@@ -484,3 +484,100 @@ quantity (over-fulfillment isn't blocked) — the pack's §16.1 usage chain
 doesn't ask for that check, and Stores remains the authoritative stock
 ledger (§16.2), so this module deliberately doesn't try to reconcile
 quantities against a truth it doesn't own.
+
+## Loop 9 — 2026-09-06
+
+**Summary:** Duplicate case linkage (§4.6) and reporter-driven false/wrong
+complaint closure (§4.7).
+
+**Material changes:**
+- Migration `0011_maintenance_duplicate_false_complaint.sql`:
+  - Added `cases.duplicate_of_case_id`. The `status_transitions` rows for
+    `-> DUPLICATE` have existed since Loop 1 as graph documentation, but
+    calling the generic `transition_case` RPC with `DUPLICATE` could never
+    actually record "link to primary case" (§4.6) — it only knows
+    from/to status. Rather than leave that gap open, `transition_case` now
+    refuses `DUPLICATE` outright (`USE_MARK_DUPLICATE_CASE`) and a new
+    `mark_duplicate_case(p_case_id, p_primary_case_id, p_reason)` — staff
+    only, mandatory reason, rejects a case being its own primary, still
+    reads `status_transitions` to decide which current statuses are
+    eligible rather than hardcoding them a second time — does the
+    transition and the link together, atomically. The primary case's own
+    row is never touched (§4.6: "primary remains active").
+  - New `close_false_complaint(p_case_id, p_closure_reason,
+    p_other_explanation)` — the reporting person (not staff) may close
+    their own false/wrong complaint; lands in the existing `REJECTED`
+    status (the pack defines no separate terminal status for this).
+    Deliberately does NOT hardcode the pack's "predefined closure reason"
+    as a fixed enum in the database — the pack requires the concept but
+    never enumerates values, and inventing that business taxonomy at the
+    RPC layer would be exactly the kind of business-rule invention
+    CLAUDE.md prohibits. What IS enforced literally: a non-empty reason,
+    and a mandatory explanation when the reason is `OTHER`. The reason
+    list lives in the UI (`close-false-complaint-form.tsx`) as presentation
+    convenience, not a locked contract.
+- UI: `MarkDuplicateForm` (staff, looks up the primary case by case
+  number) and `CloseFalseComplaintForm` (reporter only, predefined-reason
+  dropdown + OTHER explanation) on the case detail page; a "Duplicate of
+  <case number>" badge with a link when set.
+- `database.types.ts`: added `duplicate_of_case_id` to `MaintenanceCase`.
+
+**Verified live (Supabase `execute_sql`, simulated JWT, project
+`maavrlqkdrisjwzhjdgg`):**
+- `transition_case(..., 'DUPLICATE', ...)` correctly refuses with
+  `USE_MARK_DUPLICATE_CASE` even for a staff caller.
+- `mark_duplicate_case`: non-staff rejected (`FORBIDDEN`), self-as-primary
+  rejected (`INVALID_PRIMARY`), empty reason rejected (`REASON_REQUIRED`);
+  full happy path confirmed — duplicate case correctly landed in
+  `DUPLICATE` with `duplicate_of_case_id` set, primary case's own
+  status/link untouched (still `REPORTED`, `duplicate_of_case_id` still
+  null).
+- `close_false_complaint`: a non-reporter staff caller rejected
+  (`FORBIDDEN`) even though they're Maintenance staff; the actual reporter
+  succeeded and the case landed in `REJECTED`.
+
+**Tests:** added `tests/duplicate-and-false-complaint.test.ts` (4 tests) —
+the `transition_case` DUPLICATE lockout, the full `mark_duplicate_case`
+guard set plus the primary-untouched assertion, reporter-only enforcement
+plus the OTHER/explanation rule on `close_false_complaint`, and a
+transition-eligibility check (cannot close-as-false-complaint once a case
+has moved past `REPORTED`). Structurally verified in this sandbox (lint
+clean, `next build` type-checks clean, all 6 test files including this one
+load and execute in order, network call fails here only — see
+tests/README.md); real signal is the GitHub Actions run on this loop's PR.
+
+**Known limitations:** `close_false_complaint` is scoped to `REPORTED`
+only (the single locked `-> REJECTED` edge in `status_transitions`) — a
+false complaint discovered after acknowledgement has no reporter-driven
+shortcut in this loop; that case goes through the normal Executive
+reject/closure path instead, which is an intentional scope choice, not
+an oversight (widening the locked transition graph would need a §42
+Change Control entry).
+
+## Regression fix (post Loop 9, pre Loop 10) — 2026-09-06
+
+**RISK-14, found by CI, not by manual review.** PR #5 (Loop 9)'s CI run
+failed `qc-and-restoration.test.ts`'s two QC-gate tests. Root cause: the
+Loop 9 `transition_case` rewrite (0011, needed to add the DUPLICATE guard)
+was built from a copy of the function that predated the §13 QC gate
+(Loop 5, migration `0007`) *and* its RISK-11 NULL-safety fix — that fix
+was applied live in Loop 5 but, per the CHANGELOG at the time, never
+captured in a numbered migration file in this repo. Re-deriving the
+function from the wrong source silently deleted the QC gate outright: a
+direct `TECHNICALLY_RESTORED -> MAINTENANCE_RELEASED` transition would
+have succeeded even with `qc_required = true`, a safety-relevant bypass.
+
+Reproduced live via `execute_sql` before fixing (confirmed the gate really
+was gone, not a test artifact), then fixed with
+`0012_maintenance_qc_gate_regression_fix.sql`: `transition_case` now
+carries the QC gate (`v_qc_required is distinct from false`) and the
+DUPLICATE guard together. Re-verified live: `qc_required = true`, `= null`,
+and `= false` all behave correctly, and DUPLICATE is still refused via the
+generic path. See `RISK_REGISTER.md` RISK-14.
+
+**Process note:** this is the second time an inline (non-migration-file)
+fix has caused downstream confusion (RISK-11's fix was also applied live
+without a matching file, which is exactly what made it easy to silently
+drop in Loop 9). Going forward, any `execute_sql`/`apply_migration` fix to
+an already-shipped function must also land as its own numbered migration
+file in the same work session — no more fixes that only exist live.

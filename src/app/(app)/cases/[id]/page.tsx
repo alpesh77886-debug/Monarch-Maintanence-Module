@@ -13,6 +13,9 @@ import CloseReopenActions from "./close-reopen-actions";
 import FollowUpButton from "./follow-up-button";
 import EmergencyPanel from "./emergency-panel";
 import SparesPanel from "./spares-panel";
+import MarkDuplicateForm from "./mark-duplicate-form";
+import CloseFalseComplaintForm from "./close-false-complaint-form";
+import Link from "next/link";
 
 export default async function CaseDetailPage({
   params,
@@ -99,8 +102,6 @@ export default async function CaseDetailPage({
     .eq("decision", "PENDING")
     .maybeSingle();
 
-  // TEMPORARILY_RESTORED has no direct edge to TECHNICALLY_RESTORED in the
-  // locked lifecycle graph (only IN_REPAIR does) — see FollowUpButton.
   const { data: spareRequests } = await supabase
     .from("spare_requests")
     .select("*")
@@ -113,6 +114,8 @@ export default async function CaseDetailPage({
     .eq("case_id", id)
     .order("used_at", { ascending: true });
 
+  // TEMPORARILY_RESTORED has no direct edge to TECHNICALLY_RESTORED in the
+  // locked lifecycle graph (only IN_REPAIR does) — see FollowUpButton.
   const canRecordRestoration = !!isStaffRow && caseRow.status === "IN_REPAIR";
   const needsFollowUp = !!isStaffRow && caseRow.status === "TEMPORARILY_RESTORED";
 
@@ -127,6 +130,24 @@ export default async function CaseDetailPage({
   const canConfirmEmergency =
     !!isStaffRow && caseRow.emergency_claimed && !caseRow.emergency_confirmed;
 
+  // §4.6/§4.7: both scoped to the same statuses their locked status_transitions
+  // edges actually allow (REPORTED/ACKNOWLEDGED/ASSESSED -> DUPLICATE;
+  // REPORTED -> REJECTED) — the RPCs re-check this server-side regardless.
+  const canMarkDuplicate =
+    !!isStaffRow && ["REPORTED", "ACKNOWLEDGED", "ASSESSED"].includes(caseRow.status);
+  const canCloseFalseComplaint =
+    !!user && user.id === caseRow.reporter_user_id && caseRow.status === "REPORTED";
+
+  let duplicatePrimaryCaseNumber: string | null = null;
+  if (caseRow.duplicate_of_case_id) {
+    const { data: primaryCase } = await supabase
+      .from("cases")
+      .select("case_number")
+      .eq("id", caseRow.duplicate_of_case_id)
+      .maybeSingle();
+    duplicatePrimaryCaseNumber = primaryCase?.case_number ?? null;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -136,7 +157,26 @@ export default async function CaseDetailPage({
           {caseRow.case_type} · Status: <span className="font-medium">{caseRow.status}</span>
           {caseRow.priority ? ` · Priority: ${caseRow.priority}` : ""}
         </p>
+        {caseRow.duplicate_of_case_id && (
+          <p className="mt-1 text-sm text-slate-600">
+            Duplicate of{" "}
+            {duplicatePrimaryCaseNumber ? (
+              <Link
+                href={`/cases/${caseRow.duplicate_of_case_id}`}
+                className="font-medium text-blue-700"
+              >
+                {duplicatePrimaryCaseNumber}
+              </Link>
+            ) : (
+              caseRow.duplicate_of_case_id
+            )}
+          </p>
+        )}
       </div>
+
+      {canCloseFalseComplaint && <CloseFalseComplaintForm caseId={caseRow.id} />}
+
+      {canMarkDuplicate && <MarkDuplicateForm caseId={caseRow.id} />}
 
       {(caseRow.emergency_claimed || canClaimEmergency) && (
         <EmergencyPanel

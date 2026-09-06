@@ -51,6 +51,7 @@ export interface MaintenanceCase {
   emergency_confirmed: boolean;
   emergency_confirmed_by: string | null;
   emergency_confirmed_at: string | null;
+  duplicate_of_case_id: string | null;
   symptom: string;
   area: string | null;
   line: string | null;
