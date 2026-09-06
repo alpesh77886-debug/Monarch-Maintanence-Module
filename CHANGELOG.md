@@ -264,3 +264,46 @@ graph (per Boss's request: "har button check karo... aarpaar jao").
 
 All fixes verified against the live Supabase project and deployed;
 `/api/sentry-test` is the only diagnostic route left in place (see Loop 2).
+
+## PR #1 merged to main — 2026-09-06
+
+Boss approved merging `claude/new-session-edkk1u` into `main` (previously
+placeholder-only). Merged via GitHub PR #1 (fast-forward-safe, zero
+conflicts — the diff was purely additive). Vercel's configured production
+branch is `main`, so this also moved the real "Production" deployment
+target off the stale placeholder commit onto the actual app for the first
+time — `https://monarch-maintenance-module.vercel.app` now serves the
+merged code. The working branch was then reset to the new `main` per the
+project's own branch-restart convention (same branch name, fresh history).
+
+## Loop 6 — 2026-09-06
+
+**Summary:** Automated integration test suite (top item from
+`APPROVAL_REPORT_LOOP_01_05.md` §J / RISK-07).
+
+**Material changes:**
+- Added Vitest (`vitest.config.ts`, `tests/helpers.ts`, 3 test files, 17
+  tests total): Scenario A + reopen, invalid-transition rejection,
+  closure-reason requirement, idempotent replay, append-only enforcement,
+  Scenario B (QC required/rejected/cleared), QC-gate bypass regression
+  tests for both `qc_required=true` and never-decided (RISK-11), Scenario C
+  + a regression test that a TECHNICAL restoration is correctly rejected
+  directly from TEMPORARILY_RESTORED (RISK-12), verification-failure path,
+  technician assignment + auto ASSESSED→ASSIGNED, intervention recording +
+  impersonation-forbidden, case_assignments/waits direct-insert bypass
+  denials, and the first-valid-actor ownership race.
+- Bumped `@types/node` to `^22` (vitest 5's peer requirement).
+- Wired `npm test` into `.github/workflows/ci.yml` (runs after lint+build).
+
+**Tests:** the suite itself — see above. Confirmed structurally sound in
+this sandbox (type-checks clean, all 17 tests load and execute in the
+right order, failing uniformly at the `signInWithPassword` network call
+because this sandbox's egress proxy blocks `*.supabase.co` — not a code
+defect). Real green/red signal comes from the GitHub Actions run on the PR
+for this loop.
+
+**Known limitations:** no separate test/staging Supabase project (tests run
+against the same live project, tagged `[AUTOTEST]`, no automated cleanup —
+see tests/README.md for why). PM, spares, notifications, and
+duplicate/false-complaint scenarios have no tests yet because those
+features don't exist yet either.
