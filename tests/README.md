@@ -82,14 +82,23 @@ the bug affected.
   (type-checks, loads, executes in order) from here; real pass/fail signal
   comes from GitHub Actions CI, which has normal network access.
 
+Loop 9 (`duplicate-and-false-complaint.test.ts`) adds: the `transition_case`
+DUPLICATE lockout, the full `mark_duplicate_case` guard set (non-staff,
+self-as-primary, missing reason) plus an explicit assertion that the
+primary case's own status/link is untouched, reporter-only enforcement and
+the OTHER/explanation rule on `close_false_complaint`, and a
+transition-eligibility check confirming a case that's moved past
+`REPORTED` can no longer use the reporter-driven false-complaint shortcut.
+
 ## Not yet covered
 
 The full `IMPLEMENTATION_PACK.md` §37 matrix is larger than this first pass
-— PM overdue/regeneration and duplicate/false-complaint closure still need
-tests once those features exist (see `APPROVAL_REPORT_LOOP_01_05.md` §J for
-the build order). Notifications, the emergency two-step, and spare
-request/usage are now covered (Loops 7-8); the escalation-timer *durations*
-are still only spot-checked live, not in this suite — see above.
+— PM overdue/regeneration still needs tests once that feature exists (see
+`APPROVAL_REPORT_LOOP_01_05.md` §J for the build order). Notifications, the
+emergency two-step, spare request/usage, duplicate linkage, and
+false-complaint closure are now covered (Loops 7-9); the escalation-timer
+*durations* are still only spot-checked live, not in this suite — see
+above.
 
 Browser E2E lives in `../e2e/` — same network limitation applies to running
 it from this sandbox.
