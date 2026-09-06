@@ -90,15 +90,29 @@ the OTHER/explanation rule on `close_false_complaint`, and a
 transition-eligibility check confirming a case that's moved past
 `REPORTED` can no longer use the reporter-driven false-complaint shortcut.
 
+Loop 10 (`pm.test.ts`) adds: PM plan creation guards (RECURRING requires an
+explicit frequency, ONE_TIME is Manager-only and self-approved, ONE_TIME
+must not carry a frequency), the `approve_pm_plan` guard set (Manager-only,
+no double-approval, can't approve an already-self-approved plan), and the
+`run_pm_scan` permission lockout. **Not covered here:** the
+instance-lifecycle RPCs (`link_pm_instance_to_case`, `complete_pm_instance`,
+`reschedule_pm_instance`) — a PM instance only comes into existence via
+`run_pm_scan`, which is cron-only and unreachable by any client, so there
+is no way for a signed-in test user to get an instance to act on without a
+test-only backdoor RPC (which would cut against the same principle that
+kept this suite from building a cleanup RPC in Loop 6). Those three RPCs,
+and the scan's generation/overdue-flagging/notification logic itself, were
+verified live via `execute_sql` instead — see CHANGELOG.md Loop 10.
+
 ## Not yet covered
 
 The full `IMPLEMENTATION_PACK.md` §37 matrix is larger than this first pass
-— PM overdue/regeneration still needs tests once that feature exists (see
-`APPROVAL_REPORT_LOOP_01_05.md` §J for the build order). Notifications, the
-emergency two-step, spare request/usage, duplicate linkage, and
-false-complaint closure are now covered (Loops 7-9); the escalation-timer
-*durations* are still only spot-checked live, not in this suite — see
-above.
+— see `APPROVAL_REPORT_LOOP_01_05.md` §J for the original build order, now
+complete through Loop 10 (the last item in the Loops 6-10 batch).
+Notifications, the emergency two-step, spare request/usage, duplicate
+linkage, false-complaint closure, and PM plan/approval are all now covered
+(Loops 7-10); escalation-timer *durations* and PM instance-lifecycle
+actions are still only spot-checked live, not in this suite — see above.
 
 Browser E2E lives in `../e2e/` — same network limitation applies to running
 it from this sandbox.
