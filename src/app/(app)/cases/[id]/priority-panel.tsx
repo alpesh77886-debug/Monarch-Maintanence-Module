@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Priority, StaffRole } from "@/lib/supabase/database.types";
+import type { Priority } from "@/lib/supabase/database.types";
 
 // §5.4: "Executive can change priority. Manager has final override."
 //
@@ -116,8 +116,4 @@ export default function PriorityPanel({
       )}
     </section>
   );
-}
-
-export function isPriorityLockedByManager(setByRole: StaffRole | null): boolean {
-  return setByRole === "MAINTENANCE_MANAGER";
 }

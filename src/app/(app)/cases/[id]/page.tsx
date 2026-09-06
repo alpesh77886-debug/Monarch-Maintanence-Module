@@ -19,7 +19,7 @@ import HandoverForm from "./handover-form";
 import ProductionBoundaryPanel from "./production-boundary-panel";
 import ImpactPanel from "./impact-panel";
 import RecurrenceCapaPanel from "./recurrence-capa-panel";
-import PriorityPanel, { isPriorityLockedByManager } from "./priority-panel";
+import PriorityPanel from "./priority-panel";
 import PtwPanel from "./ptw-panel";
 import Link from "next/link";
 import type {
@@ -316,7 +316,7 @@ export default async function CaseDetailPage({
         <PriorityPanel
           caseId={caseRow.id}
           priority={caseRow.priority}
-          priorityLockedByManager={isPriorityLockedByManager(caseRow.priority_set_by_role)}
+          priorityLockedByManager={caseRow.priority_set_by_role === "MAINTENANCE_MANAGER"}
           isManager={isManager}
         />
       )}
