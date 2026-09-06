@@ -165,3 +165,22 @@ the project's auth rate limit. CI failed with 8 tests erroring "Request rate
 limit reached", which looked like a product defect and was not. If you add
 tests, keep using `signInAs()` rather than building your own client, or the
 same ceiling comes back.
+
+Loop 15 (`recurrence-capa.test.ts`) adds: the **PENDING-04 guard** — an
+assertion that NO active recurrence rule is configured, so a future change
+that quietly seeds a default threshold fails CI (§18: "Do not hard-code an
+unapproved recurrence threshold"); the `run_recurrence_scan` permission
+lockout; `create_recurrence_rule` Manager-only plus its value guards
+(`APPROVAL_NOTE_REQUIRED`, `INVALID_THRESHOLD`, `INVALID_WINDOW`); §19 CAPA
+ownership (an Executive and a non-staff technician are both refused as owner
+— only a Manager qualifies); the raise guards; the full effectiveness path
+including **both** outcomes (`VERIFIED_NOT_EFFECTIVE` is a real result, not a
+missing answer) and Manager-only enforcement; and direct-insert plus
+non-staff-read denial on all three tables.
+
+**Not covered here:** the scan creating a flag. `run_recurrence_scan` is
+cron-only and `permission denied` for every client, so a signed-in test user
+cannot reach it without a test-only backdoor RPC — the same reasoning that
+kept the PM instance-lifecycle RPCs out of `pm.test.ts`. The whole
+scan → flag → confirm → root cause → CAPA → verify chain was verified live
+instead; see CHANGELOG.md Loop 15 for the run and its results.

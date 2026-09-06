@@ -18,12 +18,15 @@ import CloseFalseComplaintForm from "./close-false-complaint-form";
 import HandoverForm from "./handover-form";
 import ProductionBoundaryPanel from "./production-boundary-panel";
 import ImpactPanel from "./impact-panel";
+import RecurrenceCapaPanel from "./recurrence-capa-panel";
 import Link from "next/link";
 import type {
   StaffMember,
   SafetyStop,
   ProductionBoundaryEvent,
   CaseImpactRecord,
+  RecurrenceFlag,
+  CapaLink,
 } from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
@@ -186,6 +189,20 @@ export default async function CaseDetailPage({
     .eq("case_id", id)
     .order("recorded_at", { ascending: false });
 
+  // §18/§19. Flags are read for this case only; the scan links the related
+  // cases inside the flag itself.
+  const { data: recurrenceFlags } = await supabase
+    .from("recurrence_flags")
+    .select("*")
+    .eq("case_id", id)
+    .order("flagged_at", { ascending: false });
+
+  const { data: capaRows } = await supabase
+    .from("capa_links")
+    .select("*")
+    .eq("case_id", id)
+    .order("created_at", { ascending: true });
+
   let duplicatePrimaryCaseNumber: string | null = null;
   if (caseRow.duplicate_of_case_id) {
     const { data: primaryCase } = await supabase
@@ -297,6 +314,19 @@ export default async function CaseDetailPage({
         <ImpactPanel
           caseId={caseRow.id}
           records={(impactRecords ?? []) as CaseImpactRecord[]}
+          nameById={Object.fromEntries(
+            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
+          )}
+        />
+      )}
+
+      {isStaffRow && (
+        <RecurrenceCapaPanel
+          caseId={caseRow.id}
+          flags={(recurrenceFlags ?? []) as RecurrenceFlag[]}
+          capas={(capaRows ?? []) as CapaLink[]}
+          staff={(staffList ?? []) as StaffMember[]}
+          isManager={isManager}
           nameById={Object.fromEntries(
             Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
           )}

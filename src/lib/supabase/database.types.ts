@@ -201,12 +201,23 @@ export interface CaseEvent {
   reason: string | null;
 }
 
+// Kept in step with the live `notifications_notification_type_check`
+// constraint. This list had drifted: PM_OVERDUE (Loop 10),
+// CASE_HANDOVER_RECEIVED / CASE_UNASSIGNED (Loop 12) and
+// PRODUCTION_BOUNDARY_BREACH (Loop 13) were all being written by RPCs but
+// were missing here, so the type was quietly narrower than reality.
 export type NotificationType =
   | "CASE_ACKNOWLEDGED"
   | "WAIT_RESUME_READY"
   | "WAIT_ESCALATION_24H"
   | "WAIT_MANAGER_REMINDER_24H"
-  | "EMERGENCY_ESCALATION_1H";
+  | "EMERGENCY_ESCALATION_1H"
+  | "PM_OVERDUE"
+  | "CASE_HANDOVER_RECEIVED"
+  | "CASE_UNASSIGNED"
+  | "PRODUCTION_BOUNDARY_BREACH"
+  | "RECURRENCE_SUSPECTED"
+  | "CAPA_ASSIGNED";
 
 export interface AppNotification {
   id: string;
@@ -300,4 +311,62 @@ export interface CaseCurrentImpact {
   basis: string;
   recorded_by: string;
   recorded_at: string;
+}
+
+// §18 recurrence. A rule IS the "evidence tier" — the Manager names it and
+// supplies the threshold and window. No rule rows are seeded anywhere: with
+// none configured the scan flags nothing, which is how PENDING-04 (the
+// unapproved threshold) is honoured in code rather than in a comment.
+export interface RecurrenceRule {
+  id: string;
+  tier_name: string;
+  match_on: "ASSET_REF" | "LINE" | "AREA";
+  threshold_count: number;
+  window_days: number;
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  approval_note: string;
+}
+
+// §18: the system may flag SUSPECTED, never CONFIRMED, and must never write
+// root_cause_note on its own.
+export type RecurrenceStatus = "SUSPECTED" | "CONFIRMED" | "DISMISSED";
+
+export interface RecurrenceFlag {
+  id: string;
+  case_id: string;
+  related_case_ids: string[];
+  flagged_at: string;
+  evidence_tier: string | null;
+  status: RecurrenceStatus;
+  rule_id: string | null;
+  match_value: string | null;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  decision_reason: string | null;
+  root_cause_note: string | null;
+  root_cause_note_by: string | null;
+  root_cause_note_at: string | null;
+}
+
+// §19: owner and effectiveness verifier are both the Maintenance Manager.
+// SYSTEM_SUGGESTED marks a candidate the system proposed — it is never a
+// certification, which §19 forbids the system from making.
+export type CapaStatus = "OPEN" | "VERIFIED_EFFECTIVE" | "VERIFIED_NOT_EFFECTIVE";
+
+export interface CapaLink {
+  id: string;
+  case_id: string;
+  title: string;
+  owner_user_id: string;
+  corrective_action: string | null;
+  status: CapaStatus;
+  source: "HUMAN" | "SYSTEM_SUGGESTED";
+  proposed_by: string | null;
+  recurrence_flag_id: string | null;
+  verification_note: string | null;
+  effectiveness_verified_by: string | null;
+  effectiveness_verified_at: string | null;
+  created_at: string;
 }

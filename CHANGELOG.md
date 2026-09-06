@@ -1067,3 +1067,130 @@ correction chain (original survives, view reports only the newest),
 cross-case `INVALID_SUPERSEDE`, direct-insert denial, and the RISK-15
 regression test asserting a non-staff user reads nothing through either the
 view or the table. Suite is now 61 tests across 10 files.
+
+## Loop 15 — 2026-09-06
+
+**§18 recurrence detection + §19 CAPA (§32 items 17-18).** Last loop of the
+Loops 11-15 batch; the hard gate re-triggers after this one.
+
+### The central design problem: PENDING-04
+
+§18 is locked as a HYBRID architecture — evidence tiers, a configurable
+threshold, a configurable window — and says in as many words:
+
+> "Do not hard-code an unapproved recurrence threshold."
+> "Historical examples may inform configuration but are not automatically the
+> Maintenance rule."
+
+PENDING-04 (the threshold and window) is still open. So this loop ships the
+**mechanism and no numbers**. `maintenance.recurrence_rules` is created
+**empty and seeds nothing**: with no rule rows, `run_recurrence_scan()` reads
+zero rules and flags nothing. Detection is dormant *by construction*, not by a
+comment asking someone not to enable it. `tests/recurrence-capa.test.ts`
+asserts no ACTIVE rule exists, so a future change that quietly seeds a default
+threshold fails CI.
+
+"Evidence tiers" are likewise not invented. A tier **is** a rule row the
+Manager names and defines. `match_on` is constrained to the three fields the
+schema actually carries (`ASSET_REF`, `LINE`, `AREA`) rather than to a
+severity ranking I would have had to make up, and every flag records which
+rule produced it, so a flag always states its own evidence basis.
+
+### What the system may and may not do (§18)
+
+The scan creates flags with status `SUSPECTED` only. It never sets
+`CONFIRMED`, and there is **no code path anywhere that writes
+`root_cause_note` except `record_recurrence_root_cause`**, which requires a
+human actor, their own words, and a flag somebody has already confirmed —
+§18's "must NOT automatically declare root cause", enforced rather than
+documented. Confirmation is by Executive **or** Manager, matching §18's
+"Executive/Manager confirms recurrence status"; unlike the ₹12,000 boundary,
+the pack does not reserve this to the Manager, so neither does the code.
+
+### §19 CAPA
+
+Owner and effectiveness verifier are both the Maintenance Manager. Any staff
+member may raise a CAPA, but `raise_capa` rejects an owner who is not an
+active Manager. `verify_capa_effectiveness` is Manager-only and records
+**both** outcomes — the skeleton's `effectiveness_verified boolean` could not
+distinguish "not yet verified" from "verified and found NOT effective", which
+is precisely the distinction §19 exists to capture, so it was replaced with a
+status (the table was empty; verified before altering). A system-proposed CAPA
+is stored as `source = 'SYSTEM_SUGGESTED'` and shown as *"suggested — not
+certified"*: §19 allows the system to suggest candidates and forbids it from
+certifying effectiveness.
+
+### A caught error worth recording
+
+The first apply of migration 0018 was **rejected by Postgres**:
+
+```
+ERROR: 23514: check constraint "notifications_notification_type_check"
+of relation "notifications" is violated by some row
+```
+
+I had rebuilt the notification-type list by copying it out of migration 0015,
+but read from a line offset that silently dropped `CASE_ACKNOWLEDGED` and
+`WAIT_RESUME_READY` — 580 live rows carry those two values. The transaction
+rolled back cleanly (constraint verified intact afterwards). The list is now
+taken from the live constraint definition itself, with a comment saying why.
+Same class of mistake as RISK-14: rebuilding a definition from a stale copy
+instead of from the live object.
+
+### Live verification (`execute_sql`, simulated JWTs)
+
+| Check | Result |
+|---|---|
+| scan with **no** rules configured | `flags_created: 0` (dormant — PENDING-04) |
+| Executive creates a recurrence rule | `FORBIDDEN` |
+| Executive verifies CAPA effectiveness | `FORBIDDEN` |
+| blank `approval_note` | `APPROVAL_NOTE_REQUIRED` |
+| threshold of 1 | `INVALID_THRESHOLD` |
+| unsupported `match_on` | check constraint violation |
+| `run_recurrence_scan` as `authenticated` | `permission denied` (cron only) |
+| scan with a rule + 3 matching cases | 1 flag: `status=SUSPECTED`, `root_cause=NULL`, `decided_by=NULL`, 3 related cases, 2 staff notified |
+| second scan | `flags_created: 0` (no duplicate) |
+| root cause **before** confirmation | `NOT_CONFIRMED` |
+| decide with no reason / bad decision | `REASON_REQUIRED` / `INVALID_DECISION` |
+| confirm, then confirm again | `CONFIRMED`, then `ALREADY_DECIDED` |
+| root cause after confirmation | recorded, attributed to the human who wrote it |
+| CAPA owned by an Executive | `OWNER_MUST_BE_MANAGER` |
+| CAPA owned by a non-staff technician | `OWNER_NOT_STAFF` |
+| system-suggested CAPA | `status=OPEN source=SYSTEM_SUGGESTED` |
+| verify with no note | `VERIFICATION_NOTE_REQUIRED` |
+| verify NOT effective | `status=VERIFIED_NOT_EFFECTIVE` |
+| verify again | `ALREADY_VERIFIED` |
+| non-staff reads rules/flags/CAPA | 0 / 0 / 0 rows |
+
+**Cleanup, and why it mattered.** The verification above required a real rule
+with real numbers. Leaving it active would have meant the new hourly cron job
+flagging genuine cases against a threshold the Boss never approved — the exact
+PENDING-04 violation this design exists to prevent. The rule was deactivated
+through the real `set_recurrence_rule_active` RPC (so the action is itself
+audited) rather than deleted, keeping the history intact. Re-verified
+afterwards: **0 active rules, scan returns `flags_created: 0`.** The
+deactivated row remains, labelled `[AUTOTEST]` and
+`"NOT an approved plant threshold"`.
+
+### Also fixed
+
+`NotificationType` in `database.types.ts` had drifted badly — `PM_OVERDUE`
+(Loop 10), `CASE_HANDOVER_RECEIVED` / `CASE_UNASSIGNED` (Loop 12) and
+`PRODUCTION_BOUNDARY_BREACH` (Loop 13) were all being written by live RPCs but
+were missing from the union, so the type was quietly narrower than the
+database. Corrected along with the two new values.
+
+### Tests
+
+`tests/recurrence-capa.test.ts` (9): the PENDING-04 no-active-rule assertion,
+the scan permission lockout, `create_recurrence_rule` Manager-only and its
+value guards, CAPA owner-must-be-Manager (Executive and non-staff both
+refused), raise guards, the full verification path including **both**
+outcomes and Manager-only enforcement, direct-insert denial on all three
+tables, and non-staff read denial. Suite is now **70 tests across 11 files**.
+
+Not covered in the suite: the scan creating a flag. `run_recurrence_scan` is
+cron-only and `permission denied` for every client, so a signed-in test user
+cannot reach it without a test-only backdoor RPC — the same reasoning that
+kept the PM instance-lifecycle RPCs out of `pm.test.ts` in Loop 10. That whole
+chain was verified live instead, as tabulated above.
