@@ -36,7 +36,7 @@ test("staff see the PM surface and a Manager can approve a recurring plan (§17.
 
   // A freshly proposed RECURRING plan must show as awaiting approval —
   // never as already approved.
-  const planCard = page.locator("div").filter({ hasText: title }).last();
+  const planCard = page.getByTestId("pm-plan-card").filter({ hasText: title });
   await expect(planCard.getByText("Awaiting Manager approval")).toBeVisible({
     timeout: 20_000,
   });
@@ -54,6 +54,10 @@ test("acknowledging a case notifies the reporter, and only the reporter (§23)",
   await signIn(reporterPage, "technician");
   const symptom = e2eSymptom("notification delivery");
   const caseId = await reportCase(reporterPage, symptom);
+  // The notification text identifies the case by number, so assertions below
+  // can be scoped to this case rather than to text that also appears in page
+  // headings.
+  const caseNumber = (await reporterPage.locator("p.font-mono").first().innerText()).trim();
 
   // A different person (staff) acknowledges it.
   const execContext = await browser.newContext();
@@ -70,14 +74,20 @@ test("acknowledging a case notifies the reporter, and only the reporter (§23)",
   await expect(bell).toBeVisible();
   await bell.click();
   await expect(
-    reporterPage.getByText(/has been acknowledged by/i).first()
+    reporterPage
+      .getByTestId("notification-panel")
+      .getByText(new RegExp(`${caseNumber} has been acknowledged by`))
   ).toBeVisible({ timeout: 20_000 });
 
-  // The acknowledging Executive must NOT see the reporter's notification —
-  // notifications are recipient-scoped by RLS, and the UI must reflect that.
+  // The acknowledging Executive must NOT receive that notification —
+  // notifications are recipient-scoped by RLS and the UI must reflect it.
+  // Scoped to the notification panel on purpose: the case number also appears
+  // in the page heading, which is not what is being asserted here.
   await execPage.reload();
   await execPage.getByRole("button", { name: /Notifications/ }).click();
-  await expect(execPage.getByText(symptom)).toHaveCount(0);
+  await expect(
+    execPage.getByTestId("notification-panel").getByText(new RegExp(caseNumber))
+  ).toHaveCount(0);
 
   await reporterContext.close();
   await execContext.close();
