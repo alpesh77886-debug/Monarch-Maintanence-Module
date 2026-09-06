@@ -116,6 +116,16 @@ It acts on every open case the caller owns, so running it for real inside
 a suite that shares one live Supabase project would move cases other tests
 are mid-way through using. Verified live instead — see CHANGELOG Loop 12.
 
+Loop 13 (`production-boundary.test.ts`) adds: §13 safety/technical stop
+guards (staff-only, one active stop per case, deliberate lift with a reason,
+no double-lift), and the assertion that matters most — recording a §13.1
+breach leaves the stop **active** (`lifted_at` still null) and does not move
+the case or mark it released, since §13.1 says "do not silently clear the
+stop." Also: refusing to file a breach against a case that genuinely
+reached `MAINTENANCE_RELEASED` (walked through the real lifecycle to get
+there), §13.2 recording that neither fabricates a restart nor introduces a
+closure blocker, and direct-insert denial on both new tables.
+
 ## Not yet covered
 
 The full `IMPLEMENTATION_PACK.md` §37 matrix is larger than this first pass

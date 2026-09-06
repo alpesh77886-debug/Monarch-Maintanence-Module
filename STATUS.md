@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 12 (complete) — mid-batch (Loops 11-15; hard gate
+Current loop: Loop 13 (complete) — mid-batch (Loops 11-15; hard gate
   re-triggers after Loop 15 per IMPLEMENTATION_PACK.md §19.11)
 Current gate: none open — Gate 2 (Loops 06-10) was approved by the Boss
   ("suru karo...loop 11 se 15 suru karo"). Next hard gate is after Loop 15.
@@ -26,9 +26,10 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   `.github/workflows/ci.yml`), run as real signed-in users against the live
   `maintenance` schema. 17 tests from Loop 6, +10 Loop 7 (§6 claim/confirm,
   notifications), +7 Loop 8 (§16 spares, `is_manager()` regression), +4
-  Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM), +6 Loop 12 (§22 handover) —
-  **46 tests across 8 files**, all confirmed passing in real GitHub Actions
-  CI (including catching and driving the RISK-14 fix).
+  Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM), +6 Loop 12 (§22 handover),
+  +7 Loop 13 (§13 production boundary) — **53 tests across 9 files**, all
+  confirmed passing in real GitHub Actions CI (including catching and
+  driving the RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
   real figure at that point was 40. Counted from `it()` blocks — see
   CHANGELOG Loop 12.)

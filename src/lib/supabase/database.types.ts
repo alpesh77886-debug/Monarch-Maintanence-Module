@@ -74,6 +74,37 @@ export interface StaffMember {
   availability_changed_at?: string | null;
 }
 
+export interface SafetyStop {
+  id: string;
+  case_id: string;
+  stop_type: "SAFETY" | "TECHNICAL";
+  machine_ref: string | null;
+  line_ref: string | null;
+  reason: string;
+  raised_by: string;
+  raised_at: string;
+  lifted_by: string | null;
+  lifted_at: string | null;
+  lift_reason: string | null;
+}
+
+export type ProductionBoundaryEventType =
+  | "PRODUCTION_STARTED_WITHOUT_MAINTENANCE_RELEASE"
+  | "PRODUCTION_NOT_RESTARTED";
+
+export interface ProductionBoundaryEvent {
+  id: string;
+  case_id: string;
+  event_type: ProductionBoundaryEventType;
+  safety_stop_id: string | null;
+  machine_ref: string | null;
+  line_ref: string | null;
+  reason: string;
+  recorded_by: string;
+  recorded_at: string;
+  case_status_at_record: CaseStatus;
+}
+
 export interface CaseOwnership {
   id: string;
   case_id: string;
