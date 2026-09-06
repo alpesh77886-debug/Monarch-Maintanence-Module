@@ -230,3 +230,22 @@ RLS have existed since Loop 1 (the reporter's own insert policy already
 permits setting it, the same way symptom/area/line already work), just never
 exposed in the UI. Covers the flag being stored exactly as set, and
 defaulting to `false` rather than being silently inferred when omitted.
+
+Loop 20 (`case-assets.test.ts`) adds: §5.1 asset/machine linkage — no new
+RPC, `case_assets` and its RLS have existed since Loop 1/2 and were simply
+never used (same shape as evidence, Loop 18, but staff-gated rather than
+any-authenticated). Covers non-staff refusal, `linked_by` impersonation
+refusal, a successful link, and — the one genuine new server-side logic
+this loop adds — the `case_assets_mark_known` trigger that flips
+`cases.asset_known` from `false` to `true` once a real asset is linked, so
+that flag stops being permanently stale for any case reported with the
+asset unknown.
+
+**Not covered here:** the recurrence engine's `ASSET_REF` match tier
+actually producing a flag once assets are linked (this loop's whole reason
+for existing, alongside the intake-form promise it fulfils) — same reason
+PM instance lifecycle and the recurrence scan itself aren't unit-tested
+elsewhere in this suite: `run_recurrence_scan` is cron-only and unreachable
+by any signed-in client. Verified live instead — see CHANGELOG.md Loop 20
+for the exact run (3 cases sharing one linked asset, one recurrence rule
+with `match_on = 'ASSET_REF'`, exactly one flag produced).

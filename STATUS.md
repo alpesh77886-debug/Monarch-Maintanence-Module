@@ -1,13 +1,10 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 16 (complete) — mid-batch (Loops 16-20; hard gate
-  re-triggers after Loop 20 per IMPLEMENTATION_PACK.md §19.11)
-Current gate: none open — Gate 3 (Loops 11-15) was approved by the Boss via
-  explicit confirmation ("Haan, Loop 16-20 shuru karo" — Yes, start Loop
-  16-20 — given through AskUserQuestion after the model was switched to
-  Sonnet 5 and the gate report was re-surfaced, satisfying §19.13's
-  requirement for explicit continuation language). Next hard gate is after
-  Loop 20. See APPROVAL_GATE.md.
+Current loop: Loop 20 (complete) — END OF BATCH (Loops 16-20)
+Current gate: **GATE 4 OPEN — APPROVAL_REPORT_LOOP_16_20.md written, awaiting
+  the Boss.** Autonomous development is PAUSED. Loop 21 does not begin until
+  the Boss gives explicit continuation language (IMPLEMENTATION_PACK.md
+  §19.9/§19.13). Silence or "looks good" is NOT approval. See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -36,8 +33,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   +7 Loop 13 (§13 production boundary), +8 Loop 14 (§25 impact/KPI),
   +9 Loop 15 (§18 recurrence, §19 CAPA), +10 Loop 16 (§5.4 priority override,
   §14.2 PTW gate), +6 Loop 17 (§9.1 validated root cause), +4 Loop 18
-  (§5.1 evidence attachment), +2 Loop 19 (§5.1/§24 major/complex intake) —
-  **93 tests across 15 files** (counted from `it()` blocks), all confirmed
+  (§5.1 evidence attachment), +2 Loop 19 (§5.1/§24 major/complex intake),
+  +4 Loop 20 (§5.1 asset linkage) — **97 tests across 16 files** (counted
+  from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -109,7 +107,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0020 (Loop 17), all live on
+Migrations applied: 0008 (Loop 7) through 0021 (Loop 20), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -131,7 +129,7 @@ PR #12 (Loop 16) needed two post-open CI fixes before it merged: a test-helper
   verified live in CI; every `"use client"` file in the app has since been
   re-scanned after each subsequent loop for the same pattern (none found).
 
-Batch progress (Loops 16-20, current batch):
+Batch summary (Loops 16-20 — see CHANGELOG.md for full per-loop detail):
   - Loop 16: §5.4 priority Manager-override (`change_priority`, an Executive
     may change freely until a Manager sets it, after which only a Manager
     can move it further) + §14.2 PTW safety gate seam (`set_ptw_required`/
@@ -158,11 +156,19 @@ Batch progress (Loops 16-20, current batch):
     it); this loop is intake-form UI plus list/detail badges. Deliberately
     no later change/override flow — the pack documents the classification
     happening at creation, not a revision mechanism for it.
-  - Loop 20: NOT STARTED. Last loop of this batch — ends with the hard gate.
+  - Loop 20: §5.1 asset/machine linkage. No new RPC — `case_assets` and its
+    RLS have existed since Loop 1/2 (staff-only, same shape as evidence)
+    but nothing had ever written to it. Adds one trigger
+    (`case_assets_mark_known`, `SECURITY DEFINER` — confirmed live first
+    that `cases` has no direct UPDATE policy at all, so a plain trigger
+    would have failed) keeping `cases.asset_known` honest once a real link
+    is made. Also the knock-on fix: §18's recurrence `ASSET_REF` match tier
+    (Loop 15) could never produce a match before this loop — verified live
+    that it now does (3 cases sharing one linked asset -> 1 flag).
 
-Approval state: RUNNING — the Boss approved Loops 16-20. The next HARD GATE
-  falls after Loop 20, where autonomous development stops again pending
-  explicit continuation language (APPROVAL_GATE.md /
+Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Loops 16-20 are
+  complete and APPROVAL_REPORT_LOOP_16_20.md is written. Not resuming Loop 21+
+  until the Boss gives explicit continuation language (APPROVAL_GATE.md /
   IMPLEMENTATION_PACK.md §19.13).
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will

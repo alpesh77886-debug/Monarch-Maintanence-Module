@@ -1526,3 +1526,96 @@ page header when the flag is set.
 `tests/major-complex.test.ts` (2): the flag is stored exactly as set, and
 defaults to `false` when omitted rather than being guessed. Suite is now
 **93 tests across 15 files**.
+
+## Loop 20 — 2026-09-06
+
+**§5.1 — asset/machine linkage.** Last loop of the Loops 16-20 batch; the
+hard gate re-triggers after this one.
+
+### How the gap was found
+
+A systematic sweep — every column in every `maintenance` table cross-checked
+against `src/` for any reference — found `maintenance.case_assets`
+referenced only in the schema (0001), its RLS (0002), and as a READ inside
+the recurrence scan (0018). **Nothing had ever written to it.** §5.1 is
+explicit: *"Exact asset may be unknown at creation. Never silently map an
+unknown asset. A case may later be linked to one or more assets/machines."*
+The intake form (`cases/new`) has offered a checkbox reading *"link it after
+acknowledgement"* since it was built — a promise the app could not keep,
+since there was nowhere to actually do that.
+
+This gap also had a concrete downstream cost: §18's recurrence engine
+(Loop 15) supports an `ASSET_REF` match tier, but it could **never** produce
+a match — no case had ever had a `case_assets` row to match on. Closing this
+gap makes a previously-unusable recurrence tier usable for the first time.
+
+### No RPC — same shape as evidence (Loop 18)
+
+`case_assets_insert`'s RLS (`is_staff() and linked_by = auth.uid()`) has
+been correct since Loop 2 and needed no change; this is a direct client
+insert like `evidence`, just staff-gated rather than any-authenticated
+(asset identification is a staff/triage judgment, unlike evidence, which
+the reporter also needs to supply).
+
+### The one genuine new piece: a trigger keeping `asset_known` honest
+
+`cases.asset_known` is set once at intake and, until now, was never touched
+again — a case reported "asset unknown" stayed marked that way forever, even
+after staff identified and linked the real asset. `0021` adds
+`case_assets_mark_known`, an `AFTER INSERT` trigger on `case_assets` that
+flips `cases.asset_known` to `true`. This is not a business-rule change —
+§5.1's "never silently map an unknown asset" is about not *guessing* which
+asset, and says nothing about the boolean staying accurate once a real,
+staff-entered link exists; leaving it permanently stale would make the flag
+actively misleading. The trigger function is `SECURITY DEFINER` because it
+must be — confirmed live first that `cases` has no direct `UPDATE` policy
+for `authenticated` at all (every mutation in this schema goes through
+`SECURITY DEFINER` RPCs), so a plain trigger would have failed outright.
+
+### Live verification (`execute_sql`, simulated JWTs)
+
+| Check | Result |
+|---|---|
+| non-staff links an asset | RLS refusal |
+| `linked_by` spoofed to someone else | RLS refusal |
+| staff links a real asset | succeeds, stored exactly as entered |
+| `asset_known` before link | `false` |
+| `asset_known` after link (trigger) | `true` |
+| recurrence rule with `match_on = 'ASSET_REF'`, 3 cases sharing one linked asset | scan produces exactly 1 flag — the tier now works |
+
+The test rule used for that last check was deactivated immediately afterward
+through `set_recurrence_rule_active` (audited, not deleted) — same
+discipline as every recurrence verification since Loop 15. Re-confirmed
+after cleanup: 0 active rules.
+
+### A testing-harness lesson worth recording
+
+The first verification attempt used a single `DO $$ ... $$` block that
+switched the simulated JWT (`set_config`) *inside* a `BEGIN ... EXCEPTION
+WHEN OTHERS ... END` sub-block. When that block's exception fired, Postgres
+rolled back to its implicit savepoint — which undid the `set_config` call
+too, silently reverting the session to the previous role before the next
+statement ran. The symptom was a confusing, unrelated-looking RLS failure
+several statements later. Fixed by keeping every role switch at the
+top level, outside any exception-catching block, across separate
+`execute_sql` calls. Not a migration bug — a reminder that this specific
+verification pattern (JWT switch + exception probes in one block) needs the
+switch outside the probe.
+
+### After Loop 16's server/client boundary lesson
+
+Re-scanned every `"use client"` file in the app before considering this
+done. Clean.
+
+### UI
+
+`AssetPanel` on the case page (staff-only), showing linked assets and a
+form to add one — explicitly captioned that an asset is linked once
+identified, never guessed from the symptom.
+
+### Tests
+
+`tests/case-assets.test.ts` (4): non-staff refusal, `linked_by` impersonation
+refusal, a successful link stored exactly as entered, and the
+`asset_known` trigger flipping `false` → `true`. Suite is now **97 tests
+across 16 files**.

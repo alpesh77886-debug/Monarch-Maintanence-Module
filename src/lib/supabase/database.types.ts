@@ -116,6 +116,19 @@ export interface CaseEvidence {
   created_at: string;
 }
 
+// §5.1: "A case may later be linked to one or more assets/machines." Staff
+// only, direct insert (no RPC) — same shape as evidence, just staff-gated
+// instead of any-authenticated. `linked_by`/`linked_at` are also what the
+// §18 recurrence engine's ASSET_REF match tier reads from.
+export interface CaseAsset {
+  id: string;
+  case_id: string;
+  asset_name: string;
+  asset_ref: string | null;
+  linked_by: string | null;
+  linked_at: string;
+}
+
 export interface StaffMember {
   id: string;
   full_name: string;

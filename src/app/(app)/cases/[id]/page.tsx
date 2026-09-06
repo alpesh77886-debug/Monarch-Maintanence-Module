@@ -23,6 +23,7 @@ import PriorityPanel from "./priority-panel";
 import PtwPanel from "./ptw-panel";
 import RootCausePanel from "./root-cause-panel";
 import EvidencePanel from "./evidence-panel";
+import AssetPanel from "./asset-panel";
 import Link from "next/link";
 import type {
   StaffMember,
@@ -33,6 +34,7 @@ import type {
   CapaLink,
   CaseRootCause,
   CaseEvidence,
+  CaseAsset,
 } from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
@@ -226,6 +228,14 @@ export default async function CaseDetailPage({
     .eq("case_id", id)
     .order("created_at", { ascending: false });
 
+  // §5.1 asset linkage. Staff-only, direct insert — the RLS/trigger do the
+  // work; this is just a read for display.
+  const { data: caseAssets } = await supabase
+    .from("case_assets")
+    .select("*")
+    .eq("case_id", id)
+    .order("linked_at", { ascending: true });
+
   let duplicatePrimaryCaseNumber: string | null = null;
   if (caseRow.duplicate_of_case_id) {
     const { data: primaryCase } = await supabase
@@ -365,6 +375,13 @@ export default async function CaseDetailPage({
           status={caseRow.status}
           ptwRequired={caseRow.ptw_required}
           ptwProofRef={caseRow.ptw_proof_ref}
+        />
+      )}
+
+      {isStaffRow && (
+        <AssetPanel
+          caseId={caseRow.id}
+          assets={(caseAssets ?? []) as CaseAsset[]}
         />
       )}
 
