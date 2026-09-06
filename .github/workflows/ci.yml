@@ -1,9 +1,21 @@
 name: CI
 
 on:
+  # `branches: ["**"]` here meant every PR commit triggered TWO identical runs
+  # (once as `push`, once as `pull_request`). That doubled the sign-in load on
+  # the one live Supabase project and ran two suites against the same data at
+  # the same time. Branch work reaches CI through its PR; `main` is covered on
+  # merge.
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
+
+# The test suites mutate a single shared live Supabase project, so two runs of
+# the same ref must never overlap. Superseded runs are cancelled rather than
+# left racing the newer one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-build:
