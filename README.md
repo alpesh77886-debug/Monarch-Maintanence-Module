@@ -13,6 +13,12 @@ Change history: [`CHANGELOG.md`](./CHANGELOG.md)
 Open risks: [`RISK_REGISTER.md`](./RISK_REGISTER.md)
 Latest Boss approval gate: [`APPROVAL_GATE.md`](./APPROVAL_GATE.md)
 
+## Live
+
+- App (branch deploy): https://monarch-maintenance-module-git-claude-new-s-e548d3-monarch-92be.vercel.app
+- Demo login (rotate before real rollout): `exec1@monarch.test` / `Loop1TestPass!23`
+  (Executive), `mgr1@monarch.test` / `Loop1TestPass!23` (Manager)
+
 ## Stack
 
 - **Frontend**: Next.js (App Router, TypeScript), mobile-first
