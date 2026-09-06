@@ -684,3 +684,67 @@ that is before a case exists for the PM work. `run_pm_scan`'s hourly
 cadence is an implementation choice; the pack locks no specific polling
 interval for PM, only that overdue flagging and generation happen
 automatically.
+
+# Batch 3 — Loops 11-15
+
+Boss approval to proceed: "suru karo...loop 11 se 15 suru karo" (2026-09-06).
+
+## Loop 11 — 2026-09-06
+
+**Summary:** Browser E2E, actually running — closing RISK-05, open since
+Loop 1 and the top item in the last gate report's §J.
+
+**The insight that unblocked it:** RISK-05 was framed for ten loops as "this
+sandbox can't reach Supabase, so browser tests must wait for a human to run
+them elsewhere." But GitHub Actions *does* have normal egress — the Vitest
+suite has been talking to the live Supabase project from CI since Loop 6.
+The browser tests never needed a human; they needed to run in CI.
+
+**Material changes:**
+- Added `@playwright/test` + `playwright.config.ts`. The config builds and
+  starts the app itself (port 3100) and points the browser at it, rather
+  than at a Vercel preview URL — no deploy-timing race in CI, and what's
+  under test is this repo's client-side wiring, not Vercel's edge. Set
+  `E2E_BASE_URL` to run against a deployed URL instead.
+- Replaced `e2e/smoke.mjs` (a one-shot script that had never once been run,
+  and whose hardcoded `executablePath` would have failed in CI anyway) with
+  two real spec files, 8 tests:
+  - `e2e/case-flow.spec.ts` — signed-out `/login` renders with zero console
+    or page errors; `/cases` while signed out redirects to *this app's* own
+    login (a standing RISK-08 guard: it must never be a Vercel SSO wall);
+    the full sign-in → report → acknowledge → journal → audit-trail flow;
+    and the §6 emergency claim/confirm two-step including its reason
+    requirement and the claim-is-not-confirmation distinction.
+  - `e2e/roles-and-notifications.spec.ts` — §17 PM surface hidden from a
+    non-staff user *and* gated on direct navigation; Manager-only PM
+    approval (§17.3); §23 acknowledgement notification reaching the reporter
+    and provably *not* visible to the acknowledging Executive (two parallel
+    browser contexts); §3.3 ₹12,000 spare gate rendering the awaiting-
+    approval state with the approve control withheld from a non-Manager.
+- Wired into `.github/workflows/ci.yml` as a separate `e2e` job that runs
+  after `lint-and-build` passes, installs Chromium, and uploads the
+  Playwright HTML report as an artifact on failure.
+- `e2e/README.md` documents the setup, the sandbox limitation, and the
+  coverage table.
+- `signIn()` surfaces the login page's own inline error text on failure
+  instead of a bare "still on /login" timeout — RISK-10's actual message
+  ("Database error querying schema") is what identified that bug, so the
+  harness now preserves that signal by construction.
+
+**Verified locally (this sandbox):**
+- 2 of 8 tests genuinely **pass** — the two signed-out specs. These are the
+  first browser tests ever to actually run and pass in this repo; every
+  prior loop's "UI verification" was a server-side fetch of rendered HTML.
+- The other 6 fail at the sign-in network call only, and now say so
+  explicitly: `signIn(executive) did not reach /cases. Login page reported:
+  "Failed to fetch (maavrlqkdrisjwzhjdgg.supabase.co)"` — the sandbox's
+  egress policy, not an app defect.
+- `npm run lint` clean, `tsc --noEmit` clean over the new specs.
+
+**Known limitations:** the 6 sign-in specs can only be proven in CI, not
+here — that is the whole point of the CI job, but it does mean this
+sandbox cannot self-certify them. RISK-05 is marked PARTIALLY RESOLVED
+until the first CI `e2e` job passes. A version note: this environment ships
+a pre-installed Chromium of a different build than current Playwright
+expects, so local runs need `E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium`;
+CI installs its own matching browser and leaves that env var unset.

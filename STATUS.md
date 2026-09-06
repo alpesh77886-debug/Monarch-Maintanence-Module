@@ -1,10 +1,10 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 10 (complete) — BATCH COMPLETE (Loops 6-10). Hard gate
-  reached per IMPLEMENTATION_PACK.md §19.11 — see
-  APPROVAL_REPORT_LOOP_06_10.md.
-Current gate: HARD GATE REACHED — waiting for Boss approval to continue
-  with Loop 11+. See APPROVAL_GATE.md.
+Current loop: Loop 11 (complete) — mid-batch (Loops 11-15; hard gate
+  re-triggers after Loop 15 per IMPLEMENTATION_PACK.md §19.11)
+Current gate: none open — Gate 2 (Loops 06-10) was approved by the Boss
+  ("suru karo...loop 11 se 15 suru karo"). Next hard gate is after Loop 15.
+  See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -27,11 +27,14 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   `maintenance` schema. 17 tests from Loop 6, +10 Loop 7 (§6 claim/confirm,
   notifications), +7 Loop 8 (§16 spares, `is_manager()` regression), +4
   Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM plan/approval) — 44 tests total
-  across 7 files. All confirmed passing in real GitHub Actions CI through
-  Loop 9's PR (including catching and driving the RISK-14 fix); Loop 10's
-  PR CI result is pending as of this report. Browser E2E (`e2e/smoke.mjs`)
-  still has not run — this sandbox's egress proxy blocks `*.supabase.co`
-  (RISK-05, still open).
+  across 7 files, all confirmed passing in real GitHub Actions CI
+  (including catching and driving the RISK-14 fix).
+  Browser E2E: NEW in Loop 11 — 8 Playwright tests (`e2e/*.spec.ts`) wired
+  into CI as their own `e2e` job. 2 of them (the signed-out specs) pass in
+  this sandbox too — the first browser tests ever to actually run here; the
+  6 sign-in specs are provable only in CI, since the sandbox's egress proxy
+  blocks `*.supabase.co` (RISK-05, now PARTIALLY RESOLVED — see
+  RISK_REGISTER.md).
 
 Pending evidence gates: PENDING-01 (LOTO/PTW SOP — untouched, only seam
   columns exist), PENDING-02 (moot — Production module still has no live
