@@ -135,3 +135,98 @@ still cannot run `e2e/smoke.mjs` itself (RISK-05 unchanged).
 **Known limitations:** no automated regression test locks in either fix —
 recommend a Playwright assertion for the `/api/*` redirect behavior and a
 project-config check for deployment protection in a future loop.
+
+## Loop 3 — 2026-09-06
+
+**Summary:** Technician assignment + intervention recording (§5.5, §9).
+
+**Material changes:**
+- `assign_technician` / `record_intervention` SECURITY DEFINER RPCs, both
+  audited (case_events + audit_log). `find_user_by_email` helper for the
+  assignment UI (staff-only, does not leak existence to non-staff).
+- Direct client insert into `case_assignments` (staff path) and
+  `interventions` is now denied by RLS — only the audited RPCs write them.
+  The emergency direct-start insert path on `case_assignments` is
+  unchanged (§5.5 — technician can start directly before formal assignment).
+- First technician assignment on an ASSESSED case auto-transitions it to
+  ASSIGNED (reuses the existing ASSESSED→ASSIGNED graph edge); reassigning
+  later does not move the case backward.
+- UI: assign-technician + record-intervention forms and lists on the case
+  detail page.
+
+**Tests (execute_sql, simulated JWT):** staff assigns by email and case
+auto-transitions to ASSIGNED; technician records their own intervention;
+Manager records on a technician's behalf; a technician attempting to record
+under a *different* technician's identity is correctly FORBIDDEN; the old
+direct-insert bypass on both tables is correctly denied by RLS.
+
+**Deployment/reference:** commit e8def16.
+
+## Loop 4 — 2026-09-06
+
+**Summary:** WAITING dependency overlay (§7).
+
+**Material changes:**
+- `enter_waiting` / `mark_wait_resolved` / `resume_wait` SECURITY DEFINER
+  RPCs. `reason_type` is always an explicit INTERNAL/EXTERNAL argument,
+  never inferred from `reason_text` (§7.1). None of these RPCs touch
+  `cases.status` — WAITING stays an overlay, not a competing lifecycle,
+  exactly as §7 frames it.
+- EXTERNAL waits use the two-step resolve→resume path (§7.2): resolving
+  sets `resume_ready_at` (recorded, not a silent auto-continue); resuming
+  before that is rejected. INTERNAL waits resume directly (manual, by
+  Executive or Manager).
+- Direct client insert into `waits` is now denied by RLS — only the RPCs
+  write it.
+- UI: enter-WAITING form + an active-wait card (resolve/resume actions) on
+  the case detail page.
+
+**Tests (execute_sql):** double-waiting on the same case rejected
+(`ALREADY_WAITING`); resuming an EXTERNAL wait before it's marked resolved
+rejected (`NOT_RESUME_READY`); full EXTERNAL resolve→resume flow; full
+INTERNAL direct-resume flow (by a Manager).
+
+**Deployment/reference:** commit ac312c0.
+
+## Loop 5 — 2026-09-06
+
+**Summary:** Restoration/verification, QC clearance gate, close/reopen UI
+(§10, §11, §12, §13) — the last backend gap in the core lifecycle from §32
+items 8–11.
+
+**Material changes:**
+- `record_restoration` (TEMPORARY vs TECHNICAL), `verify_restoration`
+  (pass/fail, failure requires a reason and returns the case to DIAGNOSING
+  or IN_REPAIR — reusing the `TECHNICALLY_RESTORED → {DIAGNOSING,IN_REPAIR}`
+  edges already in the Loop 1 graph, so no new edges were needed for the
+  failure path, §4.2/§11).
+- `set_qc_required` (records actor/timestamp/reason — §12), `send_to_qc`
+  (only from TECHNICALLY_RESTORED), `qc_decision` (CLEARED or REJECTED,
+  REJECTED requires a reason).
+- `transition_case` gained one guard: the *direct*
+  `TECHNICALLY_RESTORED → MAINTENANCE_RELEASED` edge is blocked when
+  `qc_required` is true. The `CLEARANCE_PENDING → MAINTENANCE_RELEASED`
+  edge (only reachable via `qc_decision(CLEARED)`, since `CLEARANCE_PENDING`
+  itself is only reachable via `send_to_qc`) is deliberately left
+  unguarded — that's the legitimate cleared path, not a bypass. This is
+  §13's boundary enforced in the database, not by hiding a UI button.
+  (Caught and fixed a self-introduced bug here before applying the
+  migration: an earlier draft of the guard would have also blocked the
+  legitimate cleared path — see git history on this file.)
+- UI: record-restoration form, verify-restoration pass/fail card, a QC
+  panel (set qc_required, send to QC, clear/reject with mandatory rejection
+  reason), and close/reopen actions.
+
+**Tests (execute_sql):** full Scenario B end to end
+(`TECHNICALLY_RESTORED → CLEARANCE_PENDING → QC_REJECTED → IN_REPAIR →
+TECHNICALLY_RESTORED → CLEARANCE_PENDING → MAINTENANCE_RELEASED`); the
+QC-gate bypass (`transition_case` straight to `MAINTENANCE_RELEASED` while
+`qc_required`) correctly rejected; a verification-failure path returning
+`IN_REPAIR` with the failure reason recorded and the restoration marked
+`FAILED` (never a false `TECHNICALLY_RESTORED` success).
+
+**Deployment/reference:** commit dcd8c0d.
+
+**Gate:** this closes the first 5-loop batch. Per `IMPLEMENTATION_PACK.md`
+§19.11, autonomous development now STOPS — see
+`APPROVAL_REPORT_LOOP_01_05.md` and `APPROVAL_GATE.md`.
