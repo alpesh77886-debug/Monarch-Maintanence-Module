@@ -32,6 +32,13 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginRoute = request.nextUrl.pathname.startsWith("/login");
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
+
+  // API routes handle their own auth (or, like /api/sentry-test, are
+  // deliberately unauthenticated diagnostics) — never HTML-redirect them.
+  if (isApiRoute) {
+    return response;
+  }
 
   if (!user && !isLoginRoute) {
     const url = request.nextUrl.clone();
