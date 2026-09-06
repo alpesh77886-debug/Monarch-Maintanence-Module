@@ -19,6 +19,8 @@ import HandoverForm from "./handover-form";
 import ProductionBoundaryPanel from "./production-boundary-panel";
 import ImpactPanel from "./impact-panel";
 import RecurrenceCapaPanel from "./recurrence-capa-panel";
+import PriorityPanel from "./priority-panel";
+import PtwPanel from "./ptw-panel";
 import Link from "next/link";
 import type {
   StaffMember,
@@ -307,6 +309,24 @@ export default async function CaseDetailPage({
           status={caseRow.status}
           activeStop={(activeStop as SafetyStop | null) ?? null}
           boundaryEvents={(boundaryEvents ?? []) as ProductionBoundaryEvent[]}
+        />
+      )}
+
+      {isStaffRow && (
+        <PriorityPanel
+          caseId={caseRow.id}
+          priority={caseRow.priority}
+          priorityLockedByManager={caseRow.priority_set_by_role === "MAINTENANCE_MANAGER"}
+          isManager={isManager}
+        />
+      )}
+
+      {isStaffRow && (
+        <PtwPanel
+          caseId={caseRow.id}
+          status={caseRow.status}
+          ptwRequired={caseRow.ptw_required}
+          ptwProofRef={caseRow.ptw_proof_ref}
         />
       )}
 

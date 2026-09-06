@@ -70,6 +70,14 @@ export interface MaintenanceCase {
   // §13 boundary flags, mirrored onto the case for reporting.
   production_started_without_release: boolean;
   production_not_restarted: boolean;
+  // §5.4: who last set the current priority. NULL means it has never been
+  // changed since acknowledge_case — not yet Manager-locked. Once a Manager
+  // sets it, only a Manager can change it further.
+  priority_set_by_role: StaffRole | null;
+  // §14.2 PTW seam. NULL means undecided (does not gate anything); an
+  // explicit true requires ptw_proof_ref before IN_REPAIR is reachable.
+  ptw_required: boolean | null;
+  ptw_proof_ref: string | null;
 }
 
 export interface StaffMember {

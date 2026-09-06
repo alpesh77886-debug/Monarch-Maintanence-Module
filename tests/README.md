@@ -184,3 +184,18 @@ cannot reach it without a test-only backdoor RPC — the same reasoning that
 kept the PM instance-lifecycle RPCs out of `pm.test.ts`. The whole
 scan → flag → confirm → root cause → CAPA → verify chain was verified live
 instead; see CHANGELOG.md Loop 15 for the run and its results.
+
+Loop 16 (`priority-and-ptw.test.ts`) adds: §5.4 `change_priority` — staff-only,
+reason-required, and the Manager-override lock chain (an Executive changes
+freely until a Manager sets it, after which the Executive is refused and only
+a Manager can move it further, with the full `PRIORITY_CHANGED` audit trail
+asserted); §14.2 the PTW seam (`set_ptw_required`/`link_ptw_proof` guards,
+the gate blocking `DIAGNOSING -> IN_REPAIR` until a required proof is linked,
+and that disabling PTW clears a stale proof rather than leaving it behind).
+
+This file is also the **third** `transition_case` regression suite. It
+re-asserts the QC gate at both `qc_required = true` and never-decided, and the
+DUPLICATE lockout, specifically because this is the third time that function
+has been rewritten (0011 dropped the QC gate entirely; 0012 restored it) —
+so any future change that repeats that mistake fails here immediately rather
+than needing another manual audit to catch it.
