@@ -1,0 +1,17 @@
+-- MONARCH Maintenance — Loop 14 security fix (RISK-15).
+--
+-- `case_current_impact` (migration 0016) is the first VIEW in this schema, and
+-- it shipped with Postgres's default behaviour: a view executes with its
+-- OWNER's privileges. The owner is `postgres`, which is not subject to RLS —
+-- so the view read straight past the `case_impact_records` SELECT policy and
+-- exposed every case's impact data to any authenticated user, including the
+-- non-staff technician identity.
+--
+-- Proven live, not assumed: an identical probe view without this setting
+-- returned 2 rows to the technician JWT while the base table returned 0.
+-- See CHANGELOG.md Loop 14 for the exact runs.
+--
+-- Precedent for this repo: every reporting view over an RLS-protected
+-- maintenance table MUST set security_invoker, or the policy underneath it is
+-- decorative.
+alter view maintenance.case_current_impact set (security_invoker = true);

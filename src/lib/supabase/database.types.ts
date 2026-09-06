@@ -59,8 +59,17 @@ export interface MaintenanceCase {
   qc_required: boolean | null;
   created_at: string;
   acknowledged_at: string | null;
+  // Lifecycle milestones. These exist on `maintenance.cases` and are what the
+  // §25.2 duration measures (restoration time, time to closure) are derived
+  // from — they were simply missing from this interface until Loop 14.
+  assigned_at: string | null;
+  technically_restored_at: string | null;
+  maintenance_released_at: string | null;
   closed_at: string | null;
   closure_reason: string | null;
+  // §13 boundary flags, mirrored onto the case for reporting.
+  production_started_without_release: boolean;
+  production_not_restarted: boolean;
 }
 
 export interface StaffMember {
@@ -264,4 +273,31 @@ export interface SpareUsage {
   outcome: string | null;
   stores_reference_status: string;
   stores_reference_id: string | null;
+}
+
+// §25.1 group 3 (Production Impact). Both measures are nullable on purpose:
+// §25.2 says missing data must NOT silently become zero, so `null` means
+// "not recorded" everywhere it is rendered — never 0.
+export interface CaseImpactRecord {
+  id: string;
+  case_id: string;
+  downtime_minutes: number | null;
+  output_loss_kg: number | null;
+  basis: string;
+  recorded_by: string;
+  recorded_at: string;
+  supersedes_record_id: string | null;
+}
+
+// The newest non-superseded impact record per case (view). Corrections are
+// new rows per §27, so this is the "current" figure without any UPDATE ever
+// having touched the original.
+export interface CaseCurrentImpact {
+  case_id: string;
+  impact_record_id: string;
+  downtime_minutes: number | null;
+  output_loss_kg: number | null;
+  basis: string;
+  recorded_by: string;
+  recorded_at: string;
 }

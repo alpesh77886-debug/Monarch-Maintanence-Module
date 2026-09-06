@@ -17,11 +17,13 @@ import MarkDuplicateForm from "./mark-duplicate-form";
 import CloseFalseComplaintForm from "./close-false-complaint-form";
 import HandoverForm from "./handover-form";
 import ProductionBoundaryPanel from "./production-boundary-panel";
+import ImpactPanel from "./impact-panel";
 import Link from "next/link";
 import type {
   StaffMember,
   SafetyStop,
   ProductionBoundaryEvent,
+  CaseImpactRecord,
 } from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
@@ -175,6 +177,15 @@ export default async function CaseDetailPage({
     .eq("case_id", id)
     .order("recorded_at", { ascending: true });
 
+  // §25.1 group 3 production impact. Every record is fetched, not just the
+  // current one, because a correction supersedes rather than replaces (§27) —
+  // the superseded figures stay visible.
+  const { data: impactRecords } = await supabase
+    .from("case_impact_records")
+    .select("*")
+    .eq("case_id", id)
+    .order("recorded_at", { ascending: false });
+
   let duplicatePrimaryCaseNumber: string | null = null;
   if (caseRow.duplicate_of_case_id) {
     const { data: primaryCase } = await supabase
@@ -279,6 +290,16 @@ export default async function CaseDetailPage({
           status={caseRow.status}
           activeStop={(activeStop as SafetyStop | null) ?? null}
           boundaryEvents={(boundaryEvents ?? []) as ProductionBoundaryEvent[]}
+        />
+      )}
+
+      {isStaffRow && (
+        <ImpactPanel
+          caseId={caseRow.id}
+          records={(impactRecords ?? []) as CaseImpactRecord[]}
+          nameById={Object.fromEntries(
+            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
+          )}
         />
       )}
 

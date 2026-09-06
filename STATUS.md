@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 13 (complete) — mid-batch (Loops 11-15; hard gate
+Current loop: Loop 14 (complete) — mid-batch (Loops 11-15; hard gate
   re-triggers after Loop 15 per IMPLEMENTATION_PACK.md §19.11)
 Current gate: none open — Gate 2 (Loops 06-10) was approved by the Boss
   ("suru karo...loop 11 se 15 suru karo"). Next hard gate is after Loop 15.
@@ -9,10 +9,13 @@ Current gate: none open — Gate 2 (Loops 06-10) was approved by the Boss
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
   RISK-13 (Loop 8 — `is_manager()` NULL-propagation authorization bypass),
-  and RISK-14 (Loop 9 — a rewrite of `transition_case` silently dropped
-  the §13 QC gate; caught by CI, not by manual review) all RESOLVED and
-  verified against the live deployment. No CRITICAL or HIGH defects
-  currently open.
+  RISK-14 (Loop 9 — a rewrite of `transition_case` silently dropped the
+  §13 QC gate; caught by CI, not by manual review), RISK-15 (Loop 14 — the
+  first view in this schema shipped without `security_invoker` and read
+  past RLS; measured live, fixed, regression-tested), and RISK-16 (Loop 14
+  — the test suite exhausted Supabase's auth rate limit, producing red CI
+  that was infrastructure, not product) all RESOLVED and verified against
+  the live deployment. No CRITICAL or HIGH defects currently open.
 Highest severity open: none.
 
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
@@ -27,9 +30,10 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   `maintenance` schema. 17 tests from Loop 6, +10 Loop 7 (§6 claim/confirm,
   notifications), +7 Loop 8 (§16 spares, `is_manager()` regression), +4
   Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM), +6 Loop 12 (§22 handover),
-  +7 Loop 13 (§13 production boundary) — **53 tests across 9 files**, all
-  confirmed passing in real GitHub Actions CI (including catching and
-  driving the RISK-14 fix).
+  +7 Loop 13 (§13 production boundary), +8 Loop 14 (§25 impact/KPI) —
+  **61 tests across 10 files** (counted from `it()` blocks), all confirmed
+  passing in real GitHub Actions CI (including catching and driving the
+  RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
   real figure at that point was 40. Counted from `it()` blocks — see
   CHANGELOG Loop 12.)
@@ -39,11 +43,33 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   itself, since fixed. 2 specs (signed-out) also pass in this sandbox — the
   first browser tests ever to run here. See RISK_REGISTER.md RISK-05.
 
+CI note (Loop 14): `signInAs()` now caches one signed-in client per role.
+  Signing in per test had grown to ~78 GoTrue `/token` requests in ~80s from
+  one CI IP and was tripping Supabase's auth rate limit — red CI that was
+  infrastructure, not product (RISK-16). CI also now runs on `push` to
+  `main` plus `pull_request` only, with a `concurrency` group, so a PR
+  commit no longer starts two workflows racing on the same live project.
+
 Pending evidence gates: PENDING-01 (LOTO/PTW SOP — untouched, only seam
   columns exist), PENDING-02 (moot — Production module still has no live
   schema), PENDING-03 (granular permission matrix beyond the 2 locked
   roles), PENDING-04 (recurrence threshold/window — recurrence, §18, still
   entirely unbuilt), PENDING-05 (none discovered).
+
+Batch progress (Loops 11-15, current batch):
+  - Loop 11: browser E2E (Playwright) wired into CI as its own job —
+    closed RISK-05, open since Loop 1. 8/8 green.
+  - Loop 12: §22 shift handover / availability.
+  - Loop 13: §13 production restart boundary (safety stops, §13.1/§13.2
+    recording that never silently clears a stop).
+  - Loop 14: §25 KPI reporting + production impact capture — the one real
+    §25 gap was that "downtime minutes" and "output loss kg" had nowhere to
+    live. Added `case_impact_records` (nullable measures, mandatory basis,
+    append-only corrections via `supersedes_record_id`),
+    `record_production_impact`, the `case_current_impact` view, an impact
+    panel on the case page, and a new `/kpi` page. RISK-15 (view bypassed
+    RLS) and RISK-16 (CI auth rate limit) both found and fixed in this loop.
+  - Loop 15: NOT STARTED — §18 recurrence + §19 CAPA, then the hard gate.
 
 Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
   - Loop 6: Vitest integration suite wired into CI.
@@ -71,12 +97,15 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied this batch: 0008 (Loop 7) through 0013 (Loop 10), all
-  live on Supabase project `maavrlqkdrisjwzhjdgg` and verified via
-  `execute_sql` before each was pushed.
-Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Not resuming
-  Loop 11+ until the Boss gives explicit continuation language (see
-  APPROVAL_GATE.md / IMPLEMENTATION_PACK.md §19.13).
+Migrations applied: 0008 (Loop 7) through 0017 (Loop 14), all live on
+  Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
+  before each was pushed. 0014 (Loop 12), 0015 (Loop 13), 0016 (Loop 14
+  impact capture) and 0017 (Loop 14 RISK-15 security_invoker fix) are this
+  batch's.
+Approval state: RUNNING — the Boss approved Loops 11-15 ("suru
+  karo...loop 11 se 15 suru karo"). The next HARD GATE falls after Loop 15,
+  where autonomous development stops again pending explicit continuation
+  language (APPROVAL_GATE.md / IMPLEMENTATION_PACK.md §19.13).
 
 Demo/test logins (rotate or remove before real rollout):
   Executive:  exec1@monarch.test / Loop1TestPass!23

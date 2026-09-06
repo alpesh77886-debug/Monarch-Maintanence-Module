@@ -138,3 +138,30 @@ actions are still only spot-checked live, not in this suite — see above.
 
 Browser E2E lives in `../e2e/` — same network limitation applies to running
 it from this sandbox.
+
+Loop 14 (`kpi.test.ts`) adds: §25 production impact capture — the staff-only
+guard, `BASIS_REQUIRED` and `NO_MEASURE_SUPPLIED`, negative-measure
+rejection, and the assertion that carries the section's weight: an
+unsupplied measure is stored as **NULL, not 0** (§25.2, "Missing data must
+NOT silently become zero"). Also the §27 correction chain — a superseding
+record leaves the original row intact and the `case_current_impact` view
+reports only the newest non-superseded figure — plus cross-case
+`INVALID_SUPERSEDE` and direct-insert denial.
+
+The last test in that file is a permanent regression test for **RISK-15**:
+`case_current_impact` originally shipped without `security_invoker`, so it
+executed as its owner (`postgres`) and returned every case's impact data to
+any authenticated user regardless of the RLS policy on the table beneath it.
+The test asserts a non-staff user reads nothing through *either* the view or
+the table. Standing rule for this repo: **every reporting view over an
+RLS-protected maintenance table must set `security_invoker`.**
+
+### A note on sign-ins (RISK-16)
+
+`signInAs()` caches one signed-in client per role for the whole run. It used
+to sign in fresh on every call, and at 78 call sites that meant ~78 requests
+to Supabase GoTrue's `/token` endpoint in ~80 seconds from one CI IP — over
+the project's auth rate limit. CI failed with 8 tests erroring "Request rate
+limit reached", which looked like a product defect and was not. If you add
+tests, keep using `signInAs()` rather than building your own client, or the
+same ceiling comes back.
