@@ -4,6 +4,8 @@ import AcknowledgeForm from "./acknowledge-form";
 import ObservationForm from "./observation-form";
 import AssignTechnicianForm from "./assign-technician-form";
 import InterventionForm from "./intervention-form";
+import WaitingForm from "./waiting-form";
+import WaitingActiveCard from "./waiting-active-card";
 
 export default async function CaseDetailPage({
   params,
@@ -60,6 +62,13 @@ export default async function CaseDetailPage({
     !!user && (assignments ?? []).some((a) => a.technician_user_id === user.id && a.is_active);
   const canRecordIntervention = !!isStaffRow || isAssignedTechnician;
 
+  const { data: activeWait } = await supabase
+    .from("waits")
+    .select("*")
+    .eq("case_id", id)
+    .is("resumed_at", null)
+    .maybeSingle();
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -75,6 +84,12 @@ export default async function CaseDetailPage({
 
       {isStaffRow && caseRow.current_owner_user_id && (
         <ObservationForm caseId={caseRow.id} />
+      )}
+
+      {activeWait ? (
+        <WaitingActiveCard wait={activeWait} />
+      ) : (
+        isStaffRow && <WaitingForm caseId={caseRow.id} />
       )}
 
       {isStaffRow && <AssignTechnicianForm caseId={caseRow.id} />}

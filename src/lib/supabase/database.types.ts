@@ -98,6 +98,19 @@ export interface Intervention {
   failure_mode: string | null;
 }
 
+export interface CaseWait {
+  id: string;
+  case_id: string;
+  reason_type: "INTERNAL" | "EXTERNAL";
+  reason_text: string;
+  entered_at: string;
+  dependency_ref: string | null;
+  expected_resolution_info: string | null;
+  resume_ready_at: string | null;
+  resumed_at: string | null;
+  resume_type: "AUTO_EXTERNAL" | "MANUAL_INTERNAL" | null;
+}
+
 export interface CaseEvent {
   id: string;
   case_id: string;
