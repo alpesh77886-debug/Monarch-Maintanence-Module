@@ -24,11 +24,19 @@ async function seedToStatus(label: string, targetStatus: string) {
     .single();
   const caseId = created!.id as string;
 
-  const steps = ["ASSESSED", "ASSIGNED", "DIAGNOSING", "IN_REPAIR"];
+  // A fresh case is already REPORTED — acknowledge_case would move it past
+  // that, so callers wanting REPORTED stop here.
+  if (targetStatus === "REPORTED") {
+    return { exec, caseId };
+  }
+
   await exec.client.rpc("acknowledge_case", { p_case_id: caseId, p_priority: "LOW" });
-  for (const status of steps) {
-    if (status === targetStatus) break;
+  // Transition INTO each status, then check whether that was the target —
+  // stopping BEFORE transitioning (the original bug here) leaves the case
+  // one status short of what the caller asked for.
+  for (const status of ["ASSESSED", "ASSIGNED", "DIAGNOSING", "IN_REPAIR"]) {
     await exec.client.rpc("transition_case", { p_case_id: caseId, p_new_status: status });
+    if (status === targetStatus) break;
   }
   return { exec, caseId };
 }
