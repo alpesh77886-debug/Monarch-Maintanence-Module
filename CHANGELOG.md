@@ -1306,3 +1306,87 @@ guard (4), the PTW gate end-to-end including the disable-clears-proof
 behaviour (5), and the full priority lock/override chain including the
 audit trail (1, with 5 assertions inside it). Suite is now **81 tests
 across 12 files**.
+
+## Loop 17 — 2026-09-06
+
+**§9 item 6 / §9.1 — validated root cause.**
+
+### How the gap was found
+
+§9 lists 8 distinct concepts diagnosis/intervention data must not be
+collapsed into: observed symptom, immediate action/containment, intervention,
+result, failure mode, **validated root cause**, permanent corrective action,
+effectiveness verification. Checking each against the live schema: symptom
+(`cases.symptom`), immediate action/intervention/result/failure mode
+(`interventions`) were all already covered, and permanent corrective
+action/effectiveness verification (`capa_links`) were closed in Loop 15.
+
+**Item 6 was not.** The only place root cause could be written anywhere in
+this schema was `record_recurrence_root_cause` — gated behind a `CONFIRMED`
+recurrence flag. Recurrence detection is currently inert by design
+(PENDING-04, Loop 15), and even once configured only covers cases matching a
+rule's threshold. The great majority of one-off breakdowns had **no seam at
+all** to record a validated root cause.
+
+### `record_root_cause` — human-only by construction
+
+§9.1: *"The system/AI MUST NOT infer or declare authoritative root cause
+from symptom text alone... Only an authorized human process can validate and
+record root cause as authoritative."* The RPC is staff-only and — mirroring
+the §25.2 impact-record pattern from Loop 14 — requires a stated `basis`: a
+root cause with no stated validation is exactly the "declared from symptom
+text alone" pattern this rule forbids. Nothing anywhere calls this RPC
+automatically; there is no scan, no cron, no AI path near it.
+
+`maintenance.case_root_causes` is append-only (§8 *"Corrections are
+additive, not destructive... Do not compress away earlier
+observations/actions"* and §27): a correction is a new row pointing at the
+one it supersedes, never an `UPDATE`. Same shape as `case_impact_records`.
+
+### The RISK-15 lesson applied prospectively
+
+`case_current_root_cause` is the second reporting view in this schema.
+Unlike `case_current_impact` (Loop 14), which shipped without
+`security_invoker` and had to be fixed after the fact (RISK-15), this one was
+created **with `security_invoker = true` from its first line**:
+
+```sql
+create view maintenance.case_current_root_cause
+with (security_invoker = true)
+as select ...
+```
+
+Verified live before any test was written: `pg_class.reloptions` shows
+`{security_invoker=true}` immediately after creation, and with real rows
+present a non-staff technician JWT reads **0 rows** through both the view
+and the base table. The precedent recorded in RISK-15 held.
+
+### Live verification (`execute_sql`, simulated JWTs)
+
+| Check | Result |
+|---|---|
+| non-staff caller | `FORBIDDEN` |
+| blank root cause | `ROOT_CAUSE_REQUIRED` |
+| blank basis | `BASIS_REQUIRED` |
+| first record | stored and shown via the view |
+| supersede a record on another case | `INVALID_SUPERSEDE` |
+| correction recorded | 2 rows kept; original finding still intact |
+| view after correction | 1 row, the corrected finding only |
+| direct insert as staff | RLS refusal |
+| non-staff reads view/table (with rows present) | 0 / 0 |
+
+### UI
+
+`RootCausePanel` on the case page — states plainly that no root cause
+recorded is a valid state ("root cause is never inferred automatically"),
+requires the basis box, and offers corrections as supersessions with the
+prior finding kept visible in history, same interaction pattern as
+`ImpactPanel`.
+
+### Tests
+
+`tests/root-cause.test.ts` (6): staff-only + basis-required guards, the
+append-only correction chain, cross-case `INVALID_SUPERSEDE`, direct-insert
+denial, and the view RLS assertion (explicitly framed as confirming the
+RISK-15 lesson held, not as fixing a new instance of it). Suite is now **87
+tests across 13 files**.
