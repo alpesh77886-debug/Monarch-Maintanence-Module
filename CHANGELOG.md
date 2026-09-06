@@ -95,3 +95,43 @@ principle as the rest of the system):
 - No automated test framework (Jest/Vitest/Playwright test runner) wired
   into `npm test` yet — §37's full test matrix is still scope debt, not
   satisfied by the manual verification above.
+
+## Loop 2 — 2026-09-06
+
+**Summary:** Verification loop — found and fixed two real defects, confirmed
+Sentry captures a real error end-to-end.
+
+**Requirements affected:** §19.7 (Sentry verification), §29 (auth boundary),
+§39 (forensic verification — "green build ≠ correct product").
+
+**Defects found and fixed:**
+1. `src/proxy.ts` (the auth middleware) was HTML-redirecting unauthenticated
+   requests to `/api/*` paths to `/login` instead of letting the route
+   handler run. Harmless while no API route existed; would have silently
+   broken every future API route. Fixed by excluding `/api/*` from the
+   page-auth redirect.
+2. The Vercel project had SSO (Vercel Authentication) protection enabled on
+   "all deployments except custom domains" — meaning even the production
+   `.vercel.app` alias required a Vercel team login to open. A real plant
+   user (technician/Executive) has no Vercel account, so this would have
+   made the app completely unreachable for its actual users. Disabled SSO
+   protection at the project level; the app's own Supabase-auth login page
+   is the real access gate (§29), which is the intended boundary anyway.
+
+**Verification performed:**
+- Added a diagnostic-only `/api/sentry-test?key=loop2-verify` route,
+  deployed it, hit it via the Vercel MCP's fetch tool, and confirmed the
+  resulting error (`MONARCH-MAINTENANCE-MODULE-1`) actually appeared in
+  Sentry (1 event, correct message) — then marked it resolved. Sentry
+  observability is now verified live, not just "SDK installed."
+- Re-confirmed `/cases` correctly redirects an unauthenticated request to
+  this app's own `/login` (not a Vercel SSO wall) after the protection fix.
+
+**Tests:** manual, against the live deployment (see above) — this sandbox
+still cannot run `e2e/smoke.mjs` itself (RISK-05 unchanged).
+
+**Deployment/reference:** commit 73ed9ae, deployment dpl_4v2wJ8D2 (READY).
+
+**Known limitations:** no automated regression test locks in either fix —
+recommend a Playwright assertion for the `/api/*` redirect behavior and a
+project-config check for deployment protection in a future loop.
