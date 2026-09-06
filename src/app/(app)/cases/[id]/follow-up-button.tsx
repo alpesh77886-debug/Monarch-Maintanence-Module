@@ -1,0 +1,56 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
+// §10: temporary restoration always needs a permanent-repair follow-up.
+// TEMPORARILY_RESTORED has no direct edge to TECHNICALLY_RESTORED in the
+// locked lifecycle graph — the only valid path back into repair work is
+// TEMPORARILY_RESTORED -> IN_REPAIR (or DIAGNOSING), matching Scenario C
+// ("IN_REPAIR -> TEMPORARILY_RESTORED -> follow-up -> IN_REPAIR ->
+// TECHNICALLY_RESTORED"). This button is that follow-up step.
+export default function FollowUpButton({ caseId }: { caseId: string }) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function resume(target: "DIAGNOSING" | "IN_REPAIR") {
+    setError(null);
+    setSubmitting(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("transition_case", {
+      p_case_id: caseId,
+      p_new_status: target,
+    });
+    setSubmitting(false);
+    if (error) return setError(error.message);
+    router.refresh();
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-orange-200 bg-orange-50 p-3">
+      <p className="text-sm text-orange-900">
+        Temporary restoration is not a permanent repair (§10) — resume work to record
+        the technical fix.
+      </p>
+      {error && <p className="text-sm text-red-700">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          onClick={() => resume("IN_REPAIR")}
+          disabled={submitting}
+          className="rounded-md bg-orange-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          Resume repair (follow-up)
+        </button>
+        <button
+          onClick={() => resume("DIAGNOSING")}
+          disabled={submitting}
+          className="rounded-md border border-orange-700 px-3 py-2 text-sm text-orange-900 disabled:opacity-50"
+        >
+          Back to diagnosing
+        </button>
+      </div>
+    </div>
+  );
+}

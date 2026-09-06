@@ -230,3 +230,37 @@ QC-gate bypass (`transition_case` straight to `MAINTENANCE_RELEASED` while
 **Gate:** this closes the first 5-loop batch. Per `IMPLEMENTATION_PACK.md`
 §19.11, autonomous development now STOPS — see
 `APPROVAL_REPORT_LOOP_01_05.md` and `APPROVAL_GATE.md`.
+
+## Post-gate bugfix round — 2026-09-06
+
+Boss reported "Database error querying schema" at login on the live app.
+Investigated and fixed three real defects found during a full audit of
+every button/action against its backend RPC and the locked transition
+graph (per Boss's request: "har button check karo... aarpaar jao").
+
+- **RISK-10 (HIGH, login completely broken):** the 3 test accounts were
+  seeded via raw SQL in earlier loops rather than a real signup/Admin API
+  call, leaving several GoTrue-internal token columns NULL instead of `''`.
+  Confirmed via Supabase `auth_logs` (`error finding user: sql: Scan error
+  on column index 8, name "email_change": converting NULL to string is
+  unsupported`) — exactly the bug RISK-05 warned this environment couldn't
+  catch (no browser-driven login test was possible from this sandbox).
+  Fixed by backfilling `''` into the affected columns; verified via a
+  temporary server-side diagnostic route (`/api/login-test`, removed after
+  use) that called the real `signInWithPassword` flow — all 3 accounts
+  confirmed returning a session.
+- **RISK-11 (MEDIUM):** the Loop 5 QC guard used
+  `coalesce(v_qc_required, false)`, so an undecided (`NULL`) `qc_required`
+  could bypass the QC gate via a direct `transition_case` call, even though
+  the UI only exposes that path for an explicit `false`. Tightened to
+  `v_qc_required is distinct from false`; re-verified the full guard
+  behavior (blocked when NULL/true, allowed when explicitly false).
+- **RISK-12 (HIGH, dead-end button):** the case detail page showed "Record
+  restoration" while `TEMPORARILY_RESTORED`, but the locked graph has no
+  `TEMPORARILY_RESTORED → TECHNICALLY_RESTORED` edge — every click failed.
+  Replaced with a `FollowUpButton` (resume to `IN_REPAIR`/`DIAGNOSING`,
+  matching Scenario C's "follow-up" step); restoration form now only shows
+  in `IN_REPAIR`. Re-verified Scenario C end-to-end.
+
+All fixes verified against the live Supabase project and deployed;
+`/api/sentry-test` is the only diagnostic route left in place (see Loop 2).

@@ -10,6 +10,7 @@ import RestorationForm from "./restoration-form";
 import VerifyRestorationCard from "./verify-restoration-card";
 import QcPanel from "./qc-panel";
 import CloseReopenActions from "./close-reopen-actions";
+import FollowUpButton from "./follow-up-button";
 
 export default async function CaseDetailPage({
   params,
@@ -88,8 +89,10 @@ export default async function CaseDetailPage({
     .eq("decision", "PENDING")
     .maybeSingle();
 
-  const canRecordRestoration =
-    !!isStaffRow && ["IN_REPAIR", "TEMPORARILY_RESTORED"].includes(caseRow.status);
+  // TEMPORARILY_RESTORED has no direct edge to TECHNICALLY_RESTORED in the
+  // locked lifecycle graph (only IN_REPAIR does) — see FollowUpButton.
+  const canRecordRestoration = !!isStaffRow && caseRow.status === "IN_REPAIR";
+  const needsFollowUp = !!isStaffRow && caseRow.status === "TEMPORARILY_RESTORED";
 
   return (
     <div className="flex flex-col gap-6">
@@ -122,6 +125,8 @@ export default async function CaseDetailPage({
 
       {pendingRestoration ? (
         <VerifyRestorationCard restoration={pendingRestoration} />
+      ) : needsFollowUp ? (
+        <FollowUpButton caseId={caseRow.id} />
       ) : (
         canRecordRestoration && <RestorationForm caseId={caseRow.id} />
       )}

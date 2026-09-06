@@ -7,8 +7,11 @@ V1 completion %: ~56% against the 25-item §32 acceptance matrix (10 fully
   the itemized breakdown)
 
 Open defects: none known unresolved. Two real defects were found and fixed
-  in Loop 2 (see RISK-08, RISK-09, both RESOLVED). No CRITICAL or HIGH
-  defects currently open.
+  in Loop 2 (RISK-08, RISK-09) and three more in a post-gate bugfix round
+  triggered by a Boss-reported login failure (RISK-10 login completely
+  broken, RISK-11 QC-gate null bypass, RISK-12 dead-end restoration button
+  on TEMPORARILY_RESTORED) — all RESOLVED and verified against the live
+  deployment. No CRITICAL or HIGH defects currently open.
 Highest severity open: none.
 
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
