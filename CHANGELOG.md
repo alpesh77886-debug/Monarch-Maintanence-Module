@@ -1390,3 +1390,139 @@ append-only correction chain, cross-case `INVALID_SUPERSEDE`, direct-insert
 denial, and the view RLS assertion (explicitly framed as confirming the
 RISK-15 lesson held, not as fixing a new instance of it). Suite is now **87
 tests across 13 files**.
+
+## Loop 18 — 2026-09-06
+
+**§5.1 / §26 — evidence attachment/reference.**
+
+### How the gap was found
+
+Scanning `IMPLEMENTATION_PACK.md` §26's recommended core entities against
+`create table maintenance.` across every migration turned up
+`maintenance.evidence` — present since the very first migration (0001),
+with its own RLS policies since the second (0002). **Nothing had ever
+written to it.** Six loops, twenty migrations, and the entire UI, and this
+table had zero rows and zero references anywhere in `src/`.
+
+### The RLS was already correct — this loop is UI, not authorization
+
+Unlike almost every other table in this schema, `evidence` was never
+RPC-gated. Its insert policy is `with check (uploaded_by = auth.uid())` —
+any authenticated user, not staff-only — matching how `cases_insert` itself
+works (reporting a case is a direct insert too). This is deliberate: §5.1
+lists evidence as an intake field, so the *reporter* needs to attach it, not
+only staff, and possibly before any staff RPC has touched the case at all.
+So Loop 18 adds no migration — it is the first thing to actually use a
+six-loop-old, already-correct policy.
+
+`file_ref` is treated as a **reference** (a URL, a photo pointer, a report
+number) rather than an uploaded document this app stores. Building real
+file/photo upload would mean Supabase Storage buckets, MIME handling, and a
+security review of their own — none of that is asked for by the locked
+pack, and every other reference seam in this app (PTW proof, `evidence_ref`
+columns elsewhere) is the same shape: a text pointer to where the evidence
+actually lives.
+
+### A test-writing mistake caught before it shipped
+
+The first draft of `tests/evidence.test.ts` asserted
+`expect(updateErr).not.toBeNull()` after a direct `.update()` call from a
+non-owning session, expecting RLS to surface as a PostgREST error. It
+doesn't: **with no UPDATE policy defined, RLS makes the write match zero
+rows — PostgREST reports success, not an error.** Verified directly against
+Postgres before trusting the assumption: a raw-SQL `UPDATE ... RETURNING`
+under the same simulated JWT returned no error either, and a follow-up
+`SELECT` proved the value never changed. The correct assertion — checking
+the row is provably unchanged/still present rather than checking for a
+truthy error — already exists as precedent in this repo
+(`emergency-and-notifications.test.ts`'s `notifications` update-denial
+test), which the fixed version now matches.
+
+### Live verification (`execute_sql`, simulated JWTs)
+
+| Check | Result |
+|---|---|
+| non-staff (technician) creates a case as reporter | succeeds |
+| non-staff attaches evidence to their own case | succeeds |
+| staff attaches evidence | succeeds |
+| insert attributing evidence to someone else (impersonation) | RLS refusal (real error) |
+| update from a non-owning session | silent no-op — value unchanged (not an error) |
+| delete from a non-owning session | silent no-op — row still present (not an error) |
+
+### After Loop 16's lesson: checked before trusting build again
+
+Loop 16's PR needed a fix for a Next.js server/client boundary bug that
+`tsc`/`lint`/`build` couldn't see. Before treating this loop's UI as done,
+every `"use client"` file in the app was re-scanned for a second (non-default)
+export being called from a server component — the exact pattern that broke
+Loop 16. `evidence-panel.tsx` has none; the whole app has none.
+
+### UI
+
+`EvidencePanel` on the case page, visible to **any signed-in user** (not
+gated behind `isStaffRow` like most panels — matches the RLS). Lists
+existing evidence with uploader/timestamp, renders a `file_ref` that looks
+like a URL as a clickable link, and offers a form to attach more with an
+optional description.
+
+### Tests
+
+`tests/evidence.test.ts` (4): non-staff self-attach,
+staff attach, impersonation refusal, and the append-only assertion (correctly
+checking row state, not error presence, per the note above). Suite is now
+**91 tests across 14 files**.
+
+## Loop 19 — 2026-09-06
+
+**§5.1 / §24 — major/complex classification at intake.**
+
+### How the gap was found
+
+Re-reading §24's AUTOMATION VS HUMAN DECISION table line by line (rather
+than skimming it, as earlier loops mostly had) turned up "major/complex
+classification at complaint creation" under HUMAN REQUIRED. Cross-checked
+against §5.1's intake minimum list, which independently names "major/complex
+indication" as a required field. `cases.major_complex_flag` has existed
+since the Loop 1 schema (0001) — a real boolean column, present in the
+TypeScript types since Loop 1 too — with **no checkbox on the intake form,
+no display anywhere, and no reference in `src/` at all** until this loop.
+Same class of gap as PTW (Loop 16) and evidence (Loop 18): a real column
+sitting dead since the very first migration.
+
+### No migration, no RPC — same shape as Loop 18
+
+`cases_insert`'s RLS (`with check (reporter_user_id = auth.uid())`) already
+permits the reporter to set any column on the case they're creating — the
+same way `symptom`/`area`/`line`/`asset_known` already work with no RPC
+gate. There is nothing to author server-side; this loop is UI plumbing for
+an already-correct policy, exactly like Loop 18.
+
+Deliberately **not** built: a later change/override flow for this flag. §24
+documents the classification happening "at complaint creation" and nothing
+elsewhere in the pack describes a mechanism for revising it afterward (unlike
+priority, which §5.4 explicitly says a Manager may later override) — adding
+one would be inventing authority the contract doesn't state.
+
+### Live verification (`execute_sql`, simulated JWT)
+
+| Check | Result |
+|---|---|
+| insert with `major_complex_flag: true` | stored as `true` |
+| insert with the field omitted | defaults to `false` — never silently inferred |
+
+### After Loop 16's lesson
+
+Re-scanned every `"use client"` file in the app for the server/client
+boundary pattern before considering this done. Clean.
+
+### UI
+
+An intake checkbox on `/cases/new` ("This is a major / complex case"), and a
+`MAJOR/COMPLEX` badge on both the case list (`/cases`) and the case detail
+page header when the flag is set.
+
+### Tests
+
+`tests/major-complex.test.ts` (2): the flag is stored exactly as set, and
+defaults to `false` when omitted rather than being guessed. Suite is now
+**93 tests across 15 files**.

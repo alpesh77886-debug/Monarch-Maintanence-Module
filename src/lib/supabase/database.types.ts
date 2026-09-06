@@ -103,6 +103,19 @@ export interface CaseCurrentRootCause {
   recorded_at: string;
 }
 
+// §5.1 / §26. `file_ref` is a reference (URL, photo pointer, report number),
+// not an uploaded document this app stores itself. Any authenticated user
+// may attach evidence to a case they can see — not staff-only, matching how
+// case reporting itself works (a direct insert, not an RPC).
+export interface CaseEvidence {
+  id: string;
+  case_id: string;
+  uploaded_by: string;
+  file_ref: string;
+  description: string | null;
+  created_at: string;
+}
+
 export interface StaffMember {
   id: string;
   full_name: string;

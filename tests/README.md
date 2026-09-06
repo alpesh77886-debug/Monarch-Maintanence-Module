@@ -210,3 +210,23 @@ validation basis is exactly the "declared from symptom text alone" pattern
 same shape as the RISK-15 regression test in `kpi.test.ts` — this view was
 built WITH `security_invoker` from its first line rather than needing a
 fix, so this test confirms that precedent held rather than fixing a repeat.
+
+Loop 18 (`evidence.test.ts`) adds: §5.1 evidence attachment. No new
+migration this loop — `maintenance.evidence` and its RLS have existed since
+Loop 1/2 and were simply never exercised, so this suite is the first thing
+to use that policy. Covers non-staff self-attach, staff attach,
+impersonation refusal (`uploaded_by` spoofing), and the append-only
+assertion. That last one is worth reading carefully if you're adding a
+similar test elsewhere: **an RLS-blocked `.update()`/`.delete()` via
+PostgREST reports success with zero rows affected, not an error** — the
+first draft of this test asserted a truthy error and would have been wrong.
+The correct pattern (assert the row is provably unchanged/still present)
+already existed in `emergency-and-notifications.test.ts`'s notifications
+test; this file follows the same shape.
+
+Loop 19 (`major-complex.test.ts`) adds: §5.1/§24 major/complex intake
+classification. No new migration or RPC — `cases.major_complex_flag` and its
+RLS have existed since Loop 1 (the reporter's own insert policy already
+permits setting it, the same way symptom/area/line already work), just never
+exposed in the UI. Covers the flag being stored exactly as set, and
+defaulting to `false` rather than being silently inferred when omitted.

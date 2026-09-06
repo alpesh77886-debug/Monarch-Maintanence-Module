@@ -23,6 +23,7 @@ export default function NewCasePage() {
   const [area, setArea] = useState("");
   const [line, setLine] = useState("");
   const [assetKnown, setAssetKnown] = useState(false);
+  const [majorComplex, setMajorComplex] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -50,6 +51,7 @@ export default function NewCasePage() {
         area: area || null,
         line: line || null,
         asset_known: assetKnown,
+        major_complex_flag: majorComplex,
         reporter_user_id: user.id,
       })
       .select("id")
@@ -120,6 +122,20 @@ export default function NewCasePage() {
           onChange={(e) => setAssetKnown(e.target.checked)}
         />
         Exact asset/machine is known (link it after acknowledgement)
+      </label>
+
+      {/* §5.1 intake minimum: "major/complex indication". §24 marks this
+          classification HUMAN REQUIRED at complaint creation — it is a plain
+          checkbox, not an algorithmic guess, and it is not later overridden
+          here because the pack only documents the classification happening
+          at creation, not a change flow for it. */}
+      <label className="flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={majorComplex}
+          onChange={(e) => setMajorComplex(e.target.checked)}
+        />
+        This is a major / complex case
       </label>
 
       {error && (

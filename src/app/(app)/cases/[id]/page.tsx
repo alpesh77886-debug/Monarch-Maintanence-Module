@@ -22,6 +22,7 @@ import RecurrenceCapaPanel from "./recurrence-capa-panel";
 import PriorityPanel from "./priority-panel";
 import PtwPanel from "./ptw-panel";
 import RootCausePanel from "./root-cause-panel";
+import EvidencePanel from "./evidence-panel";
 import Link from "next/link";
 import type {
   StaffMember,
@@ -31,6 +32,7 @@ import type {
   RecurrenceFlag,
   CapaLink,
   CaseRootCause,
+  CaseEvidence,
 } from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
@@ -215,6 +217,15 @@ export default async function CaseDetailPage({
     .eq("case_id", id)
     .order("recorded_at", { ascending: false });
 
+  // §5.1 / §26 evidence. Any authenticated user may add it (not staff-only —
+  // matches the reporter's own ability to report the case), so this fetch is
+  // not gated behind isStaffRow like the others.
+  const { data: evidenceRecords } = await supabase
+    .from("evidence")
+    .select("*")
+    .eq("case_id", id)
+    .order("created_at", { ascending: false });
+
   let duplicatePrimaryCaseNumber: string | null = null;
   if (caseRow.duplicate_of_case_id) {
     const { data: primaryCase } = await supabase
@@ -229,6 +240,11 @@ export default async function CaseDetailPage({
     <div className="flex flex-col gap-6">
       <div>
         <p className="font-mono text-xs text-slate-500">{caseRow.case_number}</p>
+        {caseRow.major_complex_flag && (
+          <span className="mb-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-800">
+            MAJOR/COMPLEX
+          </span>
+        )}
         <h1 className="text-lg font-semibold text-slate-900">{caseRow.symptom}</h1>
         <p className="mt-1 text-sm text-slate-600">
           {caseRow.case_type} · Status: <span className="font-medium">{caseRow.status}</span>
@@ -250,6 +266,18 @@ export default async function CaseDetailPage({
           </p>
         )}
       </div>
+
+      {/* §5.1: any signed-in user may attach evidence, not staff-only — the
+          reporter needs this as much as staff do. */}
+      {!!user && (
+        <EvidencePanel
+          caseId={caseRow.id}
+          records={(evidenceRecords ?? []) as CaseEvidence[]}
+          nameById={Object.fromEntries(
+            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
+          )}
+        />
+      )}
 
       {canCloseFalseComplaint && <CloseFalseComplaintForm caseId={caseRow.id} />}
 
