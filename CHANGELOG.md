@@ -553,3 +553,31 @@ shortcut in this loop; that case goes through the normal Executive
 reject/closure path instead, which is an intentional scope choice, not
 an oversight (widening the locked transition graph would need a §42
 Change Control entry).
+
+## Regression fix (post Loop 9, pre Loop 10) — 2026-09-06
+
+**RISK-14, found by CI, not by manual review.** PR #5 (Loop 9)'s CI run
+failed `qc-and-restoration.test.ts`'s two QC-gate tests. Root cause: the
+Loop 9 `transition_case` rewrite (0011, needed to add the DUPLICATE guard)
+was built from a copy of the function that predated the §13 QC gate
+(Loop 5, migration `0007`) *and* its RISK-11 NULL-safety fix — that fix
+was applied live in Loop 5 but, per the CHANGELOG at the time, never
+captured in a numbered migration file in this repo. Re-deriving the
+function from the wrong source silently deleted the QC gate outright: a
+direct `TECHNICALLY_RESTORED -> MAINTENANCE_RELEASED` transition would
+have succeeded even with `qc_required = true`, a safety-relevant bypass.
+
+Reproduced live via `execute_sql` before fixing (confirmed the gate really
+was gone, not a test artifact), then fixed with
+`0012_maintenance_qc_gate_regression_fix.sql`: `transition_case` now
+carries the QC gate (`v_qc_required is distinct from false`) and the
+DUPLICATE guard together. Re-verified live: `qc_required = true`, `= null`,
+and `= false` all behave correctly, and DUPLICATE is still refused via the
+generic path. See `RISK_REGISTER.md` RISK-14.
+
+**Process note:** this is the second time an inline (non-migration-file)
+fix has caused downstream confusion (RISK-11's fix was also applied live
+without a matching file, which is exactly what made it easy to silently
+drop in Loop 9). Going forward, any `execute_sql`/`apply_migration` fix to
+an already-shipped function must also land as its own numbered migration
+file in the same work session — no more fixes that only exist live.
