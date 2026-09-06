@@ -1619,3 +1619,72 @@ identified, never guessed from the symptom.
 refusal, a successful link stored exactly as entered, and the
 `asset_known` trigger flipping `false` → `true`. Suite is now **97 tests
 across 16 files**.
+
+## Loop 21 — 2026-09-06
+
+First loop of the Loops 21-25 batch (Gate 4 approved by the Boss).
+Boss-directed scope this loop: a **presentation-only** visual upgrade to
+`/dashboard` and `/kpi` (coloured stat cards, a status-breakdown bar) —
+explicitly *not* new modules or nav sections. Confirmed with the Boss via
+`AskUserQuestion` before starting: several unrelated third-party CMMS
+screenshots were shown as visual reference, and the Boss chose "visual
+style upgrade only" over "add new modules (Equipment/Inventory/etc.)" —
+the latter would have been architecture drift into scope the locked pack
+does not define, and is explicitly out for this loop.
+
+### No migration, no RPC
+
+Every number shown was already computed by the existing pages from
+already-correct queries/RLS. This loop only changes presentation.
+
+### New shared component
+
+`src/components/stat-card.tsx` — `StatCard` (coloured icon + number +
+label) and `BarBreakdown` (a proportional status bar). Plain server-safe
+module (no `"use client"`), so it can be imported directly by any server
+page. Deliberately invents no thresholds or judgments: `tone` is a colour
+the *caller* already decided (e.g. an existing warn/neutral choice), never
+a verdict this component computes on its own.
+
+### A real, well-scoped gap found while touching `/kpi`
+
+Re-reading `/kpi`'s own comment block against the live schema turned up a
+stale claim: it said "§18 recurrence / §19 CAPA are not implemented yet",
+written before Loop 15 built them, and never corrected. The page never
+queried `recurrence_flags` or `capa_links` at all. Live query before
+touching anything:
+
+| Query | Result |
+|---|---|
+| `recurrence_flags` total / SUSPECTED / CONFIRMED / DISMISSED | 2 / 1 / 1 / 0 |
+| active `recurrence_rules` | 0 (PENDING-04 — expected) |
+| `capa_links` total / OPEN / VERIFIED_EFFECTIVE / VERIFIED_NOT_EFFECTIVE | 15 / 0 / 0 / 15 |
+| `capa_links` with `source = 'SYSTEM_SUGGESTED'` | 1 |
+
+Real, non-trivial data — accumulated from Loop 15's and Loop 20's own live
+verification runs — sitting completely unreported. Fixed: `/kpi` now
+queries and displays these as a real "Recurrence & CAPA (§18 / §19)"
+group. Re-verified with a simulated staff JWT (role switch at the top
+level, not inside an exception block — the Loop 20 lesson) that a signed-in
+Executive sees the same counts as the superuser query: confirmed, 2 and 15
+respectively.
+
+Kept the §25.2 distinction the original page was built around: a 0 here is
+a genuine zero (the detector ran, or would run, and found nothing), not a
+"missing data" zero — the copy says so explicitly rather than leaving the
+reader to guess which kind of zero it is.
+
+### After Loop 16's server/client boundary lesson
+
+Re-scanned every `"use client"` file in the app (32 files, one new since
+Loop 20: `stat-card.tsx` matched the earlier grep only because of a comment
+containing the literal string `"use client"`, not an actual directive —
+confirmed by re-running the scan anchored to line 1). Clean, no second
+export from an actual client file called by a server component.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. The sandbox cannot reach Supabase for
+`npm test`, so the suite fails identically at the network call here
+(RISK-05) — unchanged by this loop, since no test file was added or
+touched. Suite remains **97 tests across 16 files**.

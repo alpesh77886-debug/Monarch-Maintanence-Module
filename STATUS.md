@@ -1,10 +1,12 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 20 (complete) — END OF BATCH (Loops 16-20)
-Current gate: **GATE 4 OPEN — APPROVAL_REPORT_LOOP_16_20.md written, awaiting
-  the Boss.** Autonomous development is PAUSED. Loop 21 does not begin until
-  the Boss gives explicit continuation language (IMPLEMENTATION_PACK.md
-  §19.9/§19.13). Silence or "looks good" is NOT approval. See APPROVAL_GATE.md.
+Current loop: Loop 21 (complete) — batch Loops 21-25 in progress
+Current gate: **GATE 4 CLOSED.** The Boss approved continuation for Loops
+  21-25 via an explicit choice (visual-style-upgrade-only scope for the
+  dashboard/KPI work, confirmed before Loop 21 began) after reviewing
+  APPROVAL_REPORT_LOOP_16_20.md. Batch Loops 21-25 is now in progress; the
+  next hard gate is after Loop 25 (IMPLEMENTATION_PACK.md §19.9/§19.13).
+  See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -166,10 +168,19 @@ Batch summary (Loops 16-20 — see CHANGELOG.md for full per-loop detail):
     (Loop 15) could never produce a match before this loop — verified live
     that it now does (3 cases sharing one linked asset -> 1 flag).
 
-Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Loops 16-20 are
-  complete and APPROVAL_REPORT_LOOP_16_20.md is written. Not resuming Loop 21+
-  until the Boss gives explicit continuation language (APPROVAL_GATE.md /
-  IMPLEMENTATION_PACK.md §19.13).
+Approval state: Gate 4 approved. Loops 21-25 in progress.
+
+Batch summary (Loops 21-25, current batch — see CHANGELOG.md for full detail):
+  - Loop 21: dashboard/KPI visual upgrade. Boss-scoped explicitly to
+    presentation only (no new modules/nav — a real scope boundary was
+    confirmed via AskUserQuestion after several unrelated third-party CMMS
+    screenshots were shown for visual reference). No migration, no RPC.
+    New shared `StatCard`/`BarBreakdown` components (plain server-safe
+    module, no `"use client"`). While touching `/kpi`, found and fixed a
+    real stale-copy defect: the page said §18 recurrence/§19 CAPA were
+    "not implemented yet" — false since Loop 15 — and never queried either
+    table. Now shows real counts (verified live: 2 recurrence flags, 15
+    CAPA links already existed and were invisible before this loop).
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { MaintenanceCase, CaseCurrentImpact } from "@/lib/supabase/database.types";
+import { StatCard, Icons } from "@/components/stat-card";
 
 // §25 KPI reporting.
 //
@@ -20,8 +21,15 @@ import type { MaintenanceCase, CaseCurrentImpact } from "@/lib/supabase/database
 //      good/bad, and no number is compared against a threshold — because no
 //      approved threshold exists.
 //
-// Groups still unbuilt (§18 recurrence, §19 CAPA) are listed as unbuilt
-// rather than shown as zero, which would read as "no repeat failures".
+// §18 recurrence / §19 CAPA (Loop 15) ARE built — this page previously said
+// otherwise, which was stale by the time Loop 21 re-read it against the live
+// schema. A recurrence-flag or CAPA count of 0 here is a REAL zero (the
+// detector ran, or would run, and found nothing / nothing was raised), not
+// a "missing data" zero — that distinction only matters for the downtime /
+// output-loss measures above, where a case can simply have no impact record
+// yet. §18 detection itself stays dormant by construction until PENDING-04
+// is closed (see STATUS.md); that is stated explicitly below rather than
+// left for the reader to infer from an unexplained zero.
 
 const TERMINAL = ["CLOSED", "REJECTED", "DUPLICATE"];
 
@@ -77,6 +85,17 @@ export default async function KpiPage() {
     .select("case_id, downtime_minutes, output_loss_kg");
 
   const { data: pmRows } = await supabase.from("pm_instances").select("id, status");
+
+  const { data: recurrenceRows } = await supabase
+    .from("recurrence_flags")
+    .select("id, status");
+
+  const { data: capaRows } = await supabase.from("capa_links").select("id, status, source");
+
+  const { data: activeRuleRows } = await supabase
+    .from("recurrence_rules")
+    .select("id")
+    .eq("is_active", true);
 
   const { data: reopenEvents } = await supabase
     .from("case_events")
@@ -149,6 +168,21 @@ export default async function KpiPage() {
   const pmOverdue = pm.filter((p) => p.status === "OVERDUE").length;
   const pmCompleted = pm.filter((p) => p.status === "COMPLETED").length;
 
+  // --- Group 6: Recurrence & CAPA (§18/§19) -------------------------------
+  // Real zeros, not "no data" — see the comment block at the top of this
+  // file for why that distinction matters here.
+  const recurrenceFlags = (recurrenceRows ?? []) as { id: string; status: string }[];
+  const recurrenceSuspected = recurrenceFlags.filter((r) => r.status === "SUSPECTED").length;
+  const recurrenceConfirmed = recurrenceFlags.filter((r) => r.status === "CONFIRMED").length;
+  const recurrenceDismissed = recurrenceFlags.filter((r) => r.status === "DISMISSED").length;
+  const activeRecurrenceRules = (activeRuleRows ?? []).length;
+
+  const capaLinks = (capaRows ?? []) as { id: string; status: string; source: string }[];
+  const capaOpen = capaLinks.filter((c) => c.status === "OPEN").length;
+  const capaEffective = capaLinks.filter((c) => c.status === "VERIFIED_EFFECTIVE").length;
+  const capaNotEffective = capaLinks.filter((c) => c.status === "VERIFIED_NOT_EFFECTIVE").length;
+  const capaSystemSuggested = capaLinks.filter((c) => c.source === "SYSTEM_SUGGESTED").length;
+
   // --- Group 7: Quality / Closure -----------------------------------------
   const reopenedCaseIds = new Set((reopenEvents ?? []).map((e) => e.case_id as string));
   const boundaryBreaches = cases.filter((c) => c.production_started_without_release).length;
@@ -178,6 +212,23 @@ export default async function KpiPage() {
           defines no KPI targets or SLAs.
         </p>
       </div>
+
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatCard label="Total cases" value={total} icon={Icons.clipboard} tone="info" />
+        <StatCard label="Open now" value={open.length} icon={Icons.clock} tone="neutral" />
+        <StatCard
+          label="PM overdue"
+          value={pmOverdue}
+          tone={pmOverdue ? "warn" : "neutral"}
+          icon={Icons.warning}
+        />
+        <StatCard
+          label="Recurrence flags (suspected)"
+          value={recurrenceSuspected}
+          tone={recurrenceSuspected ? "warn" : "neutral"}
+          icon={Icons.check}
+        />
+      </section>
 
       <Group title="Restoration & execution">
         <Metric
@@ -310,14 +361,49 @@ export default async function KpiPage() {
         </p>
       </Group>
 
-      <Group title="Not yet built">
-        <p className="col-span-full text-xs text-slate-600">
-          <strong>Reliability / repeat failure (§18)</strong> and{" "}
-          <strong>CAPA (§19)</strong> are not implemented yet, so they are shown
-          as unbuilt rather than as zero — reporting &ldquo;0 repeat
-          failures&rdquo; from a detector that does not exist would be false.
-          §18 also depends on PENDING-04 (the recurrence threshold and window),
-          which the approved design leaves open pending evidence.
+      <Group title="Recurrence & CAPA (§18 / §19)">
+        <Metric
+          label="Recurrence flags — suspected"
+          value={String(recurrenceSuspected)}
+          coverage="awaiting Executive/Manager confirmation"
+        />
+        <Metric
+          label="Recurrence flags — confirmed"
+          value={String(recurrenceConfirmed)}
+          coverage="§18"
+        />
+        <Metric
+          label="Recurrence flags — dismissed"
+          value={String(recurrenceDismissed)}
+          coverage="§18"
+        />
+        <Metric
+          label="Active recurrence rules"
+          value={String(activeRecurrenceRules)}
+          coverage="PENDING-04 — 0 until the Boss supplies a threshold"
+        />
+        <Metric label="CAPA — open" value={String(capaOpen)} coverage="§19" />
+        <Metric
+          label="CAPA — verified effective"
+          value={String(capaEffective)}
+          coverage="Manager-verified"
+        />
+        <Metric
+          label="CAPA — verified NOT effective"
+          value={String(capaNotEffective)}
+          coverage="a real result, not a missing answer"
+        />
+        <Metric
+          label="CAPA — system-suggested"
+          value={String(capaSystemSuggested)}
+          coverage="labelled as suggested, never auto-certified"
+        />
+        <p className="col-span-full text-xs text-slate-500">
+          The mechanism has existed since Loop 15. These are real counts, not
+          placeholders — a 0 here means the detector ran (or would run) and
+          found nothing, not that the feature is unbuilt. Detection stays
+          dormant with {activeRecurrenceRules} active recurrence rule
+          {activeRecurrenceRules === 1 ? "" : "s"} configured, per PENDING-04.
         </p>
       </Group>
     </div>
