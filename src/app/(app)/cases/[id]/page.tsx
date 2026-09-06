@@ -6,6 +6,10 @@ import AssignTechnicianForm from "./assign-technician-form";
 import InterventionForm from "./intervention-form";
 import WaitingForm from "./waiting-form";
 import WaitingActiveCard from "./waiting-active-card";
+import RestorationForm from "./restoration-form";
+import VerifyRestorationCard from "./verify-restoration-card";
+import QcPanel from "./qc-panel";
+import CloseReopenActions from "./close-reopen-actions";
 
 export default async function CaseDetailPage({
   params,
@@ -69,6 +73,24 @@ export default async function CaseDetailPage({
     .is("resumed_at", null)
     .maybeSingle();
 
+  const { data: pendingRestoration } = await supabase
+    .from("restorations")
+    .select("*")
+    .eq("case_id", id)
+    .eq("restoration_type", "TECHNICAL")
+    .is("verification_result", null)
+    .maybeSingle();
+
+  const { data: pendingClearance } = await supabase
+    .from("clearances")
+    .select("*")
+    .eq("case_id", id)
+    .eq("decision", "PENDING")
+    .maybeSingle();
+
+  const canRecordRestoration =
+    !!isStaffRow && ["IN_REPAIR", "TEMPORARILY_RESTORED"].includes(caseRow.status);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -97,6 +119,23 @@ export default async function CaseDetailPage({
       {canRecordIntervention && user && (
         <InterventionForm caseId={caseRow.id} currentUserId={user.id} />
       )}
+
+      {pendingRestoration ? (
+        <VerifyRestorationCard restoration={pendingRestoration} />
+      ) : (
+        canRecordRestoration && <RestorationForm caseId={caseRow.id} />
+      )}
+
+      {isStaffRow && (
+        <QcPanel
+          caseId={caseRow.id}
+          status={caseRow.status}
+          qcRequired={caseRow.qc_required}
+          pendingClearance={pendingClearance ?? null}
+        />
+      )}
+
+      {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
 
       <section>
         <h2 className="text-sm font-semibold text-slate-900">Assigned technicians</h2>

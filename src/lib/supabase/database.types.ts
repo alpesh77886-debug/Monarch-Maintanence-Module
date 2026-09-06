@@ -111,6 +111,24 @@ export interface CaseWait {
   resume_type: "AUTO_EXTERNAL" | "MANUAL_INTERNAL" | null;
 }
 
+export interface Restoration {
+  id: string;
+  case_id: string;
+  restoration_type: "TEMPORARY" | "TECHNICAL";
+  recorded_at: string;
+  details: string | null;
+  verification_result: "PASSED" | "FAILED" | null;
+  verification_failure_reason: string | null;
+}
+
+export interface Clearance {
+  id: string;
+  case_id: string;
+  sent_to_qc_at: string;
+  decision: "PENDING" | "CLEARED" | "REJECTED";
+  decision_reason: string | null;
+}
+
 export interface CaseEvent {
   id: string;
   case_id: string;
