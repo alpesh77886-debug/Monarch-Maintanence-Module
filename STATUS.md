@@ -1,10 +1,13 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 15 (complete) — END OF BATCH (Loops 11-15)
-Current gate: **GATE 3 OPEN — APPROVAL_REPORT_LOOP_11_15.md written, awaiting
-  the Boss.** Autonomous development is PAUSED. Loop 16 does not begin until
-  the Boss gives explicit continuation language (IMPLEMENTATION_PACK.md
-  §19.9/§19.13). Silence or "looks good" is NOT approval. See APPROVAL_GATE.md.
+Current loop: Loop 16 (complete) — mid-batch (Loops 16-20; hard gate
+  re-triggers after Loop 20 per IMPLEMENTATION_PACK.md §19.11)
+Current gate: none open — Gate 3 (Loops 11-15) was approved by the Boss via
+  explicit confirmation ("Haan, Loop 16-20 shuru karo" — Yes, start Loop
+  16-20 — given through AskUserQuestion after the model was switched to
+  Sonnet 5 and the gate report was re-surfaced, satisfying §19.13's
+  requirement for explicit continuation language). Next hard gate is after
+  Loop 20. See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -31,7 +34,8 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   notifications), +7 Loop 8 (§16 spares, `is_manager()` regression), +4
   Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM), +6 Loop 12 (§22 handover),
   +7 Loop 13 (§13 production boundary), +8 Loop 14 (§25 impact/KPI),
-  +9 Loop 15 (§18 recurrence, §19 CAPA) — **70 tests across 11 files** (counted from `it()` blocks), all confirmed
+  +9 Loop 15 (§18 recurrence, §19 CAPA), +10 Loop 16 (§5.4 priority override,
+  §14.2 PTW gate) — **81 tests across 12 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -103,16 +107,26 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0018 (Loop 15), all live on
+Migrations applied: 0008 (Loop 7) through 0019 (Loop 16), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
-  before each was pushed. 0014 (Loop 12), 0015 (Loop 13), 0016 (Loop 14
-  impact capture) and 0017 (Loop 14 RISK-15 security_invoker fix) are this
-  batch's. Migration 0018's first apply was REJECTED by Postgres (an
-  incomplete notification-type list vs 580 live rows); it rolled back cleanly
-  and was re-applied from the live constraint definition — see CHANGELOG.
-Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Loops 11-15 are
-  complete and APPROVAL_REPORT_LOOP_11_15.md is written. Not resuming Loop 16+
-  until the Boss gives explicit continuation language (APPROVAL_GATE.md /
+  before each was pushed. 0019 (Loop 16) is this batch's — it touches
+  `transition_case` for the third time (adding the §14.2 PTW gate) and was
+  built from the LIVE function definition, not a migration file, per the
+  standing process rule from the RISK-14 incident; a full regression of every
+  pre-existing guard was re-verified live immediately after applying.
+
+Batch progress (Loops 16-20, current batch):
+  - Loop 16: §5.4 priority Manager-override (`change_priority`, an Executive
+    may change freely until a Manager sets it, after which only a Manager
+    can move it further) + §14.2 PTW safety gate seam (`set_ptw_required`/
+    `link_ptw_proof`, gating `DIAGNOSING -> IN_REPAIR` when required and
+    unproven) — closing two real gaps in §32 items 3 and 19 that had been
+    sitting as dead columns/no-override logic since Loop 1.
+  - Loop 17-20: NOT STARTED.
+
+Approval state: RUNNING — the Boss approved Loops 16-20. The next HARD GATE
+  falls after Loop 20, where autonomous development stops again pending
+  explicit continuation language (APPROVAL_GATE.md /
   IMPLEMENTATION_PACK.md §19.13).
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will

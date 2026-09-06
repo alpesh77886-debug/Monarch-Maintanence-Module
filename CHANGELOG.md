@@ -1194,3 +1194,115 @@ cron-only and `permission denied` for every client, so a signed-in test user
 cannot reach it without a test-only backdoor RPC — the same reasoning that
 kept the PM instance-lifecycle RPCs out of `pm.test.ts` in Loop 10. That whole
 chain was verified live instead, as tabulated above.
+
+## Loop 16 — 2026-09-06
+
+**§5.4 priority Manager-override + §14.2 PTW safety gate seam (§32 item 19).**
+First loop of the Loops 16-20 batch (approved by the Boss selecting "Loop
+16-20 shuru karo" after the Loops 11-15 gate).
+
+### How the gaps were found
+
+Re-read §5, §14, §21 and §32 against the live schema and RPC list rather than
+against memory of what had been built. Two real gaps turned up:
+
+- §5.4: *"Executive can change priority. Manager has final override."*
+  Priority was only ever set once, inside `acknowledge_case`, with no RPC to
+  change it afterwards and no override semantics anywhere.
+- §14.2: *"PTW Required = Yes/No, required permit/proof linked where
+  applicable, formally required proof must exist before governed work
+  starts."* `cases.ptw_required` / `ptw_proof_ref` have existed since the
+  Loop 1 schema (migration 0001) — five loops of never being written to or
+  gated on. Two dead columns were being counted as a built feature.
+
+§21 (vendor/external dependency) was checked and correctly has nothing to
+build in V1 — it explicitly says not to encode a mandatory approval chain
+unless separately approved, and nothing here changes that.
+
+### `change_priority` (§5.4)
+
+New column `cases.priority_set_by_role`. Any staff member may call
+`change_priority`, but the guard is: once the current priority was last set
+by a Manager, an Executive cannot change it again — only another Manager
+decision moves it. A case whose priority has never been explicitly changed
+since acknowledgement (`priority_set_by_role is null`) is not locked, which
+falls out of the NULL-safety pattern for free (`v_set_by_role = 'MANAGER'`
+is false, not true, when NULL) rather than needing a separate branch.
+
+### PTW seam (§14.2) — deliberately thin
+
+`set_ptw_required` and `link_ptw_proof`, both staff-only, both reason-gated.
+**Nothing here decides who may issue, perform, or authorize a permit** — that
+exact matrix (issuer/performer/permit authority/authorized-person matrix,
+exact permit types) is §14.1's PENDING-01 and stays untouched. What §14.2
+actually locks — Required Y/N, a linked proof reference, and refusing
+governed work without one when required — is not PENDING, so it's built.
+
+Turning PTW off clears any linked proof (`ptw_proof_ref := null`): a stale
+permit reference surviving past the requirement that produced it would be
+worse than no reference at all. Verified live: disable → re-enable leaves
+`ptw_proof_ref` NULL, not the old value.
+
+"Governed work starts" is read as `DIAGNOSING -> IN_REPAIR` — per §4 it is
+the *only* outgoing edge from DIAGNOSING, and §9 already splits diagnosis
+from intervention along exactly this line. Same reasoning the §13 QC gate
+uses for its own boundary (`TECHNICALLY_RESTORED -> MAINTENANCE_RELEASED`).
+
+### `transition_case` touched a third time — handled per the RISK-14 process rule
+
+This is the third time `transition_case` has been rewritten (after the
+original 0011 regression that dropped the QC gate, and its 0012 fix). The
+standing rule adopted after that incident — read from the *live* function,
+never a migration file, before touching it again — was followed here:
+
+```sql
+select pg_get_functiondef(oid) from pg_proc
+where proname = 'transition_case' and pronamespace = 'maintenance'::regnamespace;
+```
+
+was run and captured **before** writing a single line of the new version.
+The new file adds exactly two things — two new `declare` variables and one
+new gate block — and changes nothing else; every other line was left
+byte-for-byte identical to what the query returned. Confirmed with a full
+regression pass live, immediately after applying, covering every guard that
+already existed on the function, not just the new one:
+
+| Check | Result |
+|---|---|
+| QC gate, `qc_required = true` | `QC_GATE` (still blocks) |
+| DUPLICATE guard | `USE_MARK_DUPLICATE_CASE` (still redirects) |
+| `REASON_REQUIRED` on REJECTED | still enforced |
+| PTW not required → IN_REPAIR | proceeds (gate correctly inert) |
+| non-staff sets PTW required | `FORBIDDEN` |
+| blank reason on `set_ptw_required` | `REASON_REQUIRED` |
+| link proof before PTW required | `PTW_NOT_REQUIRED` |
+| PTW required, no proof → IN_REPAIR | `PTW_GATE` (blocks) |
+| blank proof ref | `PROOF_REF_REQUIRED` |
+| proof linked → IN_REPAIR | succeeds |
+| Executive changes priority (unlocked) | succeeds, `set_by_role=EXECUTIVE` |
+| Manager overrides | succeeds, `set_by_role=MANAGER`, priority moved |
+| Executive tries to undo Manager's decision | `MANAGER_OVERRIDE` |
+| Manager changes own decision again | succeeds |
+| `PRIORITY_CHANGED` events recorded | 4 (one per successful change above) |
+
+A permanent regression test (`tests/priority-and-ptw.test.ts`) now locks in
+the pre-existing QC-gate-at-all-states and DUPLICATE-guard behaviour
+alongside the two new features, specifically so a future rewrite of this
+function cannot silently drop either the way 0011 did.
+
+### UI
+
+`PriorityPanel` on the case page shows the current priority, offers a
+reason-gated change to staff, and — when locked by a Manager decision and
+the viewer isn't a Manager — shows why the buttons are disabled rather than
+just disabling them silently. `PtwPanel` (visible while `DIAGNOSING`, or
+once PTW is required) sets Required Yes/No and links a proof, stating
+directly in the UI that repair work cannot start until a proof exists.
+
+### Tests
+
+`tests/priority-and-ptw.test.ts` (10): the `transition_case` regression
+guard (4), the PTW gate end-to-end including the disable-clears-proof
+behaviour (5), and the full priority lock/override chain including the
+audit trail (1, with 5 assertions inside it). Suite is now **81 tests
+across 12 files**.
