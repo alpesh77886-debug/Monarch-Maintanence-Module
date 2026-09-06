@@ -12,6 +12,7 @@ import QcPanel from "./qc-panel";
 import CloseReopenActions from "./close-reopen-actions";
 import FollowUpButton from "./follow-up-button";
 import EmergencyPanel from "./emergency-panel";
+import SparesPanel from "./spares-panel";
 
 export default async function CaseDetailPage({
   params,
@@ -68,6 +69,14 @@ export default async function CaseDetailPage({
     !!user && (assignments ?? []).some((a) => a.technician_user_id === user.id && a.is_active);
   const canRecordIntervention = !!isStaffRow || isAssignedTechnician;
 
+  // §16.3: any signed-in user may raise a spare request directly (technician
+  // or executive); usage recording follows the same staff-or-assigned-
+  // technician rule as interventions (record_spare_usage mirrors
+  // record_intervention's actor check).
+  const canRaiseSpareRequest = !!user;
+  const canRecordSpareUsage = !!isStaffRow || isAssignedTechnician;
+  const isManager = isStaffRow?.role === "MAINTENANCE_MANAGER";
+
   const { data: activeWait } = await supabase
     .from("waits")
     .select("*")
@@ -92,6 +101,18 @@ export default async function CaseDetailPage({
 
   // TEMPORARILY_RESTORED has no direct edge to TECHNICALLY_RESTORED in the
   // locked lifecycle graph (only IN_REPAIR does) — see FollowUpButton.
+  const { data: spareRequests } = await supabase
+    .from("spare_requests")
+    .select("*")
+    .eq("case_id", id)
+    .order("requested_at", { ascending: true });
+
+  const { data: spareUsage } = await supabase
+    .from("spare_usage")
+    .select("*")
+    .eq("case_id", id)
+    .order("used_at", { ascending: true });
+
   const canRecordRestoration = !!isStaffRow && caseRow.status === "IN_REPAIR";
   const needsFollowUp = !!isStaffRow && caseRow.status === "TEMPORARILY_RESTORED";
 
@@ -154,6 +175,15 @@ export default async function CaseDetailPage({
       ) : (
         canRecordRestoration && <RestorationForm caseId={caseRow.id} />
       )}
+
+      <SparesPanel
+        caseId={caseRow.id}
+        spareRequests={spareRequests ?? []}
+        spareUsage={spareUsage ?? []}
+        canRaise={canRaiseSpareRequest}
+        canRecordUsage={canRecordSpareUsage}
+        isManager={isManager}
+      />
 
       {isStaffRow && (
         <QcPanel
