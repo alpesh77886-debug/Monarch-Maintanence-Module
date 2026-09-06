@@ -928,3 +928,142 @@ refusal to record a breach on a genuinely released case (walked through the
 real lifecycle to get there), §13.2 recording without fabricating a restart
 or introducing a closure blocker, and direct-insert denial on both new
 tables. Suite is now 53 tests across 9 files.
+
+## Loop 14 — 2026-09-06
+
+**§25 KPI reporting + production impact capture (§32 item 22).**
+
+### The gap this loop closes
+
+Reading §25 against the live schema turned up exactly one real hole. §25.1
+group 3 is "Production Impact — minutes + kg", and §25.2 lists **downtime
+minutes** and **output loss kg** as minimum operational measures. A schema
+query confirmed no such column existed anywhere in `maintenance`. Everything
+else §25.2 asks for was already derivable from existing history — case age
+from `created_at`, restoration time from `technically_restored_at`, wait
+duration from `waits`, PM overdue from `pm_instances`, ownership/workload from
+`case_ownership`/`cases`, reopen signals from `case_events`, escalation state
+from the wait/emergency columns. Those two measures were the whole gap.
+
+### `0016_maintenance_impact_kpi.sql`
+
+`maintenance.case_impact_records` — `downtime_minutes` and `output_loss_kg`
+both **nullable, with no DEFAULT 0 anywhere in the file**, because §25.2 says
+*"Missing data must NOT silently become zero."* Recording only one of the two
+measures is a valid partial observation, and "not recorded" and "zero" are
+different facts that the schema, the RPC, and the UI all keep apart.
+`basis text not null` because §25.2 also says financial impact must use an
+authoritative source/basis — a figure with no stated origin is not a KPI.
+`supersedes_record_id` because §27 makes history append-only: a revised figure
+is a NEW row pointing at the one it replaces, never an UPDATE.
+
+`record_production_impact(...)` — staff-only, raising `BASIS_REQUIRED`,
+`NO_MEASURE_SUPPLIED`, `CASE_NOT_FOUND`, `INVALID_SUPERSEDE`; writes both a
+`case_events` row and an `audit_log` row. The staff guard is written
+`coalesce(is_staff(), false)` even though `is_staff()` cannot currently return
+NULL — RISK-13 was exactly this pattern going wrong when the helper underneath
+changed shape, so the guard no longer depends on that.
+
+`maintenance.case_current_impact` — a view returning the newest
+non-superseded record per case, so "the current figure" exists without any
+UPDATE ever touching the original.
+
+### RISK-15 — the view bypassed RLS (found and fixed in this loop)
+
+`case_current_impact` is the first view in this schema, and it shipped with
+Postgres's default: **a view executes with its owner's privileges**, and the
+owner (`postgres`) is not subject to RLS. It read straight past the
+`is_staff()` SELECT policy on `case_impact_records`.
+
+This was measured, not assumed. With 2 impact rows present, a technician JWT
+querying an identical probe view created without `security_invoker` returned
+**2 rows**; the same JWT against the base table returned **0**. The probe view
+was dropped immediately afterwards (verified gone).
+
+Fixed in `0017_maintenance_impact_view_security_invoker.sql`. Re-verified: the
+technician JWT now returns 0 rows through the view while staff still sees the
+record. A permanent regression test guards it. **Standing precedent for this
+repo: every reporting view over an RLS-protected maintenance table must set
+`security_invoker`, or the policy underneath it is decorative.**
+
+Also confirmed the view is not writable despite `authenticated` holding the
+schema's blanket INSERT/UPDATE grant — `DISTINCT ON` makes it
+non-auto-updatable, and both a direct insert and a direct update were refused
+live (`cannot insert into view` / `cannot update view`).
+
+### Live verification (`execute_sql`, simulated JWTs)
+
+| Check | Result |
+|---|---|
+| non-staff caller | `FORBIDDEN` |
+| blank basis | `BASIS_REQUIRED` |
+| neither measure supplied | `NO_MEASURE_SUPPLIED` |
+| negative downtime | check constraint violation |
+| downtime-only record | `output_loss_kg` stored as **NULL, not 0** |
+| supersede a record on another case | `INVALID_SUPERSEDE` |
+| correction recorded | 2 rows kept; original still `downtime=45` |
+| view after correction | 1 row, the corrected record (60 min / 120 kg) |
+| events + audit | 2 `PRODUCTION_IMPACT_RECORDED` events, 2 audit rows |
+| direct insert as staff | RLS refusal |
+| non-staff reads view (post-fix) | 0 rows |
+
+### UI
+
+`ImpactPanel` on the case page — records impact, and renders a null measure as
+the words *"not recorded"* rather than a number, which is where §25.2's
+no-silent-zero rule actually has to hold. A correction is offered as
+"Correct this figure", which supersedes rather than edits; the superseded row
+stays visible in the history, greyed and labelled.
+
+New `/kpi` page covering the §25.1 groups. Three things it deliberately does
+**not** do:
+
+- **No KPI targets or SLAs** (§25.2). Nothing is coloured good/bad and no
+  number is compared to a threshold, because no approved threshold exists.
+- **No ₹ cost-of-maintenance headline.** Spare `estimated_amount` values are
+  Maintenance-entered *estimates*, not an authoritative costing, and §24 lists
+  fabricating financial impact as NEVER AUTOMATE. They are shown labelled as
+  estimates, and requests carrying no amount are counted separately rather
+  than folded in as ₹0.
+- **No zero-filling.** Every metric carries a coverage line ("recorded on 3 of
+  40 cases"); a metric with no data reads "no data", never "0". §18 recurrence
+  and §19 CAPA are listed as *unbuilt* rather than shown as zero — reporting
+  "0 repeat failures" from a detector that does not exist would be false.
+
+While wiring the page, `MaintenanceCase` turned out to be missing
+`assigned_at`, `technically_restored_at`, `maintenance_released_at`, and the
+two §13 boundary flags — all real columns. Added rather than worked around.
+
+### RISK-16 — CI was failing for a real reason (fixed first, before this loop's work)
+
+PR #9's CI came back red: 45 passed, **8 failed, every one at
+`signInWithPassword` with "Request rate limit reached"**. This was not a flake
+and re-running would only have moved the failure to a different file.
+
+Two causes, both in my own test infrastructure:
+
+1. `signInAs` signed in fresh on every call. With 78 call sites the suite fired
+   ~78 requests at GoTrue's `/token` endpoint inside ~80 seconds from one CI
+   IP — over the project's auth rate limit, and getting worse with every test
+   added. Now one signed-in client is cached per role: 3 sign-ins per run.
+   Nothing in the suite needed a fresh session (a role is one user; no test
+   signs out or builds its own client). The *promise* is cached so concurrent
+   first calls cannot race into two sign-ins, and a failed sign-in is evicted
+   so one transient network error cannot poison every later test.
+2. `push: branches: ["**"]` plus `pull_request` ran **two identical workflows
+   per PR commit**, doubling that load and running two suites against the same
+   live Supabase project simultaneously. Push now covers `main` only (branch
+   work reaches CI through its PR), and a `concurrency` group cancels
+   superseded runs so two runs of one ref can never race on shared data.
+
+Verified: the next run was a single workflow, **53/53 green**, with the `e2e`
+job green too. PR #9 (Loop 13) then merged.
+
+### Tests
+
+`tests/kpi.test.ts` (8 tests): staff-only guard, basis and measure
+requirements, negative rejection, **the null-is-not-zero assertion**, the §27
+correction chain (original survives, view reports only the newest),
+cross-case `INVALID_SUPERSEDE`, direct-insert denial, and the RISK-15
+regression test asserting a non-staff user reads nothing through either the
+view or the table. Suite is now 61 tests across 10 files.
