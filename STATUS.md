@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 11 (complete) — mid-batch (Loops 11-15; hard gate
+Current loop: Loop 12 (complete) — mid-batch (Loops 11-15; hard gate
   re-triggers after Loop 15 per IMPLEMENTATION_PACK.md §19.11)
 Current gate: none open — Gate 2 (Loops 06-10) was approved by the Boss
   ("suru karo...loop 11 se 15 suru karo"). Next hard gate is after Loop 15.
@@ -26,15 +26,17 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   `.github/workflows/ci.yml`), run as real signed-in users against the live
   `maintenance` schema. 17 tests from Loop 6, +10 Loop 7 (§6 claim/confirm,
   notifications), +7 Loop 8 (§16 spares, `is_manager()` regression), +4
-  Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM plan/approval) — 44 tests total
-  across 7 files, all confirmed passing in real GitHub Actions CI
-  (including catching and driving the RISK-14 fix).
+  Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM), +6 Loop 12 (§22 handover) —
+  **46 tests across 8 files**, all confirmed passing in real GitHub Actions
+  CI (including catching and driving the RISK-14 fix).
+  (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
+  real figure at that point was 40. Counted from `it()` blocks — see
+  CHANGELOG Loop 12.)
   Browser E2E: NEW in Loop 11 — 8 Playwright tests (`e2e/*.spec.ts`) wired
-  into CI as their own `e2e` job. 2 of them (the signed-out specs) pass in
-  this sandbox too — the first browser tests ever to actually run here; the
-  6 sign-in specs are provable only in CI, since the sandbox's egress proxy
-  blocks `*.supabase.co` (RISK-05, now PARTIALLY RESOLVED — see
-  RISK_REGISTER.md).
+  into CI as their own `e2e` job. First CI run: 6/8 passed, including all
+  four sign-in flows; the 2 failures were wrong assertions in the test code
+  itself, since fixed. 2 specs (signed-out) also pass in this sandbox — the
+  first browser tests ever to run here. See RISK_REGISTER.md RISK-05.
 
 Pending evidence gates: PENDING-01 (LOTO/PTW SOP — untouched, only seam
   columns exist), PENDING-02 (moot — Production module still has no live

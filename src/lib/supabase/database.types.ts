@@ -68,6 +68,20 @@ export interface StaffMember {
   full_name: string;
   role: StaffRole;
   is_active: boolean;
+  // §22: explicit, self-declared shift availability — used to pick a
+  // handover receiver. Added in Loop 12.
+  is_available: boolean;
+  availability_changed_at?: string | null;
+}
+
+export interface CaseOwnership {
+  id: string;
+  case_id: string;
+  owner_user_id: string;
+  assigned_by_user_id: string | null;
+  started_at: string;
+  ended_at: string | null;
+  transfer_reason: string | null;
 }
 
 export interface CaseObservation {
@@ -115,6 +129,7 @@ export interface CaseWait {
   resume_ready_at: string | null;
   resumed_at: string | null;
   resume_type: "AUTO_EXTERNAL" | "MANUAL_INTERNAL" | null;
+  last_escalated_at: string | null;
 }
 
 export interface Restoration {

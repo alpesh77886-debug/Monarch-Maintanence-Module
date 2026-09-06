@@ -15,7 +15,9 @@ import EmergencyPanel from "./emergency-panel";
 import SparesPanel from "./spares-panel";
 import MarkDuplicateForm from "./mark-duplicate-form";
 import CloseFalseComplaintForm from "./close-false-complaint-form";
+import HandoverForm from "./handover-form";
 import Link from "next/link";
+import type { StaffMember } from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
   params,
@@ -138,6 +140,22 @@ export default async function CaseDetailPage({
   const canCloseFalseComplaint =
     !!user && user.id === caseRow.reporter_user_id && caseRow.status === "REPORTED";
 
+  // §22.2 handover quality: a receiver must be able to see owner history and
+  // escalation state, not just the current status — so both are surfaced on
+  // the case itself rather than living only in the audit log.
+  const { data: ownershipHistory } = await supabase
+    .from("case_ownership")
+    .select("*")
+    .eq("case_id", id)
+    .order("started_at", { ascending: true });
+
+  const { data: staffList } = await supabase
+    .from("staff")
+    .select("id, full_name, role, is_active, is_available")
+    .eq("is_active", true);
+
+  const staffById = new Map((staffList ?? []).map((s) => [s.id, s as StaffMember]));
+
   let duplicatePrimaryCaseNumber: string | null = null;
   if (caseRow.duplicate_of_case_id) {
     const { data: primaryCase } = await supabase
@@ -235,6 +253,69 @@ export default async function CaseDetailPage({
       )}
 
       {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
+
+      {isStaffRow && !caseIsTerminal && (
+        <HandoverForm
+          caseId={caseRow.id}
+          staff={(staffList ?? []) as StaffMember[]}
+          currentOwnerId={caseRow.current_owner_user_id}
+        />
+      )}
+
+      {/* §22.2: the receiver needs escalation state at a glance, not buried
+          in the audit trail. */}
+      {(caseRow.emergency_confirmed || activeWait?.resume_ready_at) && (
+        <section className="rounded-lg border border-red-200 bg-red-50 p-3">
+          <h2 className="text-sm font-semibold text-red-900">Escalation state</h2>
+          <ul className="mt-1 flex flex-col gap-0.5 text-sm text-red-900">
+            {caseRow.emergency_confirmed && (
+              <li>
+                Confirmed emergency since{" "}
+                {caseRow.emergency_confirmed_at
+                  ? new Date(caseRow.emergency_confirmed_at).toLocaleString()
+                  : "—"}
+                {caseRow.emergency_escalated_at
+                  ? ` · escalated ${new Date(caseRow.emergency_escalated_at).toLocaleString()}`
+                  : " · 1h escalation clock running"}
+              </li>
+            )}
+            {activeWait?.resume_ready_at && (
+              <li>
+                Resume-ready since {new Date(activeWait.resume_ready_at).toLocaleString()}
+                {activeWait.last_escalated_at
+                  ? ` · escalated ${new Date(activeWait.last_escalated_at).toLocaleString()}`
+                  : ""}
+              </li>
+            )}
+          </ul>
+        </section>
+      )}
+
+      <section>
+        <h2 className="text-sm font-semibold text-slate-900">Ownership history</h2>
+        <ol className="mt-2 flex flex-col gap-1 text-sm text-slate-700">
+          {ownershipHistory?.map((o) => (
+            <li key={o.id} className="rounded-md border border-slate-100 bg-white p-2">
+              <span className="font-medium">
+                {staffById.get(o.owner_user_id)?.full_name ?? o.owner_user_id}
+              </span>
+              <span className="text-xs text-slate-500">
+                {" "}
+                — from {new Date(o.started_at).toLocaleString()}
+                {o.ended_at ? ` to ${new Date(o.ended_at).toLocaleString()}` : " (current)"}
+              </span>
+              {o.transfer_reason && (
+                <p className="text-xs text-slate-500">Reason: {o.transfer_reason}</p>
+              )}
+            </li>
+          ))}
+          {ownershipHistory?.length === 0 && (
+            <p className="text-sm text-slate-500">
+              No owner yet — this case is unassigned.
+            </p>
+          )}
+        </ol>
+      </section>
 
       <section>
         <h2 className="text-sm font-semibold text-slate-900">Assigned technicians</h2>

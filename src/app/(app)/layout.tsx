@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "./sign-out-button";
 import NotificationBell from "./notification-bell";
+import AvailabilityToggle from "./availability-toggle";
 import type { AppNotification } from "@/lib/supabase/database.types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -12,15 +13,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   let staffName: string | null = null;
   let isStaff = false;
+  let isAvailable = false;
   let notifications: AppNotification[] = [];
   if (user) {
     const { data: staff } = await supabase
       .from("staff")
-      .select("full_name, role")
+      .select("full_name, role, is_available")
       .eq("id", user.id)
       .maybeSingle();
     staffName = staff ? `${staff.full_name} (${staff.role})` : user.email ?? null;
     isStaff = !!staff;
+    isAvailable = !!staff?.is_available;
 
     const { data: unread } = await supabase
       .from("notifications")
@@ -40,13 +43,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               MONARCH Maintenance
             </Link>
             {isStaff && (
-              <Link href="/pm" className="text-sm font-medium text-slate-600">
-                PM
-              </Link>
+              <>
+                <Link href="/dashboard" className="text-sm font-medium text-slate-600">
+                  Shift
+                </Link>
+                <Link href="/pm" className="text-sm font-medium text-slate-600">
+                  PM
+                </Link>
+              </>
             )}
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-600">
             <span className="hidden sm:inline">{staffName}</span>
+            {isStaff && <AvailabilityToggle isAvailable={isAvailable} />}
             {user && <NotificationBell notifications={notifications} />}
             <SignOutButton />
           </div>
