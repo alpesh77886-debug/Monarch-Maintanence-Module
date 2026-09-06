@@ -240,6 +240,11 @@ export default async function CaseDetailPage({
     <div className="flex flex-col gap-6">
       <div>
         <p className="font-mono text-xs text-slate-500">{caseRow.case_number}</p>
+        {caseRow.major_complex_flag && (
+          <span className="mb-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-800">
+            MAJOR/COMPLEX
+          </span>
+        )}
         <h1 className="text-lg font-semibold text-slate-900">{caseRow.symptom}</h1>
         <p className="mt-1 text-sm text-slate-600">
           {caseRow.case_type} · Status: <span className="font-medium">{caseRow.status}</span>

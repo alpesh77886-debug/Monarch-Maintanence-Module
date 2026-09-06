@@ -19,7 +19,7 @@ export default async function CasesPage() {
   const { data: cases, error } = await supabase
     .from("cases")
     .select(
-      "id, case_number, case_type, status, priority, symptom, area, line, current_owner_user_id, created_at"
+      "id, case_number, case_type, status, priority, symptom, area, line, current_owner_user_id, created_at, major_complex_flag"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -55,6 +55,7 @@ export default async function CasesPage() {
           | "line"
           | "current_owner_user_id"
           | "created_at"
+          | "major_complex_flag"
         >[] | null)?.map((c) => (
           <li key={c.id}>
             <Link
@@ -71,7 +72,14 @@ export default async function CasesPage() {
                   {c.status}
                 </span>
               </div>
-              <p className="mt-1 text-sm font-medium text-slate-900">{c.symptom}</p>
+              <p className="mt-1 text-sm font-medium text-slate-900">
+                {c.major_complex_flag && (
+                  <span className="mr-1 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-800">
+                    MAJOR/COMPLEX
+                  </span>
+                )}
+                {c.symptom}
+              </p>
               <p className="mt-1 text-xs text-slate-500">
                 {c.case_type}
                 {c.area ? ` · ${c.area}` : ""}

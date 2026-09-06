@@ -1471,3 +1471,58 @@ optional description.
 staff attach, impersonation refusal, and the append-only assertion (correctly
 checking row state, not error presence, per the note above). Suite is now
 **91 tests across 14 files**.
+
+## Loop 19 — 2026-09-06
+
+**§5.1 / §24 — major/complex classification at intake.**
+
+### How the gap was found
+
+Re-reading §24's AUTOMATION VS HUMAN DECISION table line by line (rather
+than skimming it, as earlier loops mostly had) turned up "major/complex
+classification at complaint creation" under HUMAN REQUIRED. Cross-checked
+against §5.1's intake minimum list, which independently names "major/complex
+indication" as a required field. `cases.major_complex_flag` has existed
+since the Loop 1 schema (0001) — a real boolean column, present in the
+TypeScript types since Loop 1 too — with **no checkbox on the intake form,
+no display anywhere, and no reference in `src/` at all** until this loop.
+Same class of gap as PTW (Loop 16) and evidence (Loop 18): a real column
+sitting dead since the very first migration.
+
+### No migration, no RPC — same shape as Loop 18
+
+`cases_insert`'s RLS (`with check (reporter_user_id = auth.uid())`) already
+permits the reporter to set any column on the case they're creating — the
+same way `symptom`/`area`/`line`/`asset_known` already work with no RPC
+gate. There is nothing to author server-side; this loop is UI plumbing for
+an already-correct policy, exactly like Loop 18.
+
+Deliberately **not** built: a later change/override flow for this flag. §24
+documents the classification happening "at complaint creation" and nothing
+elsewhere in the pack describes a mechanism for revising it afterward (unlike
+priority, which §5.4 explicitly says a Manager may later override) — adding
+one would be inventing authority the contract doesn't state.
+
+### Live verification (`execute_sql`, simulated JWT)
+
+| Check | Result |
+|---|---|
+| insert with `major_complex_flag: true` | stored as `true` |
+| insert with the field omitted | defaults to `false` — never silently inferred |
+
+### After Loop 16's lesson
+
+Re-scanned every `"use client"` file in the app for the server/client
+boundary pattern before considering this done. Clean.
+
+### UI
+
+An intake checkbox on `/cases/new` ("This is a major / complex case"), and a
+`MAJOR/COMPLEX` badge on both the case list (`/cases`) and the case detail
+page header when the flag is set.
+
+### Tests
+
+`tests/major-complex.test.ts` (2): the flag is stored exactly as set, and
+defaults to `false` when omitted rather than being guessed. Suite is now
+**93 tests across 15 files**.

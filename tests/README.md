@@ -223,3 +223,10 @@ first draft of this test asserted a truthy error and would have been wrong.
 The correct pattern (assert the row is provably unchanged/still present)
 already existed in `emergency-and-notifications.test.ts`'s notifications
 test; this file follows the same shape.
+
+Loop 19 (`major-complex.test.ts`) adds: §5.1/§24 major/complex intake
+classification. No new migration or RPC — `cases.major_complex_flag` and its
+RLS have existed since Loop 1 (the reporter's own insert policy already
+permits setting it, the same way symptom/area/line already work), just never
+exposed in the UI. Covers the flag being stored exactly as set, and
+defaulting to `false` rather than being silently inferred when omitted.

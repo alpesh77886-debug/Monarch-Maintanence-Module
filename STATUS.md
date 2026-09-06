@@ -36,8 +36,8 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   +7 Loop 13 (§13 production boundary), +8 Loop 14 (§25 impact/KPI),
   +9 Loop 15 (§18 recurrence, §19 CAPA), +10 Loop 16 (§5.4 priority override,
   §14.2 PTW gate), +6 Loop 17 (§9.1 validated root cause), +4 Loop 18
-  (§5.1 evidence attachment) — **91 tests
-  across 14 files** (counted from `it()` blocks), all confirmed
+  (§5.1 evidence attachment), +2 Loop 19 (§5.1/§24 major/complex intake) —
+  **93 tests across 15 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -152,7 +152,13 @@ Batch progress (Loops 16-20, current batch):
     was caught before shipping: RLS-blocked UPDATE/DELETE via PostgREST
     reports success with zero rows affected, not an error — the test now
     asserts the row is provably unchanged instead.
-  - Loop 19-20: NOT STARTED.
+  - Loop 19: §5.1 / §24 major/complex classification at intake. No new
+    migration or RPC — `cases.major_complex_flag` and its RLS have existed
+    since Loop 1 (the reporter's own insert policy already permits setting
+    it); this loop is intake-form UI plus list/detail badges. Deliberately
+    no later change/override flow — the pack documents the classification
+    happening at creation, not a revision mechanism for it.
+  - Loop 20: NOT STARTED. Last loop of this batch — ends with the hard gate.
 
 Approval state: RUNNING — the Boss approved Loops 16-20. The next HARD GATE
   falls after Loop 20, where autonomous development stops again pending
