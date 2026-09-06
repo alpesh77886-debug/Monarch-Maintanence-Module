@@ -80,6 +80,29 @@ export interface MaintenanceCase {
   ptw_proof_ref: string | null;
 }
 
+// §9 item 6 / §9.1. A validated root cause, recorded by a human with a
+// stated basis — never inferred from symptom text alone. Append-only: a
+// correction supersedes rather than overwrites (§8, §27), same pattern as
+// CaseImpactRecord (Loop 14).
+export interface CaseRootCause {
+  id: string;
+  case_id: string;
+  root_cause: string;
+  basis: string;
+  recorded_by: string;
+  recorded_at: string;
+  supersedes_record_id: string | null;
+}
+
+export interface CaseCurrentRootCause {
+  case_id: string;
+  root_cause_record_id: string;
+  root_cause: string;
+  basis: string;
+  recorded_by: string;
+  recorded_at: string;
+}
+
 export interface StaffMember {
   id: string;
   full_name: string;

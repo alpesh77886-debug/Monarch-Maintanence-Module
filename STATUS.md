@@ -35,7 +35,8 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM), +6 Loop 12 (§22 handover),
   +7 Loop 13 (§13 production boundary), +8 Loop 14 (§25 impact/KPI),
   +9 Loop 15 (§18 recurrence, §19 CAPA), +10 Loop 16 (§5.4 priority override,
-  §14.2 PTW gate) — **81 tests across 12 files** (counted from `it()` blocks), all confirmed
+  §14.2 PTW gate), +6 Loop 17 (§9.1 validated root cause) — **87 tests
+  across 13 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -60,7 +61,7 @@ Pending evidence gates: PENDING-01 (LOTO/PTW SOP — untouched, only seam
   roles), PENDING-04 (recurrence threshold/window — recurrence, §18, still
   entirely unbuilt), PENDING-05 (none discovered).
 
-Batch progress (Loops 11-15, current batch):
+Batch summary (Loops 11-15 — see CHANGELOG.md for full per-loop detail):
   - Loop 11: browser E2E (Playwright) wired into CI as its own job —
     closed RISK-05, open since Loop 1. 8/8 green.
   - Loop 12: §22 shift handover / availability.
@@ -107,13 +108,16 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0019 (Loop 16), all live on
+Migrations applied: 0008 (Loop 7) through 0020 (Loop 17), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
-  before each was pushed. 0019 (Loop 16) is this batch's — it touches
-  `transition_case` for the third time (adding the §14.2 PTW gate) and was
-  built from the LIVE function definition, not a migration file, per the
-  standing process rule from the RISK-14 incident; a full regression of every
-  pre-existing guard was re-verified live immediately after applying.
+  before each was pushed. 0019 (Loop 16) touches `transition_case` for the
+  third time (adding the §14.2 PTW gate), built from the LIVE function
+  definition per the standing RISK-14 process rule, with a full regression
+  of every pre-existing guard re-verified live immediately after applying.
+  0020 (Loop 17) adds the second view in this schema, `case_current_root_cause`
+  — created WITH `security_invoker = true` from its first line (verified via
+  `pg_class.reloptions` right after creation), applying the RISK-15 lesson
+  prospectively rather than needing a second fix.
 
 Batch progress (Loops 16-20, current batch):
   - Loop 16: §5.4 priority Manager-override (`change_priority`, an Executive
@@ -122,7 +126,13 @@ Batch progress (Loops 16-20, current batch):
     `link_ptw_proof`, gating `DIAGNOSING -> IN_REPAIR` when required and
     unproven) — closing two real gaps in §32 items 3 and 19 that had been
     sitting as dead columns/no-override logic since Loop 1.
-  - Loop 17-20: NOT STARTED.
+  - Loop 17: §9 item 6 / §9.1 validated root cause. `record_root_cause`
+    (staff-only, mandatory validation basis, append-only corrections via
+    `supersedes_record_id`) closes the last of §9's 8 diagnosis/intervention
+    concepts that had no seam — previously root cause could only be recorded
+    against a CONFIRMED recurrence flag, leaving ordinary one-off cases with
+    nowhere to record one at all.
+  - Loop 18-20: NOT STARTED.
 
 Approval state: RUNNING — the Boss approved Loops 16-20. The next HARD GATE
   falls after Loop 20, where autonomous development stops again pending

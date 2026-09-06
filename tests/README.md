@@ -199,3 +199,14 @@ DUPLICATE lockout, specifically because this is the third time that function
 has been rewritten (0011 dropped the QC gate entirely; 0012 restored it) —
 so any future change that repeats that mistake fails here immediately rather
 than needing another manual audit to catch it.
+
+Loop 17 (`root-cause.test.ts`) adds: §9.1 `record_root_cause` — staff-only,
+and both required fields guarded (`ROOT_CAUSE_REQUIRED`, `BASIS_REQUIRED` —
+the latter is the operative rule, since a root cause with no stated
+validation basis is exactly the "declared from symptom text alone" pattern
+§9.1 forbids); the append-only correction chain (original finding kept,
+`case_current_root_cause` view reports only the newest); cross-case
+`INVALID_SUPERSEDE`; direct-insert denial; and a view-RLS assertion in the
+same shape as the RISK-15 regression test in `kpi.test.ts` — this view was
+built WITH `security_invoker` from its first line rather than needing a
+fix, so this test confirms that precedent held rather than fixing a repeat.

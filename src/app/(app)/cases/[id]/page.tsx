@@ -21,6 +21,7 @@ import ImpactPanel from "./impact-panel";
 import RecurrenceCapaPanel from "./recurrence-capa-panel";
 import PriorityPanel from "./priority-panel";
 import PtwPanel from "./ptw-panel";
+import RootCausePanel from "./root-cause-panel";
 import Link from "next/link";
 import type {
   StaffMember,
@@ -29,6 +30,7 @@ import type {
   CaseImpactRecord,
   RecurrenceFlag,
   CapaLink,
+  CaseRootCause,
 } from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
@@ -205,6 +207,14 @@ export default async function CaseDetailPage({
     .eq("case_id", id)
     .order("created_at", { ascending: true });
 
+  // §9 item 6 / §9.1 — validated root cause. Every record fetched (not just
+  // current) since a correction supersedes rather than replaces (§27).
+  const { data: rootCauseRecords } = await supabase
+    .from("case_root_causes")
+    .select("*")
+    .eq("case_id", id)
+    .order("recorded_at", { ascending: false });
+
   let duplicatePrimaryCaseNumber: string | null = null;
   if (caseRow.duplicate_of_case_id) {
     const { data: primaryCase } = await supabase
@@ -327,6 +337,16 @@ export default async function CaseDetailPage({
           status={caseRow.status}
           ptwRequired={caseRow.ptw_required}
           ptwProofRef={caseRow.ptw_proof_ref}
+        />
+      )}
+
+      {isStaffRow && (
+        <RootCausePanel
+          caseId={caseRow.id}
+          records={(rootCauseRecords ?? []) as CaseRootCause[]}
+          nameById={Object.fromEntries(
+            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
+          )}
         />
       )}
 
