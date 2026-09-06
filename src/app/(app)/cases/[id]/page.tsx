@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AcknowledgeForm from "./acknowledge-form";
 import ObservationForm from "./observation-form";
+import AssignTechnicianForm from "./assign-technician-form";
+import InterventionForm from "./intervention-form";
 
 export default async function CaseDetailPage({
   params,
@@ -39,8 +41,24 @@ export default async function CaseDetailPage({
     .eq("case_id", id)
     .order("created_at", { ascending: true });
 
+  const { data: assignments } = await supabase
+    .from("case_assignments")
+    .select("*")
+    .eq("case_id", id)
+    .order("assigned_at", { ascending: true });
+
+  const { data: interventions } = await supabase
+    .from("interventions")
+    .select("*")
+    .eq("case_id", id)
+    .order("started_at", { ascending: true });
+
   const canAcknowledge =
     !!isStaffRow && ["REPORTED", "NEEDS_INFORMATION"].includes(caseRow.status);
+
+  const isAssignedTechnician =
+    !!user && (assignments ?? []).some((a) => a.technician_user_id === user.id && a.is_active);
+  const canRecordIntervention = !!isStaffRow || isAssignedTechnician;
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,6 +76,47 @@ export default async function CaseDetailPage({
       {isStaffRow && caseRow.current_owner_user_id && (
         <ObservationForm caseId={caseRow.id} />
       )}
+
+      {isStaffRow && <AssignTechnicianForm caseId={caseRow.id} />}
+
+      {canRecordIntervention && user && (
+        <InterventionForm caseId={caseRow.id} currentUserId={user.id} />
+      )}
+
+      <section>
+        <h2 className="text-sm font-semibold text-slate-900">Assigned technicians</h2>
+        <ul className="mt-2 flex flex-col gap-1 text-sm text-slate-700">
+          {assignments?.map((a) => (
+            <li key={a.id}>
+              {a.technician_user_id}
+              {a.emergency_direct_start ? " (emergency direct start)" : ""}
+              {!a.is_active ? " — inactive" : ""}
+            </li>
+          ))}
+          {assignments?.length === 0 && (
+            <p className="text-sm text-slate-500">No technicians assigned yet.</p>
+          )}
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold text-slate-900">Interventions</h2>
+        <ol className="mt-2 flex flex-col gap-2">
+          {interventions?.map((i) => (
+            <li key={i.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+              <p className="text-xs text-slate-400">{new Date(i.started_at).toLocaleString()}</p>
+              <p><span className="font-medium">Action:</span> {i.action_taken}</p>
+              {i.result && <p><span className="font-medium">Result:</span> {i.result}</p>}
+              {i.failure_mode && (
+                <p><span className="font-medium">Failure mode:</span> {i.failure_mode}</p>
+              )}
+            </li>
+          ))}
+          {interventions?.length === 0 && (
+            <p className="text-sm text-slate-500">No interventions recorded yet.</p>
+          )}
+        </ol>
+      </section>
 
       <section>
         <h2 className="text-sm font-semibold text-slate-900">

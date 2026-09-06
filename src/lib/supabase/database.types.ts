@@ -78,6 +78,26 @@ export interface CaseObservation {
   created_at: string;
 }
 
+export interface CaseAssignment {
+  id: string;
+  case_id: string;
+  technician_user_id: string;
+  assigned_by_user_id: string | null;
+  assigned_at: string;
+  is_active: boolean;
+  emergency_direct_start: boolean;
+}
+
+export interface Intervention {
+  id: string;
+  case_id: string;
+  technician_user_id: string | null;
+  started_at: string;
+  action_taken: string;
+  result: string | null;
+  failure_mode: string | null;
+}
+
 export interface CaseEvent {
   id: string;
   case_id: string;
