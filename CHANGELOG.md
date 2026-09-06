@@ -581,3 +581,106 @@ without a matching file, which is exactly what made it easy to silently
 drop in Loop 9). Going forward, any `execute_sql`/`apply_migration` fix to
 an already-shipped function must also land as its own numbered migration
 file in the same work session — no more fixes that only exist live.
+
+## Loop 10 — 2026-09-06
+
+**Summary:** Preventive maintenance (§17) — the last item in the Loops 6-10
+batch. Hard gate per IMPLEMENTATION_PACK.md §19.11 triggers after this loop;
+see `APPROVAL_REPORT_LOOP_06_10.md`.
+
+**Material changes:**
+- Migration `0013_maintenance_pm.sql`:
+  - Added `pm_plans.approved_at` and `pm_instances.completed_at` for
+    auditability (mirrors the `approved_at` pattern from Loop 8's
+    `spare_requests`). Added `PM_OVERDUE` to the `notifications` check
+    constraint (§23 locks it as a minimum notification).
+  - `pm_plans_insert` (0002) let any staff member insert a row with a
+    self-set `approved_by` — the same class of gap as `spare_requests`
+    before Loop 8. Tightened to RPC-only.
+  - `create_pm_plan(title, plan_type, asset_ref, frequency_days)`: a
+    RECURRING plan may be proposed by any staff member but is unapproved
+    until a Manager acts; frequency is mandatory and never defaulted
+    (`FREQUENCY_REQUIRED`) — "exact frequencies must not be invented" is
+    read literally, as "must be explicitly supplied," not as "the database
+    picks a number." A ONE_TIME plan may only be created by a Manager
+    (§17.2) and is self-approved at creation, matching the locked text's
+    lack of a separate approval step for it; it must not carry a frequency
+    (`FREQUENCY_NOT_APPLICABLE`).
+  - `approve_pm_plan`: Manager-only, rejects double-approval and approving
+    a plan that isn't pending (e.g. an already-self-approved ONE_TIME
+    plan).
+  - `link_pm_instance_to_case`/`complete_pm_instance`: staff-only; §17.3
+    "Executive manages execution/assignment" — linking a PM instance to a
+    real case is how execution starts, the case's own lifecycle takes over
+    from there.
+  - `reschedule_pm_instance`: staff-only, mandatory reason; §17.4
+    "rescheduling must not erase original overdue history" is enforced
+    structurally — the old instance is marked `RESCHEDULED` (never
+    deleted/edited in place) and a new `SCHEDULED` instance is created,
+    linked back via the `rescheduled_from_instance_id` column that has
+    existed since Loop 1 for exactly this.
+  - `run_pm_scan()`: cron-only (hourly), same pattern as
+    `run_escalation_scan` (Loop 7) — generates the next due instance one
+    at a time per approved active RECURRING plan (no invented lookahead
+    window; the pack asks for generation "from approved schedule," not a
+    batch size), flags `SCHEDULED` instances past `due_at` as `OVERDUE`,
+    and notifies (§17.4: "alert responsible Executive + Manager"). The
+    schema has no per-plan "responsible Executive" field, so the
+    already-auditable stand-in is used: the linked case's current owner
+    once execution has started, falling back to the plan's own creator
+    before that.
+- UI: new `/pm` page (staff-only — a non-staff signed-in user sees a plain
+  notice instead of an empty/broken list, since `pm_plans`/`pm_instances`
+  are staff-only reads per 0002 RLS) — plan list with a create form and
+  Manager-only approve control, instance list with link-to-case,
+  reschedule, and complete actions. Added a "PM" nav link in the app
+  header, staff-only.
+- `database.types.ts`: added `PmPlan`/`PmInstance`.
+
+**Verified live (Supabase `execute_sql`, simulated JWT, project
+`maavrlqkdrisjwzhjdgg`):**
+- `create_pm_plan`: RECURRING without frequency → `FREQUENCY_REQUIRED`;
+  ONE_TIME by a non-Manager → `FORBIDDEN`; ONE_TIME by Manager →
+  self-approved immediately.
+- `approve_pm_plan`: non-Manager rejected, double-approve rejected.
+- `run_pm_scan()` called directly by an `authenticated` client:
+  `permission denied`.
+- Backdated a RECURRING plan's `approved_at` 31 days (frequency 30 days)
+  and ran the scan as `postgres`: 1 instance generated and immediately
+  flagged `OVERDUE` (its due date was already in the past); the matching
+  `PM_OVERDUE` notifications landed for both the plan's creator and the
+  Manager. Re-running the scan produced no duplicate instance and no
+  duplicate notification — idempotent (status leaves `SCHEDULED` once
+  flagged, so the overdue-scan's own `WHERE status = 'SCHEDULED'` no
+  longer matches it).
+- `link_pm_instance_to_case` linked a case; `complete_pm_instance`
+  succeeded once then correctly rejected a second call
+  (`ALREADY_COMPLETED`).
+- `reschedule_pm_instance` on a manually-seeded SCHEDULED instance:
+  confirmed the old instance survives as `RESCHEDULED` (not deleted) and
+  the new instance carries `rescheduled_from_instance_id` pointing back to
+  it — original overdue/scheduling history is never erased.
+
+**Tests:** added `tests/pm.test.ts` (6 tests) — the plan-creation and
+approval guard set (frequency requirement, RECURRING-vs-ONE_TIME authority
+split, double-approval rejection, approving an already-self-approved
+ONE_TIME plan), and the `run_pm_scan` permission lockout. Structurally
+verified in this sandbox (lint clean, `next build` type-checks clean, all
+7 test files including this one load and execute in order, network call
+fails here only — see tests/README.md); real signal is the GitHub Actions
+run on this loop's PR. Instance-lifecycle RPCs
+(`link_pm_instance_to_case`/`complete_pm_instance`/
+`reschedule_pm_instance`) are **not** exercised by this Vitest suite —
+instances only come into existence via `run_pm_scan`, which is
+intentionally unreachable by any client, and there is no test-only
+"seed an instance" RPC (same reasoning as Loop 6's decision not to build
+a test cleanup RPC: it would cut against the tables' own design). Those
+three RPCs were verified live instead, per above.
+
+**Known limitations:** the "responsible Executive" stand-in
+(case-owner-or-plan-creator) for `PM_OVERDUE` alerts is a reasonable but
+not pack-specified interpretation — the locked text never defines who
+that is before a case exists for the PM work. `run_pm_scan`'s hourly
+cadence is an implementation choice; the pack locks no specific polling
+interval for PM, only that overdue flagging and generation happen
+automatically.

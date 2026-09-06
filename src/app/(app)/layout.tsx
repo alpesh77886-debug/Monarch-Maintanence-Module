@@ -11,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
 
   let staffName: string | null = null;
+  let isStaff = false;
   let notifications: AppNotification[] = [];
   if (user) {
     const { data: staff } = await supabase
@@ -19,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("id", user.id)
       .maybeSingle();
     staffName = staff ? `${staff.full_name} (${staff.role})` : user.email ?? null;
+    isStaff = !!staff;
 
     const { data: unread } = await supabase
       .from("notifications")
@@ -33,9 +35,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-3">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link href="/cases" className="text-base font-semibold text-slate-900">
-            MONARCH Maintenance
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/cases" className="text-base font-semibold text-slate-900">
+              MONARCH Maintenance
+            </Link>
+            {isStaff && (
+              <Link href="/pm" className="text-sm font-medium text-slate-600">
+                PM
+              </Link>
+            )}
+          </div>
           <div className="flex items-center gap-3 text-sm text-slate-600">
             <span className="hidden sm:inline">{staffName}</span>
             {user && <NotificationBell notifications={notifications} />}

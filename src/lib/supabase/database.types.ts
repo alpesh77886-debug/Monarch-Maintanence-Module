@@ -181,6 +181,31 @@ export interface SpareRequest {
   stores_reference_id: string | null;
 }
 
+export interface PmPlan {
+  id: string;
+  title: string;
+  asset_ref: string | null;
+  plan_type: "RECURRING" | "ONE_TIME";
+  frequency_days: number | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_by: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface PmInstance {
+  id: string;
+  pm_plan_id: string;
+  case_id: string | null;
+  due_at: string;
+  generated_at: string;
+  status: "SCHEDULED" | "OVERDUE" | "COMPLETED" | "RESCHEDULED";
+  overdue_since: string | null;
+  completed_at: string | null;
+  rescheduled_from_instance_id: string | null;
+}
+
 export interface SpareUsage {
   id: string;
   spare_request_id: string | null;

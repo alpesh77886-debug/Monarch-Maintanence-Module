@@ -1,15 +1,16 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 9 (complete) — mid-batch (Loops 6-10; hard gate re-triggers
-  after Loop 10 per IMPLEMENTATION_PACK.md §19.11)
-Current gate: none open right now — Gate 1 (Loops 01-05) was approved by the
-  Boss ("Loop 2-5 continue karo"). Next hard gate is after Loop 10 —
-  autonomous work stops there until re-approved. See APPROVAL_GATE.md.
+Current loop: Loop 10 (complete) — BATCH COMPLETE (Loops 6-10). Hard gate
+  reached per IMPLEMENTATION_PACK.md §19.11 — see
+  APPROVAL_REPORT_LOOP_06_10.md.
+Current gate: HARD GATE REACHED — waiting for Boss approval to continue
+  with Loop 11+. See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
-  RISK-13 (Loop 8 — `is_manager()` NULL-propagation authorization bypass,
-  found and fixed while building `approve_spare_request`) all RESOLVED and
+  RISK-13 (Loop 8 — `is_manager()` NULL-propagation authorization bypass),
+  and RISK-14 (Loop 9 — a rewrite of `transition_case` silently dropped
+  the §13 QC gate; caught by CI, not by manual review) all RESOLVED and
   verified against the live deployment. No CRITICAL or HIGH defects
   currently open.
 Highest severity open: none.
@@ -17,81 +18,59 @@ Highest severity open: none.
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
   `monarch-maintenance-module`. SSO/deployment protection is OFF (fixed
   Loop 2). App-level Supabase auth is the actual access boundary. `main`
-  is the configured production branch; PRs #1 (Loops 1-5) and #2 (Loop 6)
-  are merged.
+  is the configured production branch; PRs #1-#5 (Loops 1-5, 6, 7, 8, 9)
+  are all merged.
 Sentry status: LINKED, SDK wired, verified live (Loop 2). Org `monarch-bo`,
   project `monarch-maintenance-module`.
 Test status: Vitest integration suite wired into CI (`npm test` in
   `.github/workflows/ci.yml`), run as real signed-in users against the live
-  `maintenance` schema. 17 tests from Loop 6 (Scenario A/B/C, negative
-  transitions, idempotency, append-only, RLS bypass denials, ownership
-  race, WAITING) confirmed passing in real GitHub Actions CI. Loop 7 added
-  10 more (§6 claim/confirm, notifications), Loop 8 added 7 more (§16
-  spare request/usage, the `is_manager()` NULL regression), and Loop 9
-  added 4 more (§4.6 duplicate linkage, §4.7 false-complaint closure) — 38
-  tests total across 6 files, structurally verified in this sandbox (lint
-  clean, `next build` type-checks clean, loads and executes in order,
-  network call fails here only because the sandbox's egress proxy blocks
-  `*.supabase.co` — RISK-05); real signal is the next GitHub Actions run.
-  Browser E2E (`e2e/smoke.mjs`) still has not run — same network
-  restriction (RISK-05, still open).
+  `maintenance` schema. 17 tests from Loop 6, +10 Loop 7 (§6 claim/confirm,
+  notifications), +7 Loop 8 (§16 spares, `is_manager()` regression), +4
+  Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM plan/approval) — 44 tests total
+  across 7 files. All confirmed passing in real GitHub Actions CI through
+  Loop 9's PR (including catching and driving the RISK-14 fix); Loop 10's
+  PR CI result is pending as of this report. Browser E2E (`e2e/smoke.mjs`)
+  still has not run — this sandbox's egress proxy blocks `*.supabase.co`
+  (RISK-05, still open).
 
 Pending evidence gates: PENDING-01 (LOTO/PTW SOP — untouched, only seam
   columns exist), PENDING-02 (moot — Production module still has no live
   schema), PENDING-03 (granular permission matrix beyond the 2 locked
-  roles), PENDING-04 (recurrence threshold/window — recurrence not started
-  yet), PENDING-05 (none discovered).
+  roles), PENDING-04 (recurrence threshold/window — recurrence, §18, still
+  entirely unbuilt), PENDING-05 (none discovered).
 
-Loop 7 highlights (see CHANGELOG.md for full detail):
-  - §6 emergency two-step workflow actually implemented (`claim_emergency`/
-    `confirm_emergency`) — the `emergency_claimed`/`emergency_confirmed`
-    columns existed since Loop 1 but no RPC ever set them until now.
-  - §23 notifications: `maintenance.notifications` table + RLS +
-    `mark_notification_read`, wired into `acknowledge_case` and
-    `mark_wait_resolved`.
-  - §7.2/§7.3 timer escalation: `pg_cron`-scheduled
-    `maintenance.run_escalation_scan()` (every 5 min) handles the 24h
-    WAITING resume-ready escalation + 24h repeat Manager reminder, and the
-    1h confirmed-emergency escalation. Client `EXECUTE` revoked — verified
-    a client call gets `permission denied`, not a business-logic error.
-  - UI: `EmergencyPanel` on the case detail page, `NotificationBell` in the
-    app header.
+Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
+  - Loop 6: Vitest integration suite wired into CI.
+  - Loop 7: §6 emergency two-step (`claim_emergency`/`confirm_emergency`),
+    §23 notifications (`maintenance.notifications` + RLS +
+    `mark_notification_read`), §7.2/§7.3 timer escalation
+    (`run_escalation_scan`, pg_cron every 5 min).
+  - Loop 8: §16 spare request/usage RPCs, §3.3 ₹12,000 Manager-approval
+    threshold computed server-side. RISK-13 found and fixed
+    (`is_manager()` NULL propagation).
+  - Loop 9: §4.6 duplicate case linkage (`mark_duplicate_case`), §4.7
+    reporter-driven false/wrong complaint closure
+    (`close_false_complaint`).
+  - Loop 10: §17 preventive maintenance — `create_pm_plan`/
+    `approve_pm_plan` (RECURRING proposed-by-staff/approved-by-Manager vs.
+    ONE_TIME Manager-only/self-approved), `link_pm_instance_to_case`/
+    `complete_pm_instance`/`reschedule_pm_instance` (history-preserving),
+    `run_pm_scan` (pg_cron hourly) for generation + `PM_OVERDUE` alerts.
+  - **RISK-14** (between Loop 9 and 10): Loop 9's `transition_case`
+    rewrite was built from a stale copy of the function and silently
+    dropped the Loop 5 QC gate. Caught by CI on PR #5, not by manual
+    review — reproduced live, fixed at the source
+    (`0012_maintenance_qc_gate_regression_fix.sql`), re-verified, and the
+    process gap that caused it (a live-only fix with no matching migration
+    file) is now called out explicitly in CHANGELOG.md as a standing
+    process rule for this repo.
 
-Loop 8 highlights (see CHANGELOG.md for full detail):
-  - §16 spare request/usage RPCs (`raise_spare_request`,
-    `approve_spare_request`, `record_spare_usage`) — closed a real RLS gap
-    where any authenticated user could previously self-set
-    `requires_manager_approval`/`approved_by`/`approved_at` by direct
-    insert.
-  - §3.3 ₹12,000 Manager-approval threshold computed server-side, never
-    client-supplied; mandatory approval-proof reference; usage blocked
-    until a required approval is actually on record.
-  - **RISK-13 found and fixed**: `is_manager()` returned NULL (not false)
-    for non-staff callers, which would have let a non-staff caller bypass
-    the Manager-only approval guard undetected. Fixed at the source.
-  - UI: `SparesPanel` on the case detail page.
-
-Loop 9 highlights (see CHANGELOG.md for full detail):
-  - §4.6 `mark_duplicate_case` — links a duplicate to its primary case
-    atomically with the status transition (the generic `transition_case`
-    RPC now refuses `DUPLICATE` outright, since it cannot record the
-    link). Primary case is never touched.
-  - §4.7 `close_false_complaint` — the reporting person (not staff) may
-    close their own false/wrong complaint; predefined-reason shape
-    enforced (non-empty reason, mandatory explanation for `OTHER`)
-    without hardcoding the pack's unspecified reason taxonomy into the
-    database.
-  - UI: duplicate badge + primary-case link, staff duplicate-marking form,
-    reporter false-complaint-closure form.
-
-Last verified commit/reference: see `git log` on `claude/new-session-edkk1u`
-  (Loop 9 migration `0011_maintenance_duplicate_false_complaint.sql`
-  applied live to Supabase project `maavrlqkdrisjwzhjdgg` and verified via
-  `execute_sql` before this commit was pushed).
-Next authorized work: Loop 10 (PM/preventive maintenance, §17), which ends
-  this batch — `APPROVAL_REPORT_LOOP_06_10.md` and a hard STOP for Boss
-  re-approval per IMPLEMENTATION_PACK.md §19.11.
-Approval state: AUTONOMOUS DEVELOPMENT IN PROGRESS (Loops 6-10 batch).
+Migrations applied this batch: 0008 (Loop 7) through 0013 (Loop 10), all
+  live on Supabase project `maavrlqkdrisjwzhjdgg` and verified via
+  `execute_sql` before each was pushed.
+Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Not resuming
+  Loop 11+ until the Boss gives explicit continuation language (see
+  APPROVAL_GATE.md / IMPLEMENTATION_PACK.md §19.13).
 
 Demo/test logins (rotate or remove before real rollout):
   Executive:  exec1@monarch.test / Loop1TestPass!23
