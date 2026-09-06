@@ -48,6 +48,17 @@ lets a signed-in staff user backdate those columns on their own
 `[AUTOTEST]`-tagged case (still gated by ownership), not a shortcut around
 RLS.
 
+Loop 8 (`spares.test.ts`) adds: the §3.3 ₹12,000 threshold computation
+(exactly ₹12,000 vs ₹12,000.01), spare-name validation, both tables'
+direct-insert RLS denials, the full approval gate (non-staff and
+staff-Executive both rejected, proof required, idempotent approve, a
+<=₹12,000 request correctly refused approval), the `APPROVAL_REQUIRED`
+usage-recording gate, and usage-recording actor eligibility (staff or the
+actively assigned technician). The Manager-approval rejection test is
+also a permanent regression test for RISK-13 (`is_manager()` NULL
+propagation) — it specifically exercises the non-staff-caller path that
+the bug affected.
+
 ## Known tradeoffs (deliberate, not oversights)
 
 - **No separate test/staging Supabase project.** Tests run against the same
@@ -74,12 +85,11 @@ RLS.
 ## Not yet covered
 
 The full `IMPLEMENTATION_PACK.md` §37 matrix is larger than this first pass
-— PM overdue/regeneration, spare traceability, and duplicate/false-complaint
-closure still need tests once those features exist (see
-`APPROVAL_REPORT_LOOP_01_05.md` §J for the build order). Notifications and
-the emergency two-step are now covered (Loop 7); the escalation-timer
-*durations* are still only spot-checked live, not in this suite — see
-above.
+— PM overdue/regeneration and duplicate/false-complaint closure still need
+tests once those features exist (see `APPROVAL_REPORT_LOOP_01_05.md` §J for
+the build order). Notifications, the emergency two-step, and spare
+request/usage are now covered (Loops 7-8); the escalation-timer *durations*
+are still only spot-checked live, not in this suite — see above.
 
 Browser E2E lives in `../e2e/` — same network limitation applies to running
 it from this sandbox.

@@ -396,3 +396,91 @@ left as-is rather than adding dedup logic the pack doesn't ask for. pg_cron
 job cadence (5 min) is an implementation choice, not a locked value — the
 pack only locks the 24h/1h thresholds, not how often the scan polls for
 them.
+
+## Loop 8 — 2026-09-06
+
+**Summary:** Spare request/usage RPCs + UI (§16), enforcing the §3.3
+₹12,000 Manager-approval financial-authority boundary server-side. Also
+fixed a real authorization bug found while building this loop.
+
+**Material changes:**
+- Migration `0009_maintenance_spares.sql`: `spare_requests`/`spare_usage`
+  have existed since Loop 1, but their 0002 insert policies let ANY
+  authenticated user insert a row with self-set values for
+  `requires_manager_approval`/`approved_by`/`approved_at` — a real gap on a
+  locked financial boundary. Tightened both to RPC-only
+  (`with check (false)`), matching every other audit-sensitive table in
+  this schema, and added:
+  - `raise_spare_request` — any authenticated user (§16.3: technician
+    direct, or Executive on their behalf); `requires_manager_approval` is
+    always computed server-side from `p_estimated_amount > 12000`, never
+    accepted as client input.
+  - `approve_spare_request` — Manager-only, mandatory non-empty
+    `approval_proof_ref` (§3.3: "approval proof is a request
+    prerequisite"), rejects a request that never crossed the threshold
+    (`NOT_REQUIRED`) or was already approved (`ALREADY_APPROVED`).
+  - `record_spare_usage` — same actor eligibility as `record_intervention`
+    (staff, or the actively assigned technician); if linked to a request
+    that needed Manager approval, blocks (`APPROVAL_REQUIRED`) until that
+    approval is actually on record — this is where the proof requirement
+    gets enforced against real usage, not just the request.
+- **Bug found and fixed (`0010_maintenance_is_manager_null_fix.sql`):**
+  `maintenance.is_manager()` (defined in 0002) returned `NULL` — not
+  `false` — for any authenticated caller with no `maintenance.staff` row,
+  because `current_staff_role() = 'MAINTENANCE_MANAGER'` propagates NULL
+  through the equality. The function's only prior use (0002, an RLS `with
+  check`) happened to be safe because Postgres RLS treats NULL as "reject",
+  but `approve_spare_request`'s `if not maintenance.is_manager() then raise
+  exception` guard is standard PL/pgSQL, where `IF NULL` silently skips the
+  branch — i.e. a non-staff authenticated caller (tech1, or any reporter)
+  could have called `approve_spare_request` and fallen through the
+  authorization check undetected. Same class of defect as RISK-11 (guard
+  against NULL, not just an explicit false). Fixed at the source
+  (`coalesce(..., false)`) so every future caller of `is_manager()` is safe
+  by construction, not just this one call site. Caught by testing the
+  negative case with the technician account (no staff row) before this
+  code ever reached the UI — see verification below.
+- UI: `SparesPanel` on the case detail page — request list with per-request
+  approval status, a raise-request form (any signed-in user), a Manager-only
+  approve control (proof reference required), a usage list, and a
+  record-usage form (staff or the assigned technician).
+- `database.types.ts`: added `SpareRequest`/`SpareUsage`.
+
+**Verified live (Supabase `execute_sql`, simulated JWT, project
+`maavrlqkdrisjwzhjdgg`):**
+- `raise_spare_request`: ₹12,000 exactly → `requires_manager_approval =
+  false`; ₹12,000.01 → `true` (boundary is `>`, not `>=`, matching §3.3
+  literally). `initiated_role` correctly `TECHNICIAN` for tech1 (no staff
+  row).
+- Before the `is_manager()` fix: confirmed the bug live — a non-staff
+  caller's `approve_spare_request` call incorrectly proceeded past the
+  `FORBIDDEN` guard. After the fix: `select maintenance.is_manager()` for
+  tech1 correctly returns `false` (not NULL), and `approve_spare_request`
+  now correctly rejects both a non-staff caller and a staff Executive
+  (only Manager is authorized).
+- `approve_spare_request` without proof → `APPROVAL_PROOF_REQUIRED`; with
+  proof → succeeds; re-approve → `ALREADY_APPROVED`; approving a
+  <=₹12,000 request → `NOT_REQUIRED`.
+- `record_spare_usage` on an unapproved >₹12,000 request → blocked
+  (`APPROVAL_REQUIRED`) even for staff; succeeds once approved. A
+  non-staff, non-assigned caller is `FORBIDDEN`; the actively assigned
+  technician can record usage on their own case.
+- Direct client `insert` on both `spare_requests` and `spare_usage`
+  rejected by RLS.
+
+**Tests:** added `tests/spares.test.ts` (7 tests) — the threshold
+computation, the full `is_manager()`-NULL regression (non-staff and
+non-Manager staff both rejected), proof/idempotency guards on approval,
+the `APPROVAL_REQUIRED` usage gate, actor eligibility for usage recording,
+and both tables' direct-insert RLS denials. Structurally verified in this
+sandbox (lint clean, `next build` type-checks clean, all 5 test files
+including this one load and execute in order, network call fails here
+only — see tests/README.md); real signal is the GitHub Actions run on
+this loop's PR.
+
+**Known limitations:** `record_spare_usage` does not itself verify the
+linked `spare_request`'s `quantity_requested` against cumulative usage
+quantity (over-fulfillment isn't blocked) — the pack's §16.1 usage chain
+doesn't ask for that check, and Stores remains the authoritative stock
+ledger (§16.2), so this module deliberately doesn't try to reconcile
+quantities against a truth it doesn't own.

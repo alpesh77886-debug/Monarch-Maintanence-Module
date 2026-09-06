@@ -161,3 +161,35 @@ export interface AppNotification {
   created_at: string;
   read_at: string | null;
 }
+
+export interface SpareRequest {
+  id: string;
+  case_id: string;
+  intervention_id: string | null;
+  spare_name: string;
+  quantity_requested: number;
+  initiated_by: string;
+  initiated_role: "TECHNICIAN" | "EXECUTIVE";
+  requested_at: string;
+  estimated_amount: number | null;
+  requires_manager_approval: boolean;
+  approval_proof_ref: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  stores_reference_status: string;
+  stores_reference_id: string | null;
+}
+
+export interface SpareUsage {
+  id: string;
+  spare_request_id: string | null;
+  case_id: string;
+  intervention_id: string | null;
+  asset_ref: string | null;
+  actor_user_id: string;
+  used_at: string;
+  quantity: number;
+  outcome: string | null;
+  stores_reference_status: string;
+  stores_reference_id: string | null;
+}
