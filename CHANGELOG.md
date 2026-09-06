@@ -307,3 +307,92 @@ against the same live project, tagged `[AUTOTEST]`, no automated cleanup —
 see tests/README.md for why). PM, spares, notifications, and
 duplicate/false-complaint scenarios have no tests yet because those
 features don't exist yet either.
+
+## Loop 7 — 2026-09-06
+
+**Summary:** Emergency two-step confirmation (§6), notifications (§23), and
+timer-based escalation (§7.2 WAITING 24h, §7.3 confirmed-emergency 1h).
+
+**Material changes:**
+- Migration `0008_maintenance_emergency_notifications.sql`:
+  - Added `cases.emergency_claimed_by/_at/_claim_reason` and
+    `emergency_escalated_at` — §6 requires the claim actor/timestamp/reason
+    to be recorded, and Loop 1 only ever added the two boolean flags with no
+    RPC to set them. `emergency_escalated_at` makes the 1h escalation fire
+    exactly once.
+  - New `maintenance.notifications` table (RPC/definer-write-only, RLS
+    restricts select to `recipient_user_id = auth.uid()`, same pattern as
+    every other mutation-sensitive table since Loop 1) +
+    `mark_notification_read`.
+  - New `claim_emergency`/`confirm_emergency` RPCs implementing the §6
+    two-step workflow: reporter (or staff) claims with a mandatory
+    reason, then Executive/Manager confirms — only confirmation starts the
+    1h clock (§7.3). Ordering enforced (`NOT_CLAIMED`,
+    `ALREADY_CONFIRMED`); a generic toggle cannot skip a step.
+  - `acknowledge_case` and `mark_wait_resolved` now insert the two purely
+    event-driven notifications §23 requires (acknowledgement to reporter,
+    resume-ready to the case owner).
+  - New `maintenance.run_escalation_scan()` — installs `pg_cron`/`pg_net`
+    (confirmed available-but-uninstalled beforehand) and schedules the scan
+    every 5 minutes. Handles: 24h resume-ready-with-no-action escalation to
+    Executive+Manager (fires once per wait), the §7.2 repeated-every-24h
+    Manager reminder until resumed, and the §7.3 1h confirmed-emergency
+    escalation (fires once — the pack locks no repeat cadence for this one,
+    unlike WAITING's explicit "every 24h until action"). `EXECUTE` on this
+    function is revoked from `anon`/`authenticated`/`public` — only pg_cron
+    (as `postgres`) can run it; confirmed a client call gets
+    `permission denied`, not a business-logic error.
+- UI: `EmergencyPanel` on the case detail page (claim form → confirmed
+  banner, gated by role/reporter identity and case-terminal state) and a
+  `NotificationBell` in the app header (unread list, mark-read, links to the
+  case).
+- `database.types.ts`: added the new `cases` emergency columns and an
+  `AppNotification`/`NotificationType` type.
+
+**Verified live (Supabase `execute_sql`, simulated JWT, project
+`maavrlqkdrisjwzhjdgg`):**
+- `claim_emergency` rejects an empty reason (`REASON_REQUIRED`) and a
+  non-reporter/non-staff caller (`FORBIDDEN`).
+- `confirm_emergency` rejects a non-staff caller and an unclaimed case
+  (`NOT_CLAIMED`); the reporter (technician, non-staff) cannot confirm their
+  own claim.
+- Full two-step happy path confirmed end-to-end (tech1 claims → exec1
+  confirms → `emergency_confirmed_at` set); re-confirm and re-claim after
+  confirmation both correctly rejected (`ALREADY_CONFIRMED`).
+- `run_escalation_scan()` called directly by an `authenticated` client:
+  `permission denied` — the revoke works.
+- Backdated `emergency_confirmed_at` 2h and ran the scan as `postgres`: 1
+  `EMERGENCY_ESCALATION_1H` notification fired (to case owner + all active
+  Managers); re-running the scan produced no duplicate — idempotent via
+  `emergency_escalated_at`.
+- Backdated a resolved-EXTERNAL wait's `resume_ready_at` 25h and ran the
+  scan: 1 `WAIT_ESCALATION_24H` fired; backdating `last_escalated_at` a
+  further 25h and re-running fired 1 `WAIT_MANAGER_REMINDER_24H` — the
+  §7.2 repeat-until-resumed behavior works.
+- `acknowledge_case` inserted a `CASE_ACKNOWLEDGED` notification readable by
+  the reporter and invisible to a different staff member (RLS) — the
+  message names the acknowledging actor per §5.2.
+- Direct client `insert`/`update` on `notifications` both rejected/no-op
+  under RLS; `mark_notification_read` only lets the actual recipient flip
+  `read_at`.
+
+**Tests:** added `tests/emergency-and-notifications.test.ts` (10 tests) —
+claim/confirm guards and ordering, the `run_escalation_scan` permission
+lockout, notification RLS, and `mark_wait_resolved`'s immediate
+notification. Structurally verified in this sandbox (lint clean, `next
+build` type-checks clean, all 4 test files including this one load and
+execute in order, failing uniformly at the network call — see
+tests/README.md); real signal is the GitHub Actions run on this loop's PR.
+The 24h/1h timer *durations* themselves cannot be exercised in a suite that
+runs in seconds — that gap was closed instead by the live backdated-column
+`execute_sql` checks above, run directly against the scheduled function.
+
+**Known limitations:** notification targeting for the two escalation paths
+(alert "Executive + Manager" per §7.2, and — by extension, since the pack
+names no explicit recipient for §7.3 — the same set for confirmed
+emergency) can double-notify a single person who is both the case owner
+and a Manager (two rows, same message) — cosmetic, not a correctness bug,
+left as-is rather than adding dedup logic the pack doesn't ask for. pg_cron
+job cadence (5 min) is an implementation choice, not a locked value — the
+pack only locks the 24h/1h thresholds, not how often the scan polls for
+them.

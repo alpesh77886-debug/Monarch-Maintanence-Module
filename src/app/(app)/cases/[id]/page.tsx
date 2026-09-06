@@ -11,6 +11,7 @@ import VerifyRestorationCard from "./verify-restoration-card";
 import QcPanel from "./qc-panel";
 import CloseReopenActions from "./close-reopen-actions";
 import FollowUpButton from "./follow-up-button";
+import EmergencyPanel from "./emergency-panel";
 
 export default async function CaseDetailPage({
   params,
@@ -94,6 +95,17 @@ export default async function CaseDetailPage({
   const canRecordRestoration = !!isStaffRow && caseRow.status === "IN_REPAIR";
   const needsFollowUp = !!isStaffRow && caseRow.status === "TEMPORARILY_RESTORED";
 
+  // §6: reporter or staff may claim; only staff may confirm, and only once
+  // claimed. Not offered once the case is CLOSED/REJECTED/DUPLICATE.
+  const caseIsTerminal = ["CLOSED", "REJECTED", "DUPLICATE"].includes(caseRow.status);
+  const canClaimEmergency =
+    !caseIsTerminal &&
+    !caseRow.emergency_confirmed &&
+    !!user &&
+    (user.id === caseRow.reporter_user_id || !!isStaffRow);
+  const canConfirmEmergency =
+    !!isStaffRow && caseRow.emergency_claimed && !caseRow.emergency_confirmed;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -104,6 +116,18 @@ export default async function CaseDetailPage({
           {caseRow.priority ? ` · Priority: ${caseRow.priority}` : ""}
         </p>
       </div>
+
+      {(caseRow.emergency_claimed || canClaimEmergency) && (
+        <EmergencyPanel
+          caseId={caseRow.id}
+          emergencyClaimed={caseRow.emergency_claimed}
+          emergencyClaimReason={caseRow.emergency_claim_reason}
+          emergencyConfirmed={caseRow.emergency_confirmed}
+          emergencyConfirmedAt={caseRow.emergency_confirmed_at}
+          canClaim={canClaimEmergency}
+          canConfirm={canConfirmEmergency}
+        />
+      )}
 
       {canAcknowledge && <AcknowledgeForm caseId={caseRow.id} />}
 

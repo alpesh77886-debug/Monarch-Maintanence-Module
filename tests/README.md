@@ -29,6 +29,25 @@ first-valid-actor ownership race, and both WAITING paths (EXTERNAL two-step
 resolve→resume, INTERNAL direct resume) + the waits direct-insert bypass
 denial.
 
+Loop 7 (`emergency-and-notifications.test.ts`) adds: the §6 emergency
+claim/confirm RPC guards (reason required, reporter-or-staff-only claim,
+staff-only confirm, claim-before-confirm ordering, no re-claim/re-confirm
+after confirmation), confirming `run_escalation_scan()` is not callable by
+any authenticated client (`permission denied`, not a business-logic
+error), notification RLS (only the recipient can read their own row,
+direct insert/update are both blocked), `mark_notification_read`
+rejecting a non-recipient, and `mark_wait_resolved`'s immediate
+notification to the case owner. **Not covered here:** the 24h/1h timer
+*durations* themselves — a suite that runs in seconds cannot wait real
+hours for `pg_cron` to fire. That gap was closed instead with one-off
+`execute_sql` checks (backdating `resume_ready_at`/`emergency_confirmed_at`
+and calling the scan function directly as `postgres`) — see CHANGELOG.md
+Loop 7 for the exact runs and results. If this needs to become an
+automated regression test later, the honest way is a test-only RPC that
+lets a signed-in staff user backdate those columns on their own
+`[AUTOTEST]`-tagged case (still gated by ownership), not a shortcut around
+RLS.
+
 ## Known tradeoffs (deliberate, not oversights)
 
 - **No separate test/staging Supabase project.** Tests run against the same
@@ -55,9 +74,12 @@ denial.
 ## Not yet covered
 
 The full `IMPLEMENTATION_PACK.md` §37 matrix is larger than this first pass
-— PM overdue/regeneration, spare traceability, duplicate/false-complaint
-closure, and notification/escalation timing all still need tests once those
-features exist (see `APPROVAL_REPORT_LOOP_01_05.md` §J for the build order).
+— PM overdue/regeneration, spare traceability, and duplicate/false-complaint
+closure still need tests once those features exist (see
+`APPROVAL_REPORT_LOOP_01_05.md` §J for the build order). Notifications and
+the emergency two-step are now covered (Loop 7); the escalation-timer
+*durations* are still only spot-checked live, not in this suite — see
+above.
 
 Browser E2E lives in `../e2e/` — same network limitation applies to running
 it from this sandbox.

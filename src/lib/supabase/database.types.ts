@@ -45,7 +45,12 @@ export interface MaintenanceCase {
   priority: Priority | null;
   major_complex_flag: boolean;
   emergency_claimed: boolean;
+  emergency_claimed_by: string | null;
+  emergency_claimed_at: string | null;
+  emergency_claim_reason: string | null;
   emergency_confirmed: boolean;
+  emergency_confirmed_by: string | null;
+  emergency_confirmed_at: string | null;
   symptom: string;
   area: string | null;
   line: string | null;
@@ -138,4 +143,21 @@ export interface CaseEvent {
   previous_status: CaseStatus | null;
   new_status: CaseStatus | null;
   reason: string | null;
+}
+
+export type NotificationType =
+  | "CASE_ACKNOWLEDGED"
+  | "WAIT_RESUME_READY"
+  | "WAIT_ESCALATION_24H"
+  | "WAIT_MANAGER_REMINDER_24H"
+  | "EMERGENCY_ESCALATION_1H";
+
+export interface AppNotification {
+  id: string;
+  recipient_user_id: string;
+  case_id: string | null;
+  notification_type: NotificationType;
+  message: string;
+  created_at: string;
+  read_at: string | null;
 }

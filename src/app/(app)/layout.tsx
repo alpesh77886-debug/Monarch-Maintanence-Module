@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "./sign-out-button";
+import NotificationBell from "./notification-bell";
+import type { AppNotification } from "@/lib/supabase/database.types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -9,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
 
   let staffName: string | null = null;
+  let notifications: AppNotification[] = [];
   if (user) {
     const { data: staff } = await supabase
       .from("staff")
@@ -16,6 +19,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("id", user.id)
       .maybeSingle();
     staffName = staff ? `${staff.full_name} (${staff.role})` : user.email ?? null;
+
+    const { data: unread } = await supabase
+      .from("notifications")
+      .select("*")
+      .is("read_at", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    notifications = unread ?? [];
   }
 
   return (
@@ -27,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
           <div className="flex items-center gap-3 text-sm text-slate-600">
             <span className="hidden sm:inline">{staffName}</span>
+            {user && <NotificationBell notifications={notifications} />}
             <SignOutButton />
           </div>
         </div>
