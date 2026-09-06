@@ -1390,3 +1390,84 @@ append-only correction chain, cross-case `INVALID_SUPERSEDE`, direct-insert
 denial, and the view RLS assertion (explicitly framed as confirming the
 RISK-15 lesson held, not as fixing a new instance of it). Suite is now **87
 tests across 13 files**.
+
+## Loop 18 — 2026-09-06
+
+**§5.1 / §26 — evidence attachment/reference.**
+
+### How the gap was found
+
+Scanning `IMPLEMENTATION_PACK.md` §26's recommended core entities against
+`create table maintenance.` across every migration turned up
+`maintenance.evidence` — present since the very first migration (0001),
+with its own RLS policies since the second (0002). **Nothing had ever
+written to it.** Six loops, twenty migrations, and the entire UI, and this
+table had zero rows and zero references anywhere in `src/`.
+
+### The RLS was already correct — this loop is UI, not authorization
+
+Unlike almost every other table in this schema, `evidence` was never
+RPC-gated. Its insert policy is `with check (uploaded_by = auth.uid())` —
+any authenticated user, not staff-only — matching how `cases_insert` itself
+works (reporting a case is a direct insert too). This is deliberate: §5.1
+lists evidence as an intake field, so the *reporter* needs to attach it, not
+only staff, and possibly before any staff RPC has touched the case at all.
+So Loop 18 adds no migration — it is the first thing to actually use a
+six-loop-old, already-correct policy.
+
+`file_ref` is treated as a **reference** (a URL, a photo pointer, a report
+number) rather than an uploaded document this app stores. Building real
+file/photo upload would mean Supabase Storage buckets, MIME handling, and a
+security review of their own — none of that is asked for by the locked
+pack, and every other reference seam in this app (PTW proof, `evidence_ref`
+columns elsewhere) is the same shape: a text pointer to where the evidence
+actually lives.
+
+### A test-writing mistake caught before it shipped
+
+The first draft of `tests/evidence.test.ts` asserted
+`expect(updateErr).not.toBeNull()` after a direct `.update()` call from a
+non-owning session, expecting RLS to surface as a PostgREST error. It
+doesn't: **with no UPDATE policy defined, RLS makes the write match zero
+rows — PostgREST reports success, not an error.** Verified directly against
+Postgres before trusting the assumption: a raw-SQL `UPDATE ... RETURNING`
+under the same simulated JWT returned no error either, and a follow-up
+`SELECT` proved the value never changed. The correct assertion — checking
+the row is provably unchanged/still present rather than checking for a
+truthy error — already exists as precedent in this repo
+(`emergency-and-notifications.test.ts`'s `notifications` update-denial
+test), which the fixed version now matches.
+
+### Live verification (`execute_sql`, simulated JWTs)
+
+| Check | Result |
+|---|---|
+| non-staff (technician) creates a case as reporter | succeeds |
+| non-staff attaches evidence to their own case | succeeds |
+| staff attaches evidence | succeeds |
+| insert attributing evidence to someone else (impersonation) | RLS refusal (real error) |
+| update from a non-owning session | silent no-op — value unchanged (not an error) |
+| delete from a non-owning session | silent no-op — row still present (not an error) |
+
+### After Loop 16's lesson: checked before trusting build again
+
+Loop 16's PR needed a fix for a Next.js server/client boundary bug that
+`tsc`/`lint`/`build` couldn't see. Before treating this loop's UI as done,
+every `"use client"` file in the app was re-scanned for a second (non-default)
+export being called from a server component — the exact pattern that broke
+Loop 16. `evidence-panel.tsx` has none; the whole app has none.
+
+### UI
+
+`EvidencePanel` on the case page, visible to **any signed-in user** (not
+gated behind `isStaffRow` like most panels — matches the RLS). Lists
+existing evidence with uploader/timestamp, renders a `file_ref` that looks
+like a URL as a clickable link, and offers a form to attach more with an
+optional description.
+
+### Tests
+
+`tests/evidence.test.ts` (4): non-staff self-attach,
+staff attach, impersonation refusal, and the append-only assertion (correctly
+checking row state, not error presence, per the note above). Suite is now
+**91 tests across 14 files**.

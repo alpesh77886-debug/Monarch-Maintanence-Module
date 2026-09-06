@@ -35,8 +35,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   Loop 9 (§4.6/§4.7), +6 Loop 10 (§17 PM), +6 Loop 12 (§22 handover),
   +7 Loop 13 (§13 production boundary), +8 Loop 14 (§25 impact/KPI),
   +9 Loop 15 (§18 recurrence, §19 CAPA), +10 Loop 16 (§5.4 priority override,
-  §14.2 PTW gate), +6 Loop 17 (§9.1 validated root cause) — **87 tests
-  across 13 files** (counted from `it()` blocks), all confirmed
+  §14.2 PTW gate), +6 Loop 17 (§9.1 validated root cause), +4 Loop 18
+  (§5.1 evidence attachment) — **91 tests
+  across 14 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -117,7 +118,18 @@ Migrations applied: 0008 (Loop 7) through 0020 (Loop 17), all live on
   0020 (Loop 17) adds the second view in this schema, `case_current_root_cause`
   — created WITH `security_invoker = true` from its first line (verified via
   `pg_class.reloptions` right after creation), applying the RISK-15 lesson
-  prospectively rather than needing a second fix.
+  prospectively rather than needing a second fix. Loop 18 adds NO migration —
+  `maintenance.evidence` and its RLS have existed since Loops 1/2 and were
+  simply never used until now.
+
+PR #12 (Loop 16) needed two post-open CI fixes before it merged: a test-helper
+  logic bug, and a genuine Next.js server/client boundary bug (a plain helper
+  function exported from a `"use client"` file, called directly from the
+  Server Component) — invisible to `tsc`/`lint`/`build`, only surfacing on an
+  actual authenticated page render, which only CI's e2e job could exercise
+  (this sandbox has no live Supabase access, RISK-05). Both fixed and
+  verified live in CI; every `"use client"` file in the app has since been
+  re-scanned after each subsequent loop for the same pattern (none found).
 
 Batch progress (Loops 16-20, current batch):
   - Loop 16: §5.4 priority Manager-override (`change_priority`, an Executive
@@ -132,7 +144,15 @@ Batch progress (Loops 16-20, current batch):
     concepts that had no seam — previously root cause could only be recorded
     against a CONFIRMED recurrence flag, leaving ordinary one-off cases with
     nowhere to record one at all.
-  - Loop 18-20: NOT STARTED.
+  - Loop 18: §5.1 / §26 evidence attachment. No new migration —
+    `maintenance.evidence` has existed since Loop 1 with correct RLS since
+    Loop 2 (any authenticated user may attach evidence to a case they can
+    see, not staff-only, matching how case reporting itself works) but
+    nothing had ever written to it or displayed it. A test-writing mistake
+    was caught before shipping: RLS-blocked UPDATE/DELETE via PostgREST
+    reports success with zero rows affected, not an error — the test now
+    asserts the row is provably unchanged instead.
+  - Loop 19-20: NOT STARTED.
 
 Approval state: RUNNING — the Boss approved Loops 16-20. The next HARD GATE
   falls after Loop 20, where autonomous development stops again pending
