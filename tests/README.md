@@ -104,6 +104,18 @@ kept this suite from building a cleanup RPC in Loop 6). Those three RPCs,
 and the scan's generation/overdue-flagging/notification logic itself, were
 verified live via `execute_sql` instead — see CHANGELOG.md Loop 10.
 
+Loop 12 (`handover.test.ts`) adds: §22.1 manual-handover guards (non-staff
+caller, missing reason, a non-staff receiver, handing to the person who
+already owns it), the ownership-history assertions that matter most —
+prior row closed with its reason, new row opened, `ended_at` of one
+exactly equal to `started_at` of the next, and `created_at` unchanged so
+case age does not reset — Manager override vs. a non-owner Executive, and
+that the handover notification reaches the receiver and *not* the sender.
+**Not covered here:** `handover_all_open_cases` beyond its reason guard.
+It acts on every open case the caller owns, so running it for real inside
+a suite that shares one live Supabase project would move cases other tests
+are mid-way through using. Verified live instead — see CHANGELOG Loop 12.
+
 ## Not yet covered
 
 The full `IMPLEMENTATION_PACK.md` §37 matrix is larger than this first pass

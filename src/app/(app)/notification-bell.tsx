@@ -41,7 +41,10 @@ export default function NotificationBell({
         )}
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+        <div
+          data-testid="notification-panel"
+          className="absolute right-0 z-20 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+        >
           {notifications.length === 0 && (
             <p className="p-2 text-sm text-slate-500">No unread notifications.</p>
           )}

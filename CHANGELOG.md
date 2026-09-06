@@ -684,3 +684,184 @@ that is before a case exists for the PM work. `run_pm_scan`'s hourly
 cadence is an implementation choice; the pack locks no specific polling
 interval for PM, only that overdue flagging and generation happen
 automatically.
+
+# Batch 3 — Loops 11-15
+
+Boss approval to proceed: "suru karo...loop 11 se 15 suru karo" (2026-09-06).
+
+## Loop 11 — 2026-09-06
+
+**Summary:** Browser E2E, actually running — closing RISK-05, open since
+Loop 1 and the top item in the last gate report's §J.
+
+**The insight that unblocked it:** RISK-05 was framed for ten loops as "this
+sandbox can't reach Supabase, so browser tests must wait for a human to run
+them elsewhere." But GitHub Actions *does* have normal egress — the Vitest
+suite has been talking to the live Supabase project from CI since Loop 6.
+The browser tests never needed a human; they needed to run in CI.
+
+**Material changes:**
+- Added `@playwright/test` + `playwright.config.ts`. The config builds and
+  starts the app itself (port 3100) and points the browser at it, rather
+  than at a Vercel preview URL — no deploy-timing race in CI, and what's
+  under test is this repo's client-side wiring, not Vercel's edge. Set
+  `E2E_BASE_URL` to run against a deployed URL instead.
+- Replaced `e2e/smoke.mjs` (a one-shot script that had never once been run,
+  and whose hardcoded `executablePath` would have failed in CI anyway) with
+  two real spec files, 8 tests:
+  - `e2e/case-flow.spec.ts` — signed-out `/login` renders with zero console
+    or page errors; `/cases` while signed out redirects to *this app's* own
+    login (a standing RISK-08 guard: it must never be a Vercel SSO wall);
+    the full sign-in → report → acknowledge → journal → audit-trail flow;
+    and the §6 emergency claim/confirm two-step including its reason
+    requirement and the claim-is-not-confirmation distinction.
+  - `e2e/roles-and-notifications.spec.ts` — §17 PM surface hidden from a
+    non-staff user *and* gated on direct navigation; Manager-only PM
+    approval (§17.3); §23 acknowledgement notification reaching the reporter
+    and provably *not* visible to the acknowledging Executive (two parallel
+    browser contexts); §3.3 ₹12,000 spare gate rendering the awaiting-
+    approval state with the approve control withheld from a non-Manager.
+- Wired into `.github/workflows/ci.yml` as a separate `e2e` job that runs
+  after `lint-and-build` passes, installs Chromium, and uploads the
+  Playwright HTML report as an artifact on failure.
+- `e2e/README.md` documents the setup, the sandbox limitation, and the
+  coverage table.
+- `signIn()` surfaces the login page's own inline error text on failure
+  instead of a bare "still on /login" timeout — RISK-10's actual message
+  ("Database error querying schema") is what identified that bug, so the
+  harness now preserves that signal by construction.
+
+**Verified locally (this sandbox):**
+- 2 of 8 tests genuinely **pass** — the two signed-out specs. These are the
+  first browser tests ever to actually run and pass in this repo; every
+  prior loop's "UI verification" was a server-side fetch of rendered HTML.
+- The other 6 fail at the sign-in network call only, and now say so
+  explicitly: `signIn(executive) did not reach /cases. Login page reported:
+  "Failed to fetch (maavrlqkdrisjwzhjdgg.supabase.co)"` — the sandbox's
+  egress policy, not an app defect.
+- `npm run lint` clean, `tsc --noEmit` clean over the new specs.
+
+**Known limitations:** the 6 sign-in specs can only be proven in CI, not
+here — that is the whole point of the CI job, but it does mean this
+sandbox cannot self-certify them. RISK-05 is marked PARTIALLY RESOLVED
+until the first CI `e2e` job passes. A version note: this environment ships
+a pre-installed Chromium of a different build than current Playwright
+expects, so local runs need `E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium`;
+CI installs its own matching browser and leaves that env var unset.
+
+**First CI result — 6 of 8 passed.** The four sign-in-dependent
+`case-flow` specs all passed on the very first run: login works in a real
+browser, and so do report → acknowledge → journal → audit trail and the §6
+emergency two-step. The two failures were **defects in the new test code,
+not in the app**, and are worth naming rather than quietly fixing:
+- The PM approval spec located the plan card with
+  `page.locator("div").filter({hasText: title}).last()`, which resolves to
+  the *innermost* matching div — the one holding only the title, not the
+  card that also holds the status text and the Approve button.
+- The notification spec asserted the acknowledging Executive could not see
+  the symptom text anywhere on the page. But that page *is* the case detail
+  page, which shows the symptom in its heading. The real claim — that the
+  notification is not delivered to them — needed scoping to the
+  notification panel.
+
+Both now anchor on `data-testid` (`pm-plan-card`, `notification-panel`) and
+assert on the case number inside the panel rather than page-wide text. A
+test that asserts the wrong thing is still a defect; it just costs a cycle
+instead of an incident.
+
+## Loop 12 — 2026-09-06
+
+**Summary:** Shift handover and availability (§22) — the last §32
+must-have area that had zero implementation.
+
+**A locked-scope decision worth stating plainly:** §22.1 and §24 both name
+`UNASSIGNED / WAITING_MAINTENANCE` as where a case goes when nobody is
+available at logout. That is **not** added as a `case_status` value. The §4
+lifecycle graph is LOCKED and contains no such node, and ownership is
+already a separate axis from status in this schema (§5.6 ownership
+transfer; WAITING is likewise an overlay, not a status). So it is
+represented the way the schema already represents it: the case keeps its
+lifecycle status and `current_owner_user_id` goes NULL — which is exactly
+the state `take_ownership` is written to pick back up. Adding a status
+would have been a lifecycle change requiring a §42 Change Control entry;
+this required none.
+
+**Material changes (`0014_maintenance_handover.sql`):**
+- `staff.is_available` + `availability_changed_at`, set through
+  `set_availability` (staff-only, self only). §22 says "next available /
+  logged-in Executive" — but the database cannot see who is logged in, and
+  inferring availability from session activity would be guesswork, so
+  availability is explicit and self-declared: on shift / off shift.
+- `handover_case(case, to, reason)` — the preferred manual path (§22.1).
+  Reason mandatory; receiver must be active staff; the current owner may
+  hand over their own case and a Manager may move anyone's (§3.2). Closes
+  the prior `case_ownership` row and opens a new one, so history is an
+  unbroken chain rather than an overwrite, and `created_at` is never
+  touched (§22.1/§5.6: case age does not reset).
+- `handover_all_open_cases(reason)` — the logout path. Picks the next
+  available Executive, falling back to an available Manager ("If no
+  Executive/Manager is available" implies a Manager may receive), and with
+  nobody available unassigns the case rather than leaving it with someone
+  who has gone home. Receiver ranking among several available people is
+  deterministic (Executives first, then longest-available, then name) —
+  the pack says "next available", not how to rank, so this is a mechanism
+  choice and deliberately *not* a workload/round-robin policy, which would
+  be invented.
+- Two new notification types (§23 locks "required ownership/handover
+  notifications"): `CASE_HANDOVER_RECEIVED` to the receiver, and
+  `CASE_UNASSIGNED` to all active Managers — an orphaned case nobody is
+  told about is the exact failure mode §22.1 exists to prevent.
+
+**UI:**
+- Sign-out now checks for still-owned open cases and, if any, shows the
+  §22.1 warning popup with a handover reason, rather than silently
+  dropping them. If the check itself errors, it says so and still offers
+  to sign out — nobody gets trapped in the app, but nothing is silently
+  lost either.
+- Availability toggle (On shift / Off shift) in the header.
+- `HandoverForm` on the case detail page for the preferred manual path.
+- §22.2 handover quality: the case page now shows **ownership history**
+  (who held it, when, and why it moved) and an **escalation state** panel
+  (confirmed emergency with its 1h clock, resume-ready wait with its
+  escalation) — a receiver could previously see the journal and
+  interventions but had no view of either.
+- New `/dashboard` ("Shift") route with the §22 list: total open,
+  unassigned, per-staff pending/completed, on/off shift, PM overdue, and
+  oldest open cases. **Age is shown, never "overdue"** — no case-level SLA
+  exists in the locked pack, and inventing a threshold to colour cases red
+  would be exactly the invention CLAUDE.md prohibits. PM overdue is
+  different and is shown as a real count, because it derives from an
+  explicitly supplied frequency.
+
+**Verified live (`execute_sql`, simulated JWT):**
+- `handover_case`: non-staff `FORBIDDEN`; empty reason `REASON_REQUIRED`;
+  full handover succeeded.
+- Ownership chain checked directly: prior row closed with the reason, new
+  row opened, and `ended_at` of the first exactly equals `started_at` of
+  the second — a continuous, gap-free history. `created_at` unchanged.
+- `handover_all_open_cases` with everyone else off shift: 3 cases
+  unassigned, 0 handed over, `current_owner_user_id` NULL, ownership rows
+  closed, 3 `OWNERSHIP_UNASSIGNED` events and 3 `CASE_UNASSIGNED` Manager
+  notifications.
+- Same call with an Executive back on shift: 1 handed over, 0 unassigned,
+  receiver correctly the available Executive.
+
+**Tests:** `tests/handover.test.ts` (6 tests) — the guard set (non-staff,
+missing reason, non-staff receiver, handing to the current owner), the
+ownership-history-and-age assertions above, Manager override vs. non-owner
+Executive, and receiver-scoped handover notification. Suite is now 46
+tests across 8 files.
+
+**Known limitations:** `handover_all_open_cases` is covered in Vitest only
+by its reason guard. It deliberately acts on *every* open case the caller
+owns, so running it for real inside a suite that shares one live Supabase
+project would move cases other tests are mid-way through using. Its full
+behaviour was verified live instead (above) — the same call this project
+has made before when a test would have to fight the shared-project
+constraint rather than test the product.
+
+**Correction to an earlier claim:** `STATUS.md` at the Loop 10 gate said
+"44 tests total across 7 files". The real number was 40 (verified by
+counting `it()` blocks; the Loop 9 CI run reported 34, plus Loop 10's 6).
+The gate report's other figures were not affected, but the test count was
+overstated and is corrected here and in STATUS.md.
