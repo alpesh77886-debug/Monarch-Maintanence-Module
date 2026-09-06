@@ -865,3 +865,66 @@ constraint rather than test the product.
 counting `it()` blocks; the Loop 9 CI run reported 34, plus Loop 10's 6).
 The gate report's other figures were not affected, but the test count was
 overstated and is corrected here and in STATUS.md.
+
+## Loop 13 — 2026-09-06
+
+**Summary:** Production restart boundary (§13) — §32 item 12, previously
+schema-seam-only.
+
+**A gap found while reading the spec:** §13.1 requires recording
+`PRODUCTION_STARTED_WITHOUT_MAINTENANCE_RELEASE` with an *"active stop
+reference"* — but a Maintenance safety/technical stop had never been
+modelled anywhere in the schema, so there was nothing to reference. The
+stop itself had to be built first.
+
+**Material changes (`0015_maintenance_production_boundary.sql`):**
+- `maintenance.safety_stops` — a raised/lifted Maintenance stop with type
+  (SAFETY | TECHNICAL), machine/line refs, reasons on both raise and lift,
+  and actor/timestamps for each. RPC-only writes. A partial unique index
+  enforces **at most one active stop per case**, because a second active
+  stop would make "the active stop reference" ambiguous.
+- `raise_safety_stop` / `lift_safety_stop` — staff-only, reason mandatory
+  on both. Lifting is always its own deliberate action: there is no code
+  path anywhere that lifts a stop as a side effect of something else
+  (§24 NEVER AUTOMATE: "silently override safety stop").
+- `maintenance.production_boundary_events` — the §13.1/§13.2 records, with
+  machine/line, the stop reference, reason/context, actor, timestamp, and
+  the case status at the moment of recording. Own table rather than only
+  `case_events` because the fields are structured and §25 KPI reporting
+  will need to count them; they are mirrored into `case_events` too so the
+  case's single audit trail stays complete.
+- `record_production_started_without_release` (§13.1) — records and does
+  **nothing else**: it does not lift the stop, does not move the case, does
+  not mark anything released. It refuses to record on a case that actually
+  reached `MAINTENANCE_RELEASED`/`CLOSED`, because a production start after
+  a real release is the expected outcome and filing it as a violation would
+  be false history. Managers are notified
+  (`PRODUCTION_BOUNDARY_BREACH`) — a boundary breach nobody is told about
+  is not meaningfully recorded.
+- `record_production_not_restarted` (§13.2) — records only. It deliberately
+  does not gate closure: "Maintenance may close if Maintenance-side
+  conditions permit" is governed by the existing closure rules, and adding
+  a new blocker here would be inventing one.
+
+**Nothing here authorises or blocks a line start.** §13 is explicit that
+Maintenance must not become Production's line-start authority; these RPCs
+record what Maintenance observed at the boundary.
+
+**Verified live (`execute_sql`, simulated JWT):**
+- Raised a SAFETY stop, then recorded a §13.1 breach against it. The
+  returned `safety_stop_id` matched, and critically `lifted_at` was still
+  NULL afterwards — **the stop was not cleared**. Case status stayed
+  `IN_REPAIR`, and the event captured `case_status_at_record = IN_REPAIR`.
+  One `PRODUCTION_BOUNDARY_BREACH` notification reached the Manager.
+- Second `raise_safety_stop` on the same case → `STOP_ALREADY_ACTIVE`.
+- Non-staff `lift_safety_stop` → `FORBIDDEN`; staff lift with a reason
+  succeeded.
+- `record_production_not_restarted` recorded cleanly.
+
+**Tests:** `tests/production-boundary.test.ts` (7 tests) — stop guards
+(staff-only, one-active-per-case), lift guards (staff, reason, no
+double-lift), the **stop-must-survive-the-breach-record** assertion,
+refusal to record a breach on a genuinely released case (walked through the
+real lifecycle to get there), §13.2 recording without fabricating a restart
+or introducing a closure blocker, and direct-insert denial on both new
+tables. Suite is now 53 tests across 9 files.

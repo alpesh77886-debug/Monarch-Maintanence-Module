@@ -13,16 +13,54 @@ export const CREDS = {
 
 export type Role = keyof typeof CREDS;
 
-export async function signInAs(role: Role) {
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Derived, not hand-written: the client is schema-typed to `maintenance`,
+// so a bare `SupabaseClient` annotation would not match it.
+function createTestClient() {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     db: { schema: "maintenance" },
     auth: { persistSession: false, autoRefreshToken: false },
   });
+}
+
+type SignedIn = { client: ReturnType<typeof createTestClient>; userId: string };
+
+// One signed-in client per role, reused for the whole run.
+//
+// This used to sign in fresh on every call. With 78 call sites the suite was
+// firing ~78 requests at GoTrue's /token endpoint inside ~80 seconds, from a
+// single CI IP — which is over Supabase's auth rate limit. CI failed with
+// "Request rate limit reached" (8 tests, all at signInWithPassword; see
+// CHANGELOG Loop 14). That was a real defect in this suite, not a flake: it
+// got worse with every test added, and re-running would only have moved the
+// failure to a different file.
+//
+// Nothing here needs a fresh session — a role is one user, and the same
+// client issues identical requests. So sign in once per role and hand the
+// same client out. The promise (not the result) is cached so that concurrent
+// first calls can't race into two sign-ins.
+const sessions = new Map<Role, Promise<SignedIn>>();
+
+async function openSession(role: Role): Promise<SignedIn> {
+  const client = createTestClient();
   const { data, error } = await client.auth.signInWithPassword(CREDS[role]);
   if (error || !data.user) {
     throw new Error(`signInAs(${role}) failed: ${error?.message ?? "no user returned"}`);
   }
   return { client, userId: data.user.id };
+}
+
+export function signInAs(role: Role): Promise<SignedIn> {
+  let session = sessions.get(role);
+  if (!session) {
+    // A failed sign-in must not be cached, or one transient network error
+    // would fail every remaining test with a stale rejected promise.
+    session = openSession(role).catch((err) => {
+      sessions.delete(role);
+      throw err;
+    });
+    sessions.set(role, session);
+  }
+  return session;
 }
 
 // Every case this suite creates is tagged so it's trivially identifiable

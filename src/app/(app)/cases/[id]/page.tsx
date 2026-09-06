@@ -16,8 +16,13 @@ import SparesPanel from "./spares-panel";
 import MarkDuplicateForm from "./mark-duplicate-form";
 import CloseFalseComplaintForm from "./close-false-complaint-form";
 import HandoverForm from "./handover-form";
+import ProductionBoundaryPanel from "./production-boundary-panel";
 import Link from "next/link";
-import type { StaffMember } from "@/lib/supabase/database.types";
+import type {
+  StaffMember,
+  SafetyStop,
+  ProductionBoundaryEvent,
+} from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
   params,
@@ -156,6 +161,20 @@ export default async function CaseDetailPage({
 
   const staffById = new Map((staffList ?? []).map((s) => [s.id, s as StaffMember]));
 
+  // §13 production restart boundary.
+  const { data: activeStop } = await supabase
+    .from("safety_stops")
+    .select("*")
+    .eq("case_id", id)
+    .is("lifted_at", null)
+    .maybeSingle();
+
+  const { data: boundaryEvents } = await supabase
+    .from("production_boundary_events")
+    .select("*")
+    .eq("case_id", id)
+    .order("recorded_at", { ascending: true });
+
   let duplicatePrimaryCaseNumber: string | null = null;
   if (caseRow.duplicate_of_case_id) {
     const { data: primaryCase } = await supabase
@@ -253,6 +272,15 @@ export default async function CaseDetailPage({
       )}
 
       {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
+
+      {isStaffRow && (
+        <ProductionBoundaryPanel
+          caseId={caseRow.id}
+          status={caseRow.status}
+          activeStop={(activeStop as SafetyStop | null) ?? null}
+          boundaryEvents={(boundaryEvents ?? []) as ProductionBoundaryEvent[]}
+        />
+      )}
 
       {isStaffRow && !caseIsTerminal && (
         <HandoverForm
