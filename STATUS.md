@@ -1,10 +1,11 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 29 complete — batch Loops 26-30 in progress
-Current gate: **GATE 5 CLOSED.** The Boss approved continuation for Loops
-  26-30 ("me aage ki loops ke liye approve kar raha hu 26 se 30") after
-  reviewing APPROVAL_REPORT_LOOP_21_25.md. The next hard gate is after
-  Loop 30 (IMPLEMENTATION_PACK.md §19.9/§19.13). See APPROVAL_GATE.md.
+Current loop: Loop 30 complete — batch Loops 26-30 finished, awaiting Gate 6
+Current gate: **GATE 6 — AWAITING BOSS.** Loops 26-30 are complete.
+  APPROVAL_REPORT_LOOP_26_30.md is the batch-closing gate report; per
+  IMPLEMENTATION_PACK.md §19.9/§19.13, autonomous work is now PAUSED until
+  the Boss explicitly approves continuation for the next batch (Loops
+  31-35). See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -41,8 +42,15 @@ Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   and also left the usage row untraceable to any named spare at all,
   violating §16.1's "mandatory V1" chain — HIGH, and the first finding
   this batch reachable through the shipped UI's own default dropdown
-  selection, not only a direct API call) all RESOLVED and verified
-  against the live deployment. No CRITICAL or HIGH defects currently open.
+  selection, not only a direct API call), and RISK-22 (Loop 30 —
+  `record_intervention`'s actor check never verified an actual
+  `case_assignments` row existed, only comparing a client-supplied id to
+  the caller's own; any signed-in non-staff user, with zero assignment to
+  a case, could fabricate an intervention record on it — HIGH,
+  live-exploitable audit-trail forgery; this app's own UI already gated
+  the form correctly, so this was a pure server-side enforcement gap)
+  all RESOLVED and verified against the live deployment. No CRITICAL or
+  HIGH defects currently open.
 Highest severity open: none.
 
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
@@ -71,8 +79,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   columns beyond `reporter_user_id`), +1 Loop 28 (`case_assignments`
   attribution lockdown, RISK-20), +1 Loop 29 (`record_spare_usage`
   requires a linked request, RISK-21; 2 pre-existing tests also updated,
-  see CHANGELOG) —
-  **124 tests across 17 files** (counted from `it()` blocks), all confirmed
+  see CHANGELOG), +2 Loop 30 (`record_intervention` requires an active
+  assignment, RISK-22) —
+  **126 tests across 17 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -144,7 +153,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0028 (Loop 29), all live on
+Migrations applied: 0008 (Loop 7) through 0029 (Loop 30), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -323,6 +332,24 @@ Batch summary (Loops 26-30, current batch — see CHANGELOG.md for full detail):
     (`SPARE_REQUEST_REQUIRED`); linked low-value usage still succeeds;
     linked unapproved high-value usage still correctly blocks
     (`APPROVAL_REQUIRED`, unchanged).
+  - Loop 30: RISK-22 — HIGH, last loop of the batch. Continued the RPC
+    audit across the remaining ~40 `SECURITY DEFINER` functions; most
+    held up. `record_intervention`'s actor check (Loop 3) was
+    `is_staff() OR p_technician_user_id = v_actor` — never verified an
+    actual `case_assignments` row existed, unlike `record_spare_usage`'s
+    own migration comment, which already described `record_intervention`'s
+    intent as "staff, or the actively assigned technician" — never
+    actually implemented. Compounded by a NULL-propagation bug: omitting
+    `p_technician_user_id` (its default) made the check evaluate `NULL`,
+    which PL/pgSQL's `if` treats as false, silently skipping it too.
+    Live-verified: an unassigned non-staff technician could fabricate an
+    intervention on any case, both by self-attributing and by omitting
+    the parameter. This app's UI already gated the form correctly — pure
+    server-side gap. Migration 0029 requires an active assignment
+    (matching `record_spare_usage`'s pattern) plus a separate check
+    blocking impersonation of a different technician. Re-verified live in
+    all four directions (both exploit variants blocked; genuine
+    self-recording and staff-mediated recording unaffected).
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

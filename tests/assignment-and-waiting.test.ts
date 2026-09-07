@@ -70,6 +70,48 @@ describe("Technician assignment + intervention recording (§5.5, §9)", () => {
     expect(impersonate.error!.message).toContain("FORBIDDEN");
   });
 
+  // Loop 30 (RISK-22): record_intervention's actor check was `is_staff() OR
+  // p_technician_user_id = v_actor` — it never verified an actual
+  // case_assignments row existed, unlike record_spare_usage's established
+  // pattern. Any signed-in non-staff user could record a fabricated
+  // intervention on ANY case by simply passing their own id (or omitting
+  // p_technician_user_id entirely, which triggered a NULL-propagation bug
+  // in the old check that silently skipped it too). This app's own UI
+  // already gated the form correctly (isAssignedTechnician) — this was a
+  // pure server-side enforcement gap.
+  it("forbids a non-staff, non-assigned caller from recording any intervention (RISK-22)", async () => {
+    const exec = await signInAs("executive");
+    const tech = await signInAs("technician");
+
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("RISK-22 unassigned intervention"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    // explicit self-attribution, but never assigned to this case
+    let { error } = await tech.client.rpc("record_intervention", {
+      p_case_id: caseId,
+      p_action_taken: "fabricated, never assigned",
+      p_technician_user_id: tech.userId,
+    });
+    expect(error).not.toBeNull();
+    expect(error!.message).toContain("FORBIDDEN");
+
+    // omitted p_technician_user_id -- the NULL-propagation variant of the bug
+    ({ error } = await tech.client.rpc("record_intervention", {
+      p_case_id: caseId,
+      p_action_taken: "fabricated, omitted technician id",
+    }));
+    expect(error).not.toBeNull();
+    expect(error!.message).toContain("FORBIDDEN");
+  });
+
   it("denies a direct client insert into case_assignments outside the emergency path", async () => {
     const exec = await signInAs("executive");
     const tech = await signInAs("technician");
