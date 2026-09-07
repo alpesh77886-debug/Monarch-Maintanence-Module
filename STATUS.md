@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 31 complete — batch Loops 31-35 in progress
+Current loop: Loop 32 complete — batch Loops 31-35 in progress
 Current gate: **GATE 6 CLOSED.** The Boss approved continuation for Loops
   31-35 ("approved loops 31 to 35") after reviewing
   APPROVAL_REPORT_LOOP_26_30.md. The next hard gate is after Loop 35
@@ -363,6 +363,18 @@ Batch summary (Loops 31-35, current batch — see CHANGELOG.md for full detail):
     project's own `[AUTOTEST-Lxx]` verification data from Loops 26-27
     (`MC-003975`, `MC-003973`, `MC-003770`) — no real Boss/staff data was
     ever affected.
+  - Loop 32: new angle — read every RLS SELECT policy for over-broad
+    read-side exposure (prior loops 26-31 only audited write/authority
+    paths). Found 4 tables with `using (true)` (open to any authenticated
+    user, not staff-scoped): `cases`, `evidence`, `safety_stops`,
+    `production_boundary_events`. `cases_select`'s own migration comment
+    says "All staff can see all open work" but the actual policy is
+    broader than staff-only. `evidence` already reviewed/accepted in
+    Loop 18. Deliberately NOT fixed — narrowing read access would mean
+    guessing at PENDING-03's still-unresolved permission matrix
+    (RISK-04) rather than receiving it from the Boss. RISK-04's entry
+    updated with these 4 concrete table names instead, so it's
+    actionable when the Boss provides guidance.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +
