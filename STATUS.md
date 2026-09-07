@@ -1,16 +1,18 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 36 complete (batch 36-40 open). Loop 36 completed the
-  forensic brief's Phase 4 red-team matrix as a permanent regression suite:
-  17 attacks across non-staff, QC, Executive and Manager identities, all
-  already refused server-side — no new defects. It specifically re-attacked
-  the NEW QC identity introduced by F-01 to check it opened no lateral door
-  into Maintenance authority; it did not. Preceded today by the Boss-directed
-  forensic remediation (RISK-23 QC authority, RISK-24 read scope), a UI
-  redesign, and a load/navigation performance fix.
-  PRODUCTION READINESS VERDICT: **NOT READY** — unchanged, three Boss-side
-  blockers (maintenance.qc_authority is empty by design; one Supabase project
-  serves both production and CI; leaked-password protection is disabled).
+Current loop: Loop 37 complete (batch 36-40). Loop 36 turned the forensic
+  brief's Phase 4 red-team matrix into a permanent regression suite (17
+  attacks, all already refused). Loop 37 audited the escalation/notification
+  paths as a set: machinery healthy (12/12 notification types have fired;
+  393 pg_cron runs across all three scheduled scans succeeded, 0 failed),
+  but found RISK-25 — an INTERNAL wait can NEVER escalate, structurally,
+  because the only function that sets resume_ready_at refuses non-EXTERNAL
+  waits and the escalation scan filters on it. Live: EXTERNAL 213/213 have
+  resume_ready_at, INTERNAL 0/107. Deliberately NOT fixed — the pack
+  conflicts with itself (SS7.2 scopes escalation to resume-ready; SS23/SS24
+  do not) and closing it needs a threshold the pack never states.
+  PRODUCTION READINESS VERDICT: **NOT READY** — three Boss-side blockers
+  unchanged, now joined by RISK-25 as a fourth open evidence question.
   Live-data fact: 7,592 cases, ZERO of them real business records.
 Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
   loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
