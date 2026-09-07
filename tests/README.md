@@ -48,6 +48,16 @@ lets a signed-in staff user backdate those columns on their own
 `[AUTOTEST]`-tagged case (still gated by ownership), not a shortcut around
 RLS.
 
+Loop 26 adds 3 more `it()`s to this same file for `case_assignments`'
+`emergency_direct_start` RLS path (RISK-18), which had **zero** coverage
+since it was introduced in Loop 3 and turned out to be genuinely
+exploitable, not just untested: a direct client insert with
+`emergency_direct_start=true` never actually checked the target case was a
+confirmed emergency. Covers the denial on a non-emergency case, denial of
+impersonating a different `technician_user_id`, and confirms the
+legitimate path (via real `claim_emergency`/`confirm_emergency`) still
+works after the fix.
+
 Loop 8 (`spares.test.ts`) adds: the §3.3 ₹12,000 threshold computation
 (exactly ₹12,000 vs ₹12,000.01), spare-name validation, both tables'
 direct-insert RLS denials, the full approval gate (non-staff and

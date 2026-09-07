@@ -2002,3 +2002,74 @@ Suite is now **115 tests across 17 files**.
 client"` boundary re-scan is a formality — re-ran it anyway, clean.
 Live-verified against Supabase project `maavrlqkdrisjwzhjdgg` before and
 after the fix (tables above).
+
+## Loop 26 — 2026-09-07
+
+First loop of the Loops 26-30 batch (Boss approved: "me aage ki loops ke
+liye approve kar raha hu 26 se 30"). Continued Loop 25's RLS-policy audit
+method, widened: pulled every policy's live `qual`/`with_check` via
+`pg_policies` for the whole `maintenance` schema in one query, and read
+each one against what its own migration's comment claims it does — not
+just "is there a test", but "does the policy actually match its own
+documented intent."
+
+### RISK-18 — a live-exploitable authority bypass on `case_assignments`
+
+`case_assignments_insert` (migration 0004, Loop 3) is commented as "the
+emergency direct-start path (§5.5: 'technician can start directly')...
+deliberately immediate and self-service" — but its actual check,
+`with check (emergency_direct_start AND technician_user_id = auth.uid())`,
+never verified the target case was an actual confirmed emergency.
+`emergency_direct_start` is a plain client-supplied column value on the
+INSERT itself, not derived from anything server-side.
+
+Verified live, and this one is **genuinely exploitable, not merely a
+server-side gap like RISK-17**: signed in as the seeded non-staff
+`technician` identity, a direct insert with `emergency_direct_start = true`
+succeeded against a case whose `emergency_confirmed` was `false` (never
+even claimed as an emergency), producing an `is_active = true`
+`case_assignments` row. That matters because `page.tsx`'s own
+`isAssignedTechnician` check is defined purely as "an active
+`case_assignments` row for this technician" — and grants
+`canRecordIntervention`/`canRecordSpareUsage`. So any non-staff technician
+identity could self-grant intervention/spare-usage recording rights on
+**any case in the system**, any time, bypassing both §5.5's staff-mediated
+assignment and §6's two-step emergency confirmation gate entirely — not
+via a UI button (nothing in this app's own UI ever sets
+`emergency_direct_start`; `grep` found it only ever *displayed*), but via
+a direct client insert, which any signed-in user can issue.
+
+Migration `0025_maintenance_case_assignments_emergency_gate.sql`: the
+policy now also requires `exists (select 1 from cases where id = case_id
+and emergency_confirmed = true)`.
+
+**Live verification, all three directions:**
+
+| Step | Result |
+|---|---|
+| Technician direct-inserts `emergency_direct_start=true` on a case with `emergency_confirmed=false`, before the fix | succeeded — `is_active=true` row created |
+| Same insert, after the fix | fails, `42501` RLS violation |
+| Same insert, on a case genuinely taken through `claim_emergency`→`confirm_emergency` | succeeds — legitimate path preserved |
+| Staff-mediated `assign_technician` (SECURITY DEFINER, bypasses RLS) | unaffected |
+
+Logged as RISK-18, RESOLVED, in `RISK_REGISTER.md`.
+
+### Tests
+
+3 new `it()`s in `tests/emergency-and-notifications.test.ts` (zero prior
+coverage of `emergency_direct_start`/`case_assignments` insert existed —
+this path had gone untested since Loop 3): denies the self-insert on a
+non-emergency case, denies impersonating a different
+`technician_user_id` even on a confirmed emergency, and confirms the
+legitimate path still works end to end. Suite is now **118 tests across
+17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+No UI changed this loop. Re-scanned every `"use client"` file anyway —
+clean.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before and after the fix (table above).

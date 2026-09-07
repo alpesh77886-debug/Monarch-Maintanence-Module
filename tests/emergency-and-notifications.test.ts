@@ -237,3 +237,93 @@ describe("Notifications (§23)", () => {
     expect(notifs?.length).toBe(1);
   });
 });
+
+// Loop 26 (RISK-18): case_assignments' emergency_direct_start RLS path had
+// never been tested since it was introduced (Loop 3, migration 0004) — and
+// turned out to allow exactly what its own name promises to guard against.
+// The policy checked `emergency_direct_start AND technician_user_id =
+// auth.uid()` but never verified the case was an actual confirmed
+// emergency, so any non-staff technician could self-insert an active
+// case_assignments row (and, via page.tsx's isAssignedTechnician check,
+// grant themselves intervention/spare-usage recording rights) on ANY case
+// — not just a genuinely confirmed one. Fixed in migration 0025 by adding
+// an `emergency_confirmed = true` check on the target case.
+describe("case_assignments emergency_direct_start (§5.5, §6, RISK-18)", () => {
+  it("refuses a direct self-insert when the case is not a confirmed emergency", async () => {
+    const exec = await signInAs("executive");
+    const tech = await signInAs("technician");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("direct-start not an emergency"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+
+    const { error } = await tech.client.from("case_assignments").insert({
+      case_id: created!.id,
+      technician_user_id: tech.userId,
+      emergency_direct_start: true,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("refuses a direct self-insert claiming a different technician_user_id, even on a confirmed emergency", async () => {
+    const exec = await signInAs("executive");
+    const mgr = await signInAs("manager");
+    const tech = await signInAs("technician");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("direct-start impersonation"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    await exec.client.rpc("claim_emergency", { p_case_id: caseId, p_reason: "autotest" });
+    await mgr.client.rpc("confirm_emergency", { p_case_id: caseId });
+
+    const { error } = await tech.client.from("case_assignments").insert({
+      case_id: caseId,
+      technician_user_id: "91a2fd36-5a35-4c36-8f5a-e0cd0e492f75", // shape only; RLS rejects before this matters
+      emergency_direct_start: true,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("allows a direct self-insert once the case is a genuinely confirmed emergency", async () => {
+    const exec = await signInAs("executive");
+    const mgr = await signInAs("manager");
+    const tech = await signInAs("technician");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("direct-start legitimate"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    await exec.client.rpc("claim_emergency", { p_case_id: caseId, p_reason: "autotest" });
+    await mgr.client.rpc("confirm_emergency", { p_case_id: caseId });
+
+    const { data, error } = await tech.client
+      .from("case_assignments")
+      .insert({
+        case_id: caseId,
+        technician_user_id: tech.userId,
+        emergency_direct_start: true,
+      })
+      .select("is_active")
+      .single();
+    expect(error).toBeNull();
+    expect(data!.is_active).toBe(true);
+  });
+});

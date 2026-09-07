@@ -14,14 +14,18 @@ Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   first view in this schema shipped without `security_invoker` and read
   past RLS; measured live, fixed, regression-tested), and RISK-16 (Loop 14
   — the test suite exhausted Supabase's auth rate limit, producing red CI
-  that was infrastructure, not product), and RISK-17 (Loop 25 —
+  that was infrastructure, not product), RISK-17 (Loop 25 —
   `clearances_insert` allowed a direct client insert bypassing
   `send_to_qc`'s TECHNICALLY_RESTORED guard entirely; not live-exploitable
   as a lifecycle bypass since `transition_case`'s own graph check still
   protects the actual status, but a real server-side enforcement gap on a
-  locked boundary, same shape as the Loop 8 spares fix) all RESOLVED and
-  verified against the live deployment. No CRITICAL or HIGH defects
-  currently open.
+  locked boundary, same shape as the Loop 8 spares fix), and RISK-18
+  (Loop 26 — `case_assignments_insert`'s `emergency_direct_start` path
+  never checked the target case was an actual confirmed emergency; a
+  non-staff technician could self-grant intervention/spare-usage rights
+  on ANY case — genuinely live-exploitable, the highest-severity defect
+  found in this project to date) all RESOLVED and verified against the
+  live deployment. No CRITICAL or HIGH defects currently open.
 Highest severity open: none.
 
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
@@ -44,8 +48,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   flag), +3 Loop 23 (§18 `set_recurrence_rule_active`, previously
   zero coverage), +5 Loop 24 (§16.2 Stores reference RPCs, previously
   zero coverage), +9 Loop 25 (`observations`/`clearances`/`audit_log` RLS,
-  new file, previously zero coverage) — **115 tests across 17 files**
-  (counted from `it()` blocks), all confirmed
+  new file, previously zero coverage), +3 Loop 26 (`case_assignments`
+  `emergency_direct_start`, RISK-18, previously zero coverage) —
+  **118 tests across 17 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -117,7 +122,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0024 (Loop 25), all live on
+Migrations applied: 0008 (Loop 7) through 0025 (Loop 26), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -235,6 +240,20 @@ Batch summary (Loops 21-25 — see CHANGELOG.md for full per-loop detail):
     (RPC-only, matching the Loop 8 spares precedent). New
     `tests/observations-clearances-audit.test.ts` (9 tests) closes all
     three tables' coverage gaps.
+
+Batch summary (Loops 26-30, current batch — see CHANGELOG.md for full detail):
+  - Loop 26: RISK-18 — a live-exploitable authority bypass on
+    `case_assignments`. Widened Loop 25's RLS audit to read every policy's
+    live `qual`/`with_check` against its own migration's comment.
+    `case_assignments_insert`'s `emergency_direct_start` path never
+    checked the target case was an actual confirmed emergency — a
+    non-staff technician could self-insert an active assignment row on
+    ANY case, self-granting `canRecordIntervention`/`canRecordSpareUsage`
+    (page.tsx's `isAssignedTechnician` check) with zero emergency
+    requirement and zero staff mediation. Verified genuinely exploitable
+    live, not theoretical. Migration 0025 adds an `emergency_confirmed`
+    check; re-verified all three directions (exploit blocked, legitimate
+    path preserved, staff-mediated `assign_technician` unaffected).
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +
