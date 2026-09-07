@@ -66,6 +66,23 @@ columns defaulting correctly since Loop 1: the default-on-creation value,
 staff-only + `STATUS_REQUIRED` on each RPC, a successful update on each
 table, and the not-found guard on both.
 
+Loop 25 (`observations-clearances-audit.test.ts`, new file) closes a
+systematic RLS-coverage sweep — every table with row level security
+enabled cross-referenced against every test file, looking for tables with
+literally zero automated coverage. `observations`/`clearances`/`audit_log`
+came back. Live-verifying `clearances`' policy before writing its test
+(never trust an RLS assumption without checking it live) found a real
+defect, not just a gap: `clearances_insert` let any staff member insert a
+row directly for any case in any status, bypassing `send_to_qc`'s own
+`TECHNICALLY_RESTORED` guard entirely — the same shape of bug Loop 8 fixed
+once already for `spare_requests`/`spare_usage`. Migration 0024 makes it
+RPC-only. This file covers: `observations` (non-staff insert refused,
+staff insert/read, hidden from non-staff, append-only via the Loop 18
+zero-rows-not-an-error pattern), `clearances` (the fixed direct-insert
+denial against a real freshly created case, `send_to_qc` unaffected by the
+fix, hidden from non-staff, visible to staff), and `audit_log` (staff-only
+read, no INSERT policy at all).
+
 ## Known tradeoffs (deliberate, not oversights)
 
 - **No separate test/staging Supabase project.** Tests run against the same

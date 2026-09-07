@@ -1,12 +1,10 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 24 (complete) — batch Loops 21-25 in progress
-Current gate: **GATE 4 CLOSED.** The Boss approved continuation for Loops
-  21-25 via an explicit choice (visual-style-upgrade-only scope for the
-  dashboard/KPI work, confirmed before Loop 21 began) after reviewing
-  APPROVAL_REPORT_LOOP_16_20.md. Batch Loops 21-25 is now in progress; the
-  next hard gate is after Loop 25 (IMPLEMENTATION_PACK.md §19.9/§19.13).
-  See APPROVAL_GATE.md.
+Current loop: Loop 25 (complete) — END OF BATCH (Loops 21-25)
+Current gate: **GATE 5 OPEN — APPROVAL_REPORT_LOOP_21_25.md written, awaiting
+  the Boss.** Autonomous development is PAUSED. Loop 26 does not begin until
+  the Boss gives explicit continuation language (IMPLEMENTATION_PACK.md
+  §19.9/§19.13). Silence or "looks good" is NOT approval. See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -16,8 +14,14 @@ Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   first view in this schema shipped without `security_invoker` and read
   past RLS; measured live, fixed, regression-tested), and RISK-16 (Loop 14
   — the test suite exhausted Supabase's auth rate limit, producing red CI
-  that was infrastructure, not product) all RESOLVED and verified against
-  the live deployment. No CRITICAL or HIGH defects currently open.
+  that was infrastructure, not product), and RISK-17 (Loop 25 —
+  `clearances_insert` allowed a direct client insert bypassing
+  `send_to_qc`'s TECHNICALLY_RESTORED guard entirely; not live-exploitable
+  as a lifecycle bypass since `transition_case`'s own graph check still
+  protects the actual status, but a real server-side enforcement gap on a
+  locked boundary, same shape as the Loop 8 spares fix) all RESOLVED and
+  verified against the live deployment. No CRITICAL or HIGH defects
+  currently open.
 Highest severity open: none.
 
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
@@ -39,8 +43,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   +4 Loop 20 (§5.1 asset linkage), +1 Loop 22 (§10 restoration follow-up
   flag), +3 Loop 23 (§18 `set_recurrence_rule_active`, previously
   zero coverage), +5 Loop 24 (§16.2 Stores reference RPCs, previously
-  zero coverage) — **106 tests across 16 files** (counted
-  from `it()` blocks), all confirmed
+  zero coverage), +9 Loop 25 (`observations`/`clearances`/`audit_log` RLS,
+  new file, previously zero coverage) — **115 tests across 17 files**
+  (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -112,7 +117,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0023 (Loop 24), all live on
+Migrations applied: 0008 (Loop 7) through 0024 (Loop 25), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -173,9 +178,12 @@ Batch summary (Loops 16-20 — see CHANGELOG.md for full per-loop detail):
     (Loop 15) could never produce a match before this loop — verified live
     that it now does (3 cases sharing one linked asset -> 1 flag).
 
-Approval state: Gate 4 approved. Loops 21-25 in progress.
+Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Loops 21-25 are
+  complete and APPROVAL_REPORT_LOOP_21_25.md is written. Not resuming Loop 26+
+  until the Boss gives explicit continuation language (APPROVAL_GATE.md /
+  IMPLEMENTATION_PACK.md §19.13).
 
-Batch summary (Loops 21-25, current batch — see CHANGELOG.md for full detail):
+Batch summary (Loops 21-25 — see CHANGELOG.md for full per-loop detail):
   - Loop 21: dashboard/KPI visual upgrade. Boss-scoped explicitly to
     presentation only (no new modules/nav — a real scope boundary was
     confirmed via AskUserQuestion after several unrelated third-party CMMS
@@ -220,6 +228,16 @@ Batch summary (Loops 21-25, current batch — see CHANGELOG.md for full detail):
     `check` constraint since the real vocabulary is Stores' own once
     Phase-3 integration exists). `spares-panel.tsx` now shows and lets
     staff update the Stores status/reference per row.
+  - Loop 25 (last of the batch): systematic RLS-coverage sweep — every
+    RLS-enabled table cross-referenced against every test file for zero
+    coverage. `observations`/`clearances`/`audit_log` came back.
+    Live-verifying `clearances` before writing its test found RISK-17 (see
+    RISK_REGISTER.md): `clearances_insert` let any staff member insert a
+    row directly for any case in any status, bypassing `send_to_qc`'s
+    `TECHNICALLY_RESTORED` guard entirely. Fixed via migration 0024
+    (RPC-only, matching the Loop 8 spares precedent). New
+    `tests/observations-clearances-audit.test.ts` (9 tests) closes all
+    three tables' coverage gaps.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +
