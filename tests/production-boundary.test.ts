@@ -229,6 +229,57 @@ describe("§13.2 — shift ended, production not restarted", () => {
   });
 });
 
+describe("§15 — raise_safety_stop notifies Maintenance Managers (Loop 35)", () => {
+  // §15: "Immediate Production Manager notification is mandatory." No
+  // Production Manager account exists in this standalone module (§3.1's two
+  // roles are the only ones), so — matching the precedent already set for
+  // the closely related §13.1 breach notification, one function below this
+  // one in the same migration — every active Maintenance Manager is notified
+  // instead. Before Loop 35, raise_safety_stop sent no notification at all.
+  it("notifies the active manager, with the stop type and reason in the message", async () => {
+    const mgr = await signInAs("manager");
+    const { caseId } = await seedCaseWithStop("stop notification");
+
+    const { data: received } = await mgr.client
+      .from("notifications")
+      .select("notification_type, message")
+      .eq("case_id", caseId)
+      .eq("notification_type", "SAFETY_STOP_RAISED");
+    expect(received?.length).toBe(1);
+    expect(received![0].message).toMatch(/SAFETY/);
+  });
+
+  it("does not notify anyone when a non-staff caller is correctly refused", async () => {
+    const tech = await signInAs("technician");
+    const exec = await signInAs("executive");
+    const mgr = await signInAs("manager");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("stop notification refused actor"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    const { error } = await tech.client.rpc("raise_safety_stop", {
+      p_case_id: caseId,
+      p_stop_type: "SAFETY",
+      p_reason: "non-staff tries",
+    });
+    expect(error?.message).toMatch(/FORBIDDEN/);
+
+    const { data: received } = await mgr.client
+      .from("notifications")
+      .select("id")
+      .eq("case_id", caseId)
+      .eq("notification_type", "SAFETY_STOP_RAISED");
+    expect(received?.length).toBe(0);
+  });
+});
+
 describe("Boundary records are append-only from the client", () => {
   it("denies direct inserts into safety_stops and production_boundary_events", async () => {
     const { exec, caseId } = await seedCaseWithStop("direct insert denial");

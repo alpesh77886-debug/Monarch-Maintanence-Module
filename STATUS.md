@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 34 complete — batch Loops 31-35 in progress
+Current loop: Loop 35 complete — batch Loops 31-35 complete, gate report pending
 Current gate: **GATE 6 CLOSED.** The Boss approved continuation for Loops
   31-35 ("approved loops 31 to 35") after reviewing
   APPROVAL_REPORT_LOOP_26_30.md. The next hard gate is after Loop 35
@@ -48,8 +48,12 @@ Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   a case, could fabricate an intervention record on it — HIGH,
   live-exploitable audit-trail forgery; this app's own UI already gated
   the form correctly, so this was a pure server-side enforcement gap)
-  all RESOLVED and verified against the live deployment. No CRITICAL or
-  HIGH defects currently open.
+  all RESOLVED and verified against the live deployment. Loop 35's
+  finding (`raise_safety_stop` never sent the §15-mandatory notification)
+  was a missing-notification completeness gap, not a security/authority
+  bypass — not logged as a new RISK entry, matching the Loop 22/Loop 34
+  precedent for non-security completeness fixes. No CRITICAL or HIGH
+  defects currently open.
 Highest severity open: none.
 
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
@@ -80,8 +84,10 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   requires a linked request, RISK-21; 2 pre-existing tests also updated,
   see CHANGELOG), +2 Loop 30 (`record_intervention` requires an active
   assignment, RISK-22), +1 Loop 34 (§8 observation journal, all 9
-  canonical fields including intervention linkage) —
-  **127 tests across 17 files** (counted from `it()` blocks), all confirmed
+  canonical fields including intervention linkage), +2 Loop 35
+  (`raise_safety_stop` §15 manager notification, previously zero
+  coverage of any notification behavior on this RPC) —
+  **129 tests across 17 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -406,6 +412,25 @@ Batch summary (Loops 31-35, current batch — see CHANGELOG.md for full detail):
     intervention and evidence reference; `CaseObservation` type completed
     to match the table. Live-verified the full 9-field insert against the
     real schema before writing any code.
+  - Loop 35 (last loop of this batch): continued the pack cross-reference
+    into §15 (Safety/Technical Stop) and found a real gap:
+    `raise_safety_stop` (Loop 13) never sent the notification §15 calls
+    mandatory ("Immediate Production Manager notification is mandatory").
+    Live-verified before any fix: 271 real stops raised historically,
+    zero notifications of any type ever tied to any of them, and
+    `SAFETY_STOP_RAISED` wasn't even in the notification-type constraint.
+    No Production Manager account exists in this standalone module
+    (§3.1's two roles are the only ones) — migration 0015 already solved
+    this exact problem for the closely related §13.1 breach notification
+    by notifying every active `MAINTENANCE_MANAGER` instead, one function
+    below `raise_safety_stop` in the same file; that pattern was simply
+    never applied to the raise path itself. Not a security/authority
+    bug — the stop's own gating and recording were always correct.
+    Fixed: migration 0030 adds `SAFETY_STOP_RAISED` to the notification
+    type constraint and applies the existing 0015 substitute-recipient
+    pattern to `raise_safety_stop`. Live-verified end to end (real case,
+    real manager, exactly one notification with the right case number/
+    stop type/reason) before writing the test.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

@@ -2665,3 +2665,74 @@ re-scanned every `"use client"` file for stray named exports, clean
 `tsc`, `lint`, `build` clean. Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` (the full 9-field insert, matching what the form
 and the new test both send) before writing any UI or test code.
+
+## Loop 35 — 2026-09-07
+
+Last loop of the Loops 31-35 batch (Boss approved: "approved loops 31 to
+35"). Continued the pack cross-reference started in Loops 33-34: read §15
+(Safety/Technical Stop) closely against `raise_safety_stop`
+(`0015_maintenance_production_boundary.sql`, Loop 13).
+
+### `raise_safety_stop` never sent the notification §15 says is mandatory
+
+§15: "Immediate Production Manager notification is mandatory" for a
+safety/technical stop. Live-verified before writing any fix: 271 real
+stops have been raised in this project's history via `raise_safety_stop`,
+and **zero** notifications of any type were ever tied to any of them —
+`SAFETY_STOP_RAISED` wasn't even a member of
+`notifications_notification_type_check`. `lift_safety_stop` and the
+§13.1/§13.2 boundary-recording functions were unaffected; this was
+specific to the raise path.
+
+This module has no Production Manager account to notify — Production is
+a separate, not-yet-built module (per CLAUDE.md's repository forensics),
+and §3.1 locks Maintenance to exactly two roles
+(`MAINTENANCE_EXECUTIVE`, `MAINTENANCE_MANAGER`). Migration 0015 already
+solved this exact problem for the closely related §13.1 breach
+notification (`record_production_started_without_release`, same file):
+notify every active `MAINTENANCE_MANAGER` instead, reasoning "Managers
+are the escalation authority (§3.2)". `raise_safety_stop` — one function
+above that one in the same file — never got the same treatment. Not a
+security/authorization bug (the stop itself was always correctly
+recorded and gated); a mandatory notification requirement that was
+simply never wired up.
+
+**Fix:** Migration 0030 adds `SAFETY_STOP_RAISED` to the notification
+type constraint and updates `raise_safety_stop` to loop over active
+Maintenance Managers and notify each, exactly matching the 0015
+precedent's pattern and message style. No change to the authorization
+checks, the stop record itself, or `lift_safety_stop`.
+
+Live-verified end to end against the real Supabase project before
+writing the test: created a real case as the seeded executive, called
+`raise_safety_stop`, and confirmed the seeded manager (`mgr1@monarch.test`)
+received exactly one `SAFETY_STOP_RAISED` notification referencing the
+real case number, stop type, and reason.
+
+### Tests
+
+2 new `it()`s in `tests/production-boundary.test.ts`: the manager
+receives the notification on a legitimate raise; a correctly-refused
+non-staff attempt sends none. Suite is now **129 tests across 17 files**.
+
+### Local test-run limitation (disclosed, matches the RISK-05/Loop 11
+precedent)
+
+This sandbox's egress policy denies the CONNECT tunnel to
+`maavrlqkdrisjwzhjdgg.supabase.co` outright (`gateway answered 403`,
+confirmed via the proxy's own status endpoint) — `npx vitest run` cannot
+reach the project from here at all, the same limitation Loop 11
+disclosed for the Playwright e2e specs. The fix and the new tests were
+therefore verified two ways instead of a local `vitest run`: (1) the
+live SQL walkthrough above, run through the Supabase MCP connection
+(which is not subject to this sandbox's HTTP egress policy), and (2) the
+CI `lint-and-build`/`e2e` jobs on the PR, which do have real network
+access. No change touched a `"use client"` file, so no boundary re-scan
+was needed this loop.
+
+### Verified
+
+`tsc`, `lint`, `build` clean (all three run locally; none require
+Supabase network access). Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` as described above. CI is the source of truth for
+the actual `vitest run` result on this PR, per the disclosed limitation.
