@@ -2881,3 +2881,74 @@ well as by `tsc`. Live authenticated timing from inside this sandbox
 remains impossible (RISK-05's disclosed Supabase egress block); CI and the
 deployed Vercel function region are the sources of truth, checked in
 Loop 38.
+
+### Loop 38 — verify (measured, not assumed)
+
+**1. Did the region actually change?** This was the real unknown — a Vercel
+plan can reject a non-default region, and a `vercel.json` that is silently
+ignored looks identical to one that worked. Read back from the deployed
+preview for commit `c99bf5c`:
+
+```
+preview    dpl_8XB3oEzCcNnKkXFU3GL4Fd7bLkLe  regions: ["sin1"]  READY
+production dpl_Fh26fRFAsVF1oFNXZR6QbUtgCrHQ  regions: ["sin1"]  READY
+```
+
+Confirmed accepted, not assumed — and confirmed on **production**, not
+just the preview: that second deployment is the one aliased to
+`monarch-maintenance-module.vercel.app`, i.e. the app the Boss actually
+opens. It went out on the merge of PR #34.
+
+**2. Did it get faster?** The CI e2e job is the only authenticated,
+end-to-end timing available (RISK-05 blocks live timing from the build
+sandbox). Important caveat, stated up front so the number is not
+over-claimed: **CI builds and runs the app on a US GitHub runner, so
+`vercel.json`'s region has zero effect there.** The CI delta therefore
+measures *only* the parallelisation (cause 2), not the region
+co-location (cause 1). Cause 1's benefit shows up only on the live app.
+
+Three green runs before the fix and three after were used, rather than
+one of each, so the result could be checked against real run-to-run
+spread instead of a single pair:
+
+| CI run | commit | | `npm run test:e2e` | `npm test` (vitest, control) |
+|---|---|---|---|---|
+| #107 | `5356d31` | before | 147 s | 205 s |
+| #110 | `5a5fd31` | before | 125 s | 174 s |
+| #111 | `3d6d732` | before | 156 s | 172 s |
+| #112 | `c99bf5c` | **after** | **66 s** | 218 s |
+| #113 | `6b7612a` (main, merged) | **after** | **80 s** | 151 s |
+| #114 | `600f88c` | **after** | **72 s** | 141 s |
+
+E2E before: 125–156 s (mean 142.7). After: 66–80 s (mean 72.7). The two
+ranges **do not overlap at all** — even the slowest post-fix run is 36%
+faster than the fastest pre-fix run. Mean improvement **49%**. Runs #113
+and #114 overlapped in time by 13 seconds, hitting the same shared live
+Supabase project concurrently, and still landed at 80 s and 72 s.
+
+**Correction to the first reading of this data.** When only run #112
+existed, its vitest control read 218 s — the slowest of the four runs
+then available — and that was written up as "the control got slower while
+e2e halved, which rules out a fast-runner day." With three post-fix runs
+in hand that claim does not hold: the control came in at 218, 151 and
+141 s against a pre-fix 172–205 s, i.e. **noisy and overlapping in both
+directions**, with two of the three post-fix values *below* the entire
+pre-fix range. 218 s was ordinary variance, not a signal. The correct
+statement is the weaker and simpler one: vitest exercises the RPCs
+directly and never renders a page component, so the parallelisation
+cannot affect it — and measured across three runs it indeed shows no
+consistent movement either way. The e2e result stands on its own
+separation of ranges, not on that control.
+
+**3. Any functional regression?** No. 129 vitest tests and 8 Playwright
+e2e specs all green on `c99bf5c` — the same suites that caught two real
+self-inflicted regressions during the UI redesign the day before.
+
+**Still open / not claimed:** the live end-user improvement from the
+region move (cause 1) has not been measured, only its deployment
+confirmed — the sandbox cannot reach the app to time it, and the CI
+harness structurally cannot show it. The expected direction is clear
+(functions and database now in the same region instead of opposite sides
+of the planet) but the magnitude is unverified here and is honestly a
+device-side check. Whether `router.refresh()` (cause 3) still feels slow
+after both fixes is the same kind of open question.
