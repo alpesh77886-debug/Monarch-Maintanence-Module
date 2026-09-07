@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { MaintenanceCase, StaffMember } from "@/lib/supabase/database.types";
+import { StatCard, BarBreakdown, Icons } from "@/components/stat-card";
 
 // §22 shift-handover dashboard: total open, Executive-wise pending/completed,
 // unassigned, aging, priority/status, current owner.
@@ -84,20 +85,51 @@ export default async function DashboardPage() {
 
   const oldestOpen = [...open].slice(0, 10);
 
+  const statusColor: Record<string, string> = {
+    REPORTED: "bg-slate-400",
+    ASSESSED: "bg-sky-400",
+    ASSIGNED: "bg-sky-500",
+    DIAGNOSING: "bg-amber-400",
+    IN_REPAIR: "bg-amber-500",
+    WAITING: "bg-orange-500",
+    QC_PENDING: "bg-violet-500",
+    CLOSED: "bg-emerald-500",
+    REJECTED: "bg-slate-300",
+    DUPLICATE: "bg-slate-300",
+  };
+  const statusCounts = new Map<string, number>();
+  for (const c of cases) statusCounts.set(c.status, (statusCounts.get(c.status) ?? 0) + 1);
+  const statusSegments = [...statusCounts.entries()].map(([label, value]) => ({
+    label,
+    value,
+    colorClass: statusColor[label] ?? "bg-slate-300",
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold text-slate-900">Shift dashboard</h1>
 
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Open cases" value={open.length} />
-        <Stat label="Unassigned" value={unassigned.length} tone={unassigned.length ? "warn" : undefined} />
-        <Stat label="Closed (all time)" value={closed.length} />
-        <Stat
+        <StatCard label="Open cases" value={open.length} icon={Icons.clipboard} tone="info" />
+        <StatCard
+          label="Unassigned"
+          value={unassigned.length}
+          tone={unassigned.length ? "warn" : "neutral"}
+          icon={Icons.warning}
+          sublabel="Needs a Maintenance owner"
+        />
+        <StatCard label="Closed (all time)" value={closed.length} icon={Icons.check} tone="success" />
+        <StatCard
           label="PM overdue"
           value={(overduePm ?? []).length}
-          tone={(overduePm ?? []).length ? "warn" : undefined}
+          tone={(overduePm ?? []).length ? "warn" : "neutral"}
+          icon={Icons.clock}
         />
       </section>
+
+      {cases.length > 0 && (
+        <BarBreakdown title="Cases by status (all time)" total={cases.length} segments={statusSegments} />
+      )}
 
       <section>
         <h2 className="text-sm font-semibold text-slate-900">By staff member</h2>
@@ -191,27 +223,6 @@ export default async function DashboardPage() {
           {open.length === 0 && <p className="text-sm text-slate-500">No open cases.</p>}
         </ul>
       </section>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone?: "warn";
-}) {
-  return (
-    <div
-      className={`rounded-lg border p-3 ${
-        tone === "warn" ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"
-      }`}
-    >
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-xl font-semibold text-slate-900">{value}</p>
     </div>
   );
 }
