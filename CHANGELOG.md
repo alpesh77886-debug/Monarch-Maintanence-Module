@@ -2465,3 +2465,53 @@ No UI or RPC changed this loop — pure read-only verification. No
 
 No code change to verify — both pieces of this loop were live read
 queries against Supabase project `maavrlqkdrisjwzhjdgg`, not migrations.
+
+## Loop 32 — 2026-09-07
+
+New angle for this batch: every prior loop (26-31) audited the
+*write*/authority side of RLS and RPC guards. This loop read every RLS
+**SELECT** policy in the schema instead, specifically for over-broad
+*read*-side exposure — a genuinely different question from "can someone
+change something they shouldn't."
+
+### Found: 4 tables are readable by ANY authenticated user, not staff-scoped
+
+`pg_policies` for the whole schema shows 4 tables with `using (true)` on
+their SELECT policy — `cases`, `evidence`, `safety_stops`,
+`production_boundary_events`. Every other actor-scoped table instead
+follows an `is_staff() OR <owner column> = auth.uid()` pattern
+(`case_assignments`, `interventions`, `spare_requests`, `spare_usage`),
+making these four an asymmetry worth naming precisely.
+
+`cases_select`'s own migration comment (0002) says "All staff can see all
+open work (§22 dashboard requirement)" — but the actual policy is
+`using (true)`, which is broader than "staff": any signed-in user,
+including a non-staff reporter, can currently read every case in the
+system, not just their own. `evidence` was already reviewed and
+deliberately accepted in Loop 18 (`evidence-panel.tsx` carries the
+reasoning) — not a new finding. `safety_stops`/`production_boundary_events`
+carry no comment justifying `true` at all, though it plausibly makes
+operational sense open (plant-wide visibility that a machine has an
+active safety stop is arguably a safety benefit, not a data leak) —
+unlike `cases_select`, there's no documented intent to check this
+against either way.
+
+**Deliberately not fixed.** Narrowing any of these three would mean
+guessing at PENDING-03's still-unresolved granular permission matrix
+(RISK-04) rather than receiving it from the Boss — and could break a
+legitimate need with no pack evidence either way (a reporter tracking
+their own case, or plant-wide safety-stop visibility). Instead of
+inventing an answer, `RISK_REGISTER.md`'s existing RISK-04 entry (already
+OPEN, MEDIUM, tracking PENDING-03 generally) was updated with these four
+concrete table names and the `cases_select` comment-vs-behavior mismatch,
+so the Boss has something specific to confirm or correct rather than an
+abstract "permission matrix is unresolved" note.
+
+### After Loop 16's server/client boundary lesson
+
+No UI or RPC changed this loop. No `"use client"` re-scan needed.
+
+### Verified
+
+No code change — this loop was a live read (`pg_policies`) against
+Supabase project `maavrlqkdrisjwzhjdgg`, plus a documentation update.
