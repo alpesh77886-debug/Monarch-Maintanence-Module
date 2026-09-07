@@ -3239,3 +3239,88 @@ assertion keeps them independent and sequential.
 **Known limitations:** unchanged — the three Boss-side blockers from
 `FORENSIC_REMEDIATION_FINAL.md` §16 remain open and are deliberately not loop
 work.
+
+## Loop 37 — 2026-09-07
+
+**Summary:** Audited the notification/escalation paths as a set — something no
+prior loop had done. The machinery is healthy; one real structural gap was
+found and **deliberately not fixed** (RISK-25).
+
+**Requirements affected:** §7.2 (waiting/resume), §7.3 (1h emergency), §23
+(locked notifications), §24 (AUTO vs human), §32 item 15.
+
+**Method:** the same one that found Loop 35's defect — ask the live database
+whether a feature has ever actually produced its output, rather than reading
+the code and assuming.
+
+### What is healthy (verified, not assumed)
+
+| Check | Result |
+|---|---|
+| Notification types that have ever fired | **12 of 12** — every declared type has real rows |
+| `WAIT_ESCALATION_24H` | 74 |
+| `EMERGENCY_ESCALATION_1H` | 273 |
+| `WAIT_MANAGER_REMINDER_24H` | 2 |
+| Scheduled scans registered and active | 3 (`escalation` */5min, `pm` hourly, `recurrence` hourly) |
+| **pg_cron runs, all three scans** | **393 succeeded, 0 failed** |
+
+The cron check matters more than it looks: a scheduled job that errors on every
+run is indistinguishable from a working one in `cron.job`. Nobody had ever read
+`cron.job_run_details`. All 393 runs succeeded.
+
+The low `WAIT_MANAGER_REMINDER_24H` count (2 against 74 escalations) was checked
+and is **correct**, not a gap: the reminder requires `last_escalated_at <= now()
+- 24h`, and this database is only ~29 hours old, so the reminder has had two
+opportunities to fire. Reported here because the ratio looks alarming until you
+check it.
+
+### RISK-25 — INTERNAL waits can never escalate. Found, not fixed.
+
+`mark_wait_resolved` is the **only** function in the schema that sets
+`waits.resume_ready_at`, and it explicitly refuses any wait whose
+`reason_type <> 'EXTERNAL'`. `run_escalation_scan`'s 24h branch selects only
+`where resume_ready_at is not null`. So an INTERNAL wait is **structurally
+incapable** of ever escalating — not unlikely, impossible.
+
+Live-verified, and it is not a test-data artifact:
+
+| `reason_type` | total | have `resume_ready_at` |
+|---|---:|---:|
+| EXTERNAL | 213 | **213 (100%)** |
+| INTERNAL | 107 | **0 (0%)** |
+
+**Why this was not fixed.** The pack conflicts with itself, and the conflict is
+the whole finding:
+
+- §7.2 (the specific WAITING rule) scopes escalation to "**Resume-ready** with
+  no required action for 24h". Under that reading the code is exactly right.
+- §23's locked-notification list and §24's AUTO list both say "24h normal
+  escalation" with **no** such scoping.
+- §32 item 15 groups them as "Resume-ready + escalation + reminders", leaning
+  toward §7.2.
+
+Following the most specific section is defensible. But the operational
+consequence — internally-blocked work is invisible to escalation forever — is
+unlikely to be what a plant wants. Closing it requires deciding *when* an
+INTERNAL wait's 24h clock starts, and the pack never says. That is precisely
+the "invent SLA/threshold values not approved in this pack" that §19.15
+forbids, so it goes to the Boss as evidence-controlled rather than being
+guessed.
+
+**Material changes:** `tests/escalation-coverage.test.ts` (new, 3 tests) and a
+RISK-25 register entry. No migration, no RPC, no RLS change.
+
+The third test deliberately **pins the current behaviour** rather than
+asserting the desired one. That is the same device used for the deactivated
+`[AUTOTEST]` recurrence rule: it keeps the gap a documented decision instead of
+letting it drift into an accident, and it guarantees that anyone who later
+"fixes" it has to change a test that explains why they must not do so without
+Boss evidence.
+
+**Tests:** 3 new. `tsc`, `lint` clean.
+
+**One process note:** the first draft of these tests called a non-existent RPC
+(`start_wait`; the real name is `enter_waiting`). `tsc` passed anyway, because
+the Supabase client in this repo is not generically bound to a `Database` type,
+so RPC names are unchecked strings. Caught by verifying the function catalogue
+against the live schema before pushing rather than by letting CI find it.
