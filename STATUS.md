@@ -1,19 +1,19 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 37 complete (batch 36-40). Loop 36 turned the forensic
-  brief's Phase 4 red-team matrix into a permanent regression suite (17
-  attacks, all already refused). Loop 37 audited the escalation/notification
-  paths as a set: machinery healthy (12/12 notification types have fired;
-  393 pg_cron runs across all three scheduled scans succeeded, 0 failed),
-  but found RISK-25 — an INTERNAL wait can NEVER escalate, structurally,
-  because the only function that sets resume_ready_at refuses non-EXTERNAL
-  waits and the escalation scan filters on it. Live: EXTERNAL 213/213 have
-  resume_ready_at, INTERNAL 0/107. Deliberately NOT fixed — the pack
-  conflicts with itself (SS7.2 scopes escalation to resume-ready; SS23/SS24
-  do not) and closing it needs a threshold the pack never states.
+Current loop: Loop 38 complete (batch 36-40). Loop 36 turned the forensic
+  brief's red-team matrix into a permanent suite (17 attacks, all refused).
+  Loop 37 audited escalation paths and found RISK-25 (INTERNAL waits can
+  never escalate — evidence-controlled, deliberately NOT fixed). Loop 38
+  verified PM generation/overdue are correct despite a ratio that looks
+  broken (164 approved plans, 3 instances — frequencies are 14-30 days on a
+  1-day-old database; 0 plans are actually owed an instance), and found and
+  FIXED RISK-26: three sites delivered the same notification twice to the
+  same person when the case owner was also a Manager. Proven by microsecond-
+  identical timestamps, so not a race — a double-send by construction.
+  Migration 0035 dedupes the recipient set without dropping any recipient.
   PRODUCTION READINESS VERDICT: **NOT READY** — three Boss-side blockers
-  unchanged, now joined by RISK-25 as a fourth open evidence question.
-  Live-data fact: 7,592 cases, ZERO of them real business records.
+  plus RISK-25 as a fourth open evidence question.
+  Live-data fact: 8,254 cases, ZERO of them real business records.
 Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
   loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
   until the Boss gives explicit continuation language for the next audit

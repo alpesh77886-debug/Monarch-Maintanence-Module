@@ -3324,3 +3324,95 @@ Boss evidence.
 the Supabase client in this repo is not generically bound to a `Database` type,
 so RPC names are unchecked strings. Caught by verifying the function catalogue
 against the live schema before pushing rather than by letting CI find it.
+
+## Loop 38 — 2026-09-07
+
+**Summary:** Applied the "has this feature ever actually produced output"
+method to PM, recurrence and CAPA — all healthy — then turned the same
+question on §23's own idempotency claim and **found RISK-26: three sites were
+delivering the same notification twice to the same person.** Fixed.
+
+**Requirements affected:** §23 (notifications/escalation), §28 (escalation
+notification creation), §32 item 17 (PM generation + overdue).
+
+### PM — looked broken, is correct
+
+164 approved RECURRING plans but only **3** PM instances and **0** overdue.
+That ratio looks like the Loop 35 defect shape, so it was checked rather than
+assumed — by simulating `run_pm_scan`'s own decision for every eligible plan:
+
+| Check | Result |
+|---|---|
+| Plans currently owed an instance but not given one | **0** — the scan is fully caught up |
+| `SCHEDULED` instances past due but not flagged | **0** |
+| `PM_OVERDUE` notifications ever produced | **2** — the overdue path has run end to end |
+| `approved_at` / `approved_by` mismatch (the scan filters on `approved_by`) | **0** |
+
+The explanation is arithmetic, not a bug: frequencies are 14–30 days and
+almost every plan was approved today, so the first instance falls due in two to
+four weeks. Recorded because "164 plans, 3 instances" reads as a failure until
+you do the subtraction.
+
+Recurrence remains inert by design (0 active rules — PENDING-04), CAPA is
+producing rows normally.
+
+### RISK-26 — duplicate notification delivery. Found and fixed.
+
+§23 makes two explicit claims: notifications are "event-driven, not
+spam-driven", and "notification delivery must be idempotent and auditable".
+Rather than trust either, the live `notifications` table was grouped by
+(type, recipient, case) looking for counts above 1. Two duplicate pairs
+surfaced on one case.
+
+**The evidence rules out the obvious explanation.** Both pairs carry timestamps
+identical to the **microsecond** — `09:54:18.629383` twice and
+`09:54:55.425613` twice. Identical microsecond timestamps mean one transaction
+and one scan pass, so this is not two overlapping cron runs. It is a
+double-send by construction:
+
+```
+send to the case owner
+then loop every active Manager and send again
+```
+
+When the owner **is** a Manager — normal; a Manager can own a case — that
+person is in both sets. The case's own `CASE_ACKNOWLEDGED` row ("acknowledged
+by Loop1 Test Manager") confirms exactly that.
+
+Three sites had it: the 24h wait escalation, the 1h emergency escalation, and
+the PM-overdue alert. With N Managers, an owner-Manager gets 2 notifications
+while every other Manager gets 1, on every escalation, indefinitely — the kind
+of alert-fatigue defect that makes a real escalation get ignored.
+
+**Fix (0035):** one `case_notification_recipients(p_extra)` helper returning
+the DISTINCT union of the extra recipient and every active Manager; all three
+sites iterate that set instead of sending twice. Escalation rules, thresholds,
+guards and the once-only semantics (`last_escalated_at`,
+`emergency_escalated_at`) are byte-for-byte unchanged — only who gets collected
+changed.
+
+**The risk in this fix was dropping someone**, so all four shapes were verified
+live:
+
+| Owner | Recipients | |
+|---|---|---|
+| IS the Manager | **1** | was 2 — the bug |
+| a distinct Executive | 2 | both present, nobody dropped |
+| none (Manager-reminder path) | 1 | unchanged |
+| a non-staff technician | 2 | unchanged |
+
+**Three other Manager-notifying sites were checked and deliberately left
+alone:** the handover `CASE_UNASSIGNED` path (0014), the production-boundary
+breach (0015) and the safety-stop raise (0030) all notify Managers *only*, with
+no separate owner send, so they have no overlap to dedupe. Changing them would
+have been churn, not a fix.
+
+**Material changes:** `0035_maintenance_notification_recipient_dedupe.sql`,
+`tests/notification-dedupe.test.ts` (5 tests), RISK-26 entry.
+
+**Note on what was not touched:** the existing duplicate rows are left in
+place. `notifications` carries operational history and this repo does not
+rewrite history to make a metric look better (§27). The fix stops new
+duplicates; it does not erase the evidence of the old ones.
+
+**Tests:** 5 new. `tsc`, `lint` clean.
