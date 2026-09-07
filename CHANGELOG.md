@@ -1928,3 +1928,77 @@ table, and the not-found guard on both. Suite is now **106 tests across
 
 `tsc`, `lint`, `build` clean. Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` before shipping (table above).
+
+## Loop 25 — 2026-09-07
+
+Fifth and last loop of the Loops 21-25 batch. Different sweep this time:
+every `alter table maintenance.<t> enable row level security` (26 tables)
+cross-referenced against every test file's table/RPC references, looking
+for RLS-enabled tables with **zero automated coverage anywhere**. Three
+came back genuinely untested: `observations`, `clearances`, `audit_log`.
+
+### A real defect found while live-verifying `clearances`, not just a coverage gap
+
+Live-checking the policy before writing a test (never trust an RLS
+assumption without checking it live — the standing discipline since
+RISK-13/15) turned up:
+
+```
+clearances_insert: with check (is_staff() AND sent_to_qc_by = auth.uid())
+```
+
+This let **any staff member insert a `clearances` row directly for any
+case in any status** — completely bypassing `send_to_qc`'s own guard
+(`if v_status <> 'TECHNICALLY_RESTORED' then raise INVALID_OPERATION`).
+Verified live: a direct insert against a case still sitting at `REPORTED`
+(never even acknowledged) succeeded, creating a `decision = 'PENDING'`
+clearance row with no case-status check at all.
+
+**Not live-exploitable as a lifecycle bypass** — `qc_decision(CLEARED)`
+still calls `transition_case(..., 'MAINTENANCE_RELEASED')`, and that
+RPC's own `status_transitions` graph check rejects the edge from anything
+but `TECHNICALLY_RESTORED`/`CLEARANCE_PENDING`, so the orphaned row was
+inert on its own (confirmed: the test case's status stayed `REPORTED`
+after the direct insert). But it is exactly the "server-side enforcement
+gap on a locked boundary" class of bug CLAUDE.md names explicitly, and
+the same shape Loop 8 already fixed once in this schema for
+`spare_requests`/`spare_usage` — a direct-insert policy letting a client
+set fields a dedicated RPC was supposed to gate.
+
+Migration `0024_maintenance_clearances_rpc_only.sql`: `clearances_insert`
+is now `with check (false)` — RPC-only, matching every other
+financially/audit-sensitive table in this schema.
+
+### Live verification
+
+| Step | Result |
+|---|---|
+| Direct insert as staff, before the fix | succeeded on a `REPORTED` case (no status check) |
+| Direct insert as staff, after the fix | RLS violation (`42501`) |
+| `send_to_qc` (SECURITY DEFINER, bypasses RLS) after the fix | unaffected — full flow re-verified end to end |
+
+### `observations` and `audit_log` — coverage gaps only, policies already correct
+
+Both tables' RLS (staff-only select, staff-and-self insert on
+`observations`; staff-only select and **no insert policy at all** on
+`audit_log`) were already correct since Loop 1/2 and match the UI's own
+gating (`ObservationForm` only renders when `isStaffRow`). No migration
+for either — this loop closes the verification debt, not a defect.
+
+### Tests
+
+New `tests/observations-clearances-audit.test.ts` — 9 `it()`s across all
+three tables: `observations` (non-staff insert refused, staff can
+insert/read, hidden from non-staff, append-only via the Loop 18
+zero-rows-not-an-error pattern), `clearances` (the fixed direct-insert
+denial on a real freshly created case — not a fake-UUID FK failure,
+`send_to_qc` still works post-fix, hidden from non-staff, visible to
+staff), `audit_log` (staff-only read, no INSERT policy at all for anyone).
+Suite is now **115 tests across 17 files**.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. No UI changed this loop, so the `"use
+client"` boundary re-scan is a formality — re-ran it anyway, clean.
+Live-verified against Supabase project `maavrlqkdrisjwzhjdgg` before and
+after the fix (tables above).
