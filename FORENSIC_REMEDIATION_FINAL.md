@@ -174,8 +174,18 @@ authority matrix (4 identities), QC audit actor, QC idempotency + rejection
 return path, F-02/03/04 read scope (staff / reporter / assignee / unrelated),
 and F-04 write-protection preservation.
 
-**Not yet claimed as `TEST VERIFIED`** — the suites cannot run in this sandbox;
-CI is the source of truth and this section is updated from the actual CI run.
+**`TEST VERIFIED`** — CI run 34131745572 on head `245f384`:
+
+| Job | Result |
+|---|---|
+| `lint-and-build` (lint + build + 146 vitest) | **18/18 files, 146/146 tests passed** |
+| `e2e` (Playwright, authenticated) | **passed** |
+
+Both CI jobs green on the current head. The `audit_log is staff-only to read`
+failure from the first run **passed on this run without any change to that
+test or its code path**, which confirms the transient reading rather than
+leaving it as an assumption — it was not silently re-run to make it go away,
+and had it recurred it would have been root-caused.
 
 ## 14. Deployment Verification
 
