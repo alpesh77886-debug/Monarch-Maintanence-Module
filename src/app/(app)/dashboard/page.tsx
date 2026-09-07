@@ -82,15 +82,27 @@ export default async function DashboardPage() {
 
   const oldestOpen = [...open].slice(0, 10);
 
+  // F-07: this map used to key WAITING and QC_PENDING — neither is a value of
+  // maintenance.case_status, so they were dead entries. The real problem was
+  // the mirror image: eight statuses that DO exist were missing, so half the
+  // lifecycle rendered in the same grey as REJECTED/DUPLICATE. WAITING is a
+  // dependency/hold overlay (maintenance.waits), never a case status, so it
+  // is deliberately absent here. All 16 enum values are now covered.
   const statusColor: Record<string, string> = {
     REPORTED: "bg-slate-400",
+    ACKNOWLEDGED: "bg-blue-400",
+    NEEDS_INFORMATION: "bg-yellow-400",
     ASSESSED: "bg-sky-400",
     ASSIGNED: "bg-sky-500",
     DIAGNOSING: "bg-amber-400",
     IN_REPAIR: "bg-amber-500",
-    WAITING: "bg-orange-500",
-    QC_PENDING: "bg-violet-500",
-    CLOSED: "bg-emerald-500",
+    TEMPORARILY_RESTORED: "bg-orange-400",
+    TECHNICALLY_RESTORED: "bg-teal-500",
+    CLEARANCE_PENDING: "bg-violet-500",
+    QC_REJECTED: "bg-rose-500",
+    MAINTENANCE_RELEASED: "bg-emerald-400",
+    CLOSED: "bg-emerald-600",
+    REOPENED: "bg-fuchsia-500",
     REJECTED: "bg-slate-300",
     DUPLICATE: "bg-slate-300",
   };

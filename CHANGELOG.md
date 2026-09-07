@@ -2952,3 +2952,222 @@ harness structurally cannot show it. The expected direction is clear
 of the planet) but the magnitude is unverified here and is honestly a
 device-side check. Whether `router.refresh()` (cause 3) still feels slow
 after both fixes is the same kind of open question.
+
+## Forensic remediation — P0/P1/P2 fix pack — 2026-09-07
+
+Boss-supplied brief ("MONARCH Maintenance — Forensic Remediation Prompt"),
+executed in its own prescribed order: Phase 1 reconnaissance (no edits), Phase 2
+authority model, Phase 3 minimal fixes, Phase 4 red-team tests. Delivered
+`FORENSIC_REMEDIATION_RECON.md`, `AUTHORITY_MATRIX.md`,
+`LIVE_DATA_FORENSIC_REPORT.md`, `FORENSIC_REMEDIATION_FINAL.md`.
+
+Live database state was treated as authoritative over migration files
+throughout — a migration can be superseded, so every policy, function,
+transition edge and row count below was read back from the live project.
+
+### F-01 (CRITICAL) — QC decision authority — RISK-23
+
+`qc_decision` guarded only on `is_staff()`. Any Executive or Manager could
+clear or reject their own QC gate; the loop
+`Maintenance → send_to_qc → Maintenance → CLEARED` was reachable. Forbidden by
+§1, §43.8 and §19.15 — not an interpretation.
+
+Two adjacent controls were checked first and found correct, so the fix stayed
+surgical: `send_to_qc` (staff + `TECHNICALLY_RESTORED`) is contract-correct per
+§12, and `transition_case`'s direct release edge is properly gated on
+`qc_required` being explicitly `false`. Only the actor check in `qc_decision`
+was wrong.
+
+Migration 0031 adds `maintenance.qc_authority` — an explicit, **empty by
+default**, service-role-granted allowlist. `qc_decision` refuses any staff
+identity *first and unconditionally*, then requires an active grant, so the
+loop cannot be recreated even by granting a Maintenance member. It also now
+writes an `audit_log` row; the 0007 version wrote none, leaving the QC actor out
+of the audit trail entirely.
+
+Live-verified against four real identities — Executive and Manager both
+`FORBIDDEN … does not own QC clearance`, ungranted non-staff
+`FORBIDDEN … granted QC authority`, granted QC identity through both gates.
+
+**Deliberate open consequence, stated rather than buried:** the allowlist is
+empty, so QC-required cases now stop at `CLEARANCE_PENDING` until the Boss names
+the real QC identities. Fail-closed by design. The QC-not-required path is
+untouched.
+
+### F-02/03/04 (HIGH) — read scope — RISK-24
+
+Four SELECT policies were `USING (true)`: `cases`, `evidence`, `safety_stops`,
+`production_boundary_events`. Any authenticated account — including one with no
+staff row — could read the whole plant's work list, all evidence, all
+safety-stop reasons and all production-boundary detail.
+
+This was first surfaced in Loop 32 and **deliberately deferred** then, logged
+against RISK-04 pending PENDING-03's permission matrix. The brief reframed it
+correctly: least privilege does not need the full matrix, only the scopes the
+pack already backs. That earlier deferral was the wrong call and is recorded as
+such.
+
+Migration 0032 applies one derived predicate — staff (all cases, §22 dashboard),
+reporter (own case, §5/§7), assigned technician (assigned case, §3.1) — the same
+shape `case_assignments_select`/`interventions_select` already used. Child
+tables inherit via `can_read_case()`. **Write policies untouched**:
+`safety_stops` and `production_boundary_events` remain RPC-only.
+
+Live-verified by row counts per identity: an unrelated authenticated identity
+went from 7,592 / 211 / 355 / 138 to **0 / 0 / 0 / 0**; staff unchanged;
+assigned technician still sees their own work.
+
+One reading correction: `tech1` seeing all 211 evidence rows first looked like a
+leak. A direct check showed `evidence_tech_must_not_see = 0` — every row
+genuinely belongs to a case that identity reported or is assigned to. The
+discriminating negative is the unrelated identity's zero.
+
+### F-05 (HIGH) — test contamination — real, but the opposite shape
+
+Live audit: **7,592 cases, of which 7,284 vitest-tagged, 291 e2e-tagged, 17
+loop-verification-tagged, and exactly 0 untagged.** There is no production data
+and never has been — nothing operational was polluted, lost or mixed.
+
+The mechanism is nevertheless a genuine defect: one Supabase project serves both
+the deployed app and CI. A dedicated test project is a spend decision, so the
+available fix is the brief's preference 5 — explicit environment tagging. Both
+suites now refuse to run unless `MAINTENANCE_TEST_WRITES_OK=1` is set; CI sets
+it. A developer who later points this at a real production project gets a hard
+failure instead of silent contamination. **No data was deleted** — deleting
+7,592 rows from a database with zero real records solves nothing.
+
+### F-06 (MEDIUM) — anomalies classified, no history rewritten
+
+Four anomalous rows found; all classified against the migration timeline and
+tested for reproducibility. Three are not reproducible: the `CLOSED`-without-
+release row is Loop 27's own RISK-19 exploit proof (0026 closed that path), the
+`MAINTENANCE_RELEASED`-without-restoration row is the RISK-11 regression 0012
+fixed, and 151 unlinked spare usages all predate 0028 by minutes.
+
+**New finding not on the brief's list:** 2,686 cases have zero `case_events`
+**and** zero `audit_log` rows, and this **is** reproducible — case creation is a
+direct client insert, not an RPC, so nothing writes an event or audit row until
+someone acts on the case. Reported, not fixed: whether case creation is a
+"material action" under §43.3 is a contract reading for the Boss.
+
+### F-07 (MEDIUM) — stale vocabulary was the smaller half of the problem
+
+The live enum has neither `WAITING` nor `QC_PENDING`, and `cases/page.tsx` was
+already correct — the stale keys survived in exactly one file. The real defect
+was the mirror image: because those two dead keys occupied the dashboard's
+colour map, the eight statuses that *do* exist but were missing
+(`ACKNOWLEDGED`, `NEEDS_INFORMATION`, `TEMPORARILY_RESTORED`,
+`TECHNICALLY_RESTORED`, `CLEARANCE_PENDING`, `QC_REJECTED`,
+`MAINTENANCE_RELEASED`, `REOPENED`) all rendered in the same grey as
+`REJECTED`/`DUPLICATE`. All 16 enum values are now mapped.
+
+### F-08 (MEDIUM) — hardening, with honest severity
+
+Migration 0033 pins `search_path` on `is_staff()`/`is_manager()`. Reported
+honestly: this was **not** an open bypass — both are SECURITY INVOKER, their one
+call is schema-qualified, and the callee is already SECURITY DEFINER with a
+pinned path; an attacker would need `CREATE` on the schema. Fixed because it is
+free. The Supabase advisor now no longer reports
+`function_search_path_mutable`.
+
+Leaked-password protection is **still disabled** — the MCP surface exposes no
+auth-config write tool, so it needs a dashboard toggle. The
+`idempotency_keys` "RLS enabled, no policy" INFO is correct by design (no policy
+= no client access; only SECURITY DEFINER RPCs touch it) and is documented
+rather than "fixed".
+
+### F-09 (MEDIUM) — three indexes, not twenty
+
+Only `evidence`, `capa_links` and `case_assets` gained a `case_id` index — the
+only tables the case-detail page actually filters by `case_id` that lacked one.
+`notifications` (3,089 rows), `idempotency_keys` and `pm_instances` also lack
+one and deliberately keep it that way: they are not filtered by `case_id`
+anywhere, and indexing them would be exactly the "blindly index every FK" the
+brief warns against.
+
+### F-10 (MEDIUM) — already measured
+
+Handled earlier today; `explain analyze` showed 6.783 ms and the real costs were
+region and sequential queries. Residual app-side aggregation on the dashboard is
+documented as a scale risk, deliberately not folded into a security fix.
+
+### Verdict
+
+**NOT READY** — see `FORENSIC_REMEDIATION_FINAL.md` §16. Three blockers, none of
+them unfinished engineering: the QC allowlist is empty, production and CI share
+one database, and leaked-password protection is off. Each needs a Boss decision
+or credential. The security posture is materially better than before this work;
+that is a separate question from being operable on real data.
+
+### Verified
+
+`tsc`, `npm run lint`, `npm run build` all clean. Full `"use client"` boundary
+re-scan across 35 client files — clean. 15 new regression tests in
+`tests/forensic-authorization.test.ts`; the QC scenario test updated to use the
+QC identity. Suites cannot run in this sandbox (RISK-05 egress block) — CI is
+the source of truth.
+
+### Forensic remediation — two self-inflicted defects, caught by CI (migration 0034)
+
+The first CI run on the remediation PR failed 5 of 143 tests. Both real
+failures were introduced by the remediation itself, and both are recorded here
+because one of them exposes a genuine weakness in how 0031 was verified.
+
+**(1) `qc_decision` could never actually complete.** `qc_decision` correctly
+admitted only a QC-authority identity, then called `transition_case` — whose
+own first line is `if not is_staff() then raise FORBIDDEN`. A QC identity is
+deliberately *not* staff, so every real QC decision failed. Three tests caught
+it, including the pre-existing Scenario B test that has passed since Loop 5.
+
+**Why the live probe missed it, stated plainly:** the four-identity probe used
+a *non-existent* clearance id, on the reasoning that reaching
+`CLEARANCE_NOT_FOUND` proves the authority gates opened. It does — but it stops
+exactly one step before the transition, so it verified the gates and nothing
+past them. A probe that only exercises the refusal path cannot tell you the
+success path works. The test suite caught what the probe could not.
+
+Fixed in 0034 by granting the QC identity exactly the two transitions that
+*are* the QC decision — `CLEARANCE_PENDING → MAINTENANCE_RELEASED` and
+`CLEARANCE_PENDING → QC_REJECTED` — and nothing else. Every other transition
+stays staff-only, and a second check after the status is read refuses a QC
+identity on any case not actually in `CLEARANCE_PENDING`, so it cannot skip
+the clearance record.
+
+Re-verified end to end this time, on a real case with a real clearance:
+`CLEARANCE_PENDING` → Executive refused → QC identity **SUCCEEDED** → case
+reached `MAINTENANCE_RELEASED` → exactly 1 audit row with the QC actor → and
+the same QC identity was still refused when it tried to `CLOSED` a case.
+
+**(2) Tightening `cases_select` silently broke `case_assignments_insert`.** The
+RISK-18 fix (0025) gated the emergency self-insert on
+`exists (select 1 from cases where … emergency_confirmed)`. That subquery is
+evaluated **as the inserting user**, so it was itself subject to
+`cases_select`. While that policy was `USING (true)` the coupling was
+invisible; once 0032 scoped case reads, a technician who is neither reporter
+nor already assigned could no longer see the case, the `EXISTS` returned false,
+and the legitimate emergency self-insert was refused.
+
+This is the general hazard worth recording as a standing lesson for this repo:
+**an authorization check must never depend on the actor's read visibility**, or
+narrowing a SELECT policy silently narrows a WITH CHECK policy somewhere else.
+0034 moves the check into a SECURITY DEFINER helper
+(`case_is_confirmed_emergency`) so it answers the same question regardless of
+who is asking. Authority is unchanged — the RISK-18 emergency gate and the
+RISK-20 attribution pins both still hold.
+
+Verified live in all four directions: the technician still cannot *see* the
+case (0032 holds), still *can* self-insert on a confirmed emergency (0034
+fixes it), still *cannot* self-insert on a non-emergency case (RISK-18 holds),
+and *can* see the case once assigned (0032's assignee branch works).
+
+**(3) One failure was not reproduced and is not claimed as fixed.**
+`observations-clearances-audit.test.ts > audit_log is staff-only to read`
+failed inside `driveToInRepair`. The same helper, same identity and same insert
+passed twice elsewhere in the same file in the same run, and a direct SQL probe
+of that exact insert-and-read-back as the Executive identity succeeded. The run
+also coincided with PostgREST reloading its schema cache after three migrations
+added a table and several functions. That is consistent with a transient, but
+it is recorded as *unexplained* rather than dismissed as a flake; if it recurs
+on the next run it will be root-caused properly rather than re-run again.
+
+3 new regression tests cover the two real defects.

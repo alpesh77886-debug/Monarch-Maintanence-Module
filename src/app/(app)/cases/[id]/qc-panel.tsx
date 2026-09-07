@@ -11,11 +11,16 @@ export default function QcPanel({
   status,
   qcRequired,
   pendingClearance,
+  isQcAuthority,
 }: {
   caseId: string;
   status: string;
   qcRequired: boolean | null;
   pendingClearance: Clearance | null;
+  // F-01: holds an active maintenance.qc_authority grant. Never true by
+  // virtue of a Maintenance role — the server RPC enforces the same rule, so
+  // this only decides what is *shown*, never what is *allowed*.
+  isQcAuthority: boolean;
 }) {
   const router = useRouter();
   const [reason, setReason] = useState("");
@@ -67,6 +72,25 @@ export default function QcPanel({
   }
 
   if (pendingClearance) {
+    // F-01: Maintenance may send a case to QC but must never decide it —
+    // §1 and §43.8 put QC clearance truth outside Maintenance's ownership.
+    // A Maintenance user is told what is happening and who owns the next
+    // step, rather than being shown buttons the server will refuse.
+    if (!isQcAuthority) {
+      return (
+        <div className="flex flex-col gap-1 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+          <p className="text-sm font-medium text-indigo-900">
+            Sent to QC {new Date(pendingClearance.sent_to_qc_at).toLocaleString()} — awaiting QC decision
+          </p>
+          <p className="text-xs text-indigo-800">
+            QC clearance is decided by QC, not by Maintenance. This case stays in
+            CLEARANCE_PENDING until an identity holding QC authority clears or
+            rejects it.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
         <p className="text-sm font-medium text-indigo-900">
