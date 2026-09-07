@@ -15,6 +15,12 @@ const BASE_URL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  // Loop 41 (F-41-1): until now this suite had NO teardown, so every CI run
+  // left its cases in the live project permanently. Playwright calls the
+  // function returned by globalSetup as the global teardown — verified in the
+  // installed runner (playwright/lib/runner: `if (typeof globalSetupResult ===
+  // "function") await globalSetupResult()`), not assumed from memory.
+  globalSetup: "./e2e/global-teardown.ts",
   // Each spec drives one signed-in browser session through multi-step
   // lifecycle flows; running them in parallel against one shared Supabase
   // project makes failures harder to read than they're worth.

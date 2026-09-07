@@ -36,6 +36,15 @@ jobs:
       - run: npm test
         env:
           MAINTENANCE_TEST_WRITES_OK: "1"
+          # Loop 41 (F-41-2). `concurrency` above is keyed on github.ref, so a
+          # PR run and a main-branch run are in DIFFERENT groups and can
+          # overlap. The teardown used to select purely on a time window, so
+          # whichever run finished first deleted the other's IN-FLIGHT cases.
+          # Every case is now stamped with this id and a run deletes only its
+          # own. The `-unit` suffix matters: without it this job and the e2e
+          # job of the SAME workflow run would share an id and clean up each
+          # other's rows.
+          MAINTENANCE_TEST_RUN_ID: "${{ github.run_id }}-${{ github.run_attempt }}-unit"
 
   # Browser E2E (RISK-05). Separate job because it needs a browser install
   # and builds/starts the app itself; runs only once lint/build/unit are
@@ -54,6 +63,8 @@ jobs:
       - run: npm run test:e2e
         env:
           MAINTENANCE_TEST_WRITES_OK: "1"
+          # Distinct from the unit job's id — see the comment there.
+          MAINTENANCE_TEST_RUN_ID: "${{ github.run_id }}-${{ github.run_attempt }}-e2e"
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

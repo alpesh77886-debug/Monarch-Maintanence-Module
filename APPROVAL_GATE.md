@@ -9,23 +9,33 @@
 | 5 (Loops 21–25) | [`APPROVAL_REPORT_LOOP_21_25.md`](./APPROVAL_REPORT_LOOP_21_25.md) | Approved — "me aage ki loops ke liye approve kar raha hu 26 se 30" | 2026-09-07 |
 | 6 (Loops 26–30) | [`APPROVAL_REPORT_LOOP_26_30.md`](./APPROVAL_REPORT_LOOP_26_30.md) | Approved — "approved loops 31 to 35" | 2026-09-07 |
 | 7 (Loops 31–35) | [`APPROVAL_REPORT_LOOP_31_35.md`](./APPROVAL_REPORT_LOOP_31_35.md) | Approved — "ye karlo iske baad you can proceed for 36 to 40 loop" (given alongside the forensic remediation brief) | 2026-09-07 |
-| 8 (Loops 36–40) | [`APPROVAL_REPORT_LOOP_36_40.md`](./APPROVAL_REPORT_LOOP_36_40.md) | **AWAITING BOSS** | — |
+| 8 (Loops 36–40) | [`APPROVAL_REPORT_LOOP_36_40.md`](./APPROVAL_REPORT_LOOP_36_40.md) | Approved — "itna complete karne ke baad tum loop 41 se 45 start kar sakte ho...Mera approval hai" (given in advance, conditional on the RISK-25 + cleanup task completing first — it did, and merged as PR #41) | 2026-09-07 |
 
-Current state: **GATE 8 (Loops 36-40) AWAITING BOSS.** Loops 36-40 are
-complete and merged. Autonomous loop work is PAUSED per
-IMPLEMENTATION_PACK.md §19.9/§19.13; Loop 41 will not start without
-explicit continuation language.
+Current state: **GATE 8 (Loops 36-40) APPROVED — Loop 41 STARTED.**
 
-Four items need the Boss and are NOT loop work — each needs evidence or a
-credential, and none has been guessed at:
-  1. Name the real QC identities (`maintenance.qc_authority` is empty by
-     design, so QC-required cases stop at CLEARANCE_PENDING).
-  2. Separate test and production databases, or accept the current shared
-     project.
-  3. Enable leaked-password protection (Supabase dashboard → Auth).
-  4. RISK-25 — should an INTERNAL wait escalate, and from what instant?
-     The pack conflicts with itself here (§7.2 vs §23/§24) and closing it
-     needs a threshold the pack never states.
+The Boss's approval for Loops 41-45 was given *conditionally*: it attached to
+completing the RISK-25 + safe-cleanup brief first. That brief is complete and
+merged (PR #41, all checks green), so the condition is met and the approval is
+live. Gate 9 falls after Loop 45.
+
+Boss-side items, refreshed after the Loop 36-40 batch:
+
+| # | Item | State |
+|---|---|---|
+| 1 | Real QC identities for `maintenance.qc_authority` | **ANSWERED, no code owed.** The QC login name will come from the Quality module at integration time. That module is still a standalone localStorage prototype not on shared Supabase auth, so integration must come first. An empty `qc_authority` is now a recorded decision, not a gap. |
+| 2 | Separate test and production databases | **STILL OPEN.** Mitigated by prefix tagging and a scoped teardown, not eliminated. One live project still backs both. |
+| 3 | Leaked-password protection (Supabase → Auth) | **DEFERRED BY THE BOSS** — "leaked Password wala kaam hum last me karenge". |
+| 4 | RISK-25 — should an INTERNAL wait escalate, and from when? | **CLOSED.** The Boss supplied the three permitted INTERNAL reasons and the escalation rule; implemented and live-verified in PR #41. |
+
+Two further items are the Boss's call and are NOT loop work:
+
+  a. **103 open cases that a DUPLICATE case points at.** Removing them means
+     also deleting the linked resolved cases, which §16 forbids without
+     explicit instruction. They are why the retained-open count is 114 and
+     not 10. Needs an explicit "yes, delete these too."
+  b. **The Sarvam Maintenance Screen Architecture document.** §4/§5/§27 of the
+     brief ask for UX correction *against it*; it was never supplied and is not
+     in the repo, so that work is recorded as NOT TOUCHED rather than done.
 
 Silence, "looks good", or an unrelated reply is NOT approval (`IMPLEMENTATION_PACK.md`
 §19.13). Explicit continuation language is required, e.g. "Approved, continue next 5

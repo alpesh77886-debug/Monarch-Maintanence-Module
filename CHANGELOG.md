@@ -3612,3 +3612,79 @@ recorded decision rather than an open question.
 
 **Tests:** 17 new (10 RISK-25, 7 cleanup), 4 files updated. `tsc`, `lint`,
 `build` clean; `"use client"` boundary re-scan across 36 files clean.
+
+## Loop 41 — 2026-09-07
+
+**Summary:** Verified Loop 40's test-data cleanup against the next real CI run
+instead of against its own code. It did not hold. Two defects found; the fix for
+the second was itself wrong on the first attempt and was caught by its own
+red-team test. Full evidence in `LOOP_41_REPORT.md`.
+
+**Requirements affected:** §21 (test data hygiene), §28 (no fake green),
+§29 (least privilege).
+
+**Findings:**
+- **F-41-1 — Playwright had no teardown at all.** The Loop 40 cleanup lived in
+  `vitest.config.ts`'s `globalSetup`, which Playwright never runs. Ordering made
+  it unfixable by config alone: `e2e` `needs: lint-and-build`, so Vitest's
+  teardown fires before the e2e cases exist. Evidence from the CI run that
+  merged PR #41 — teardown at 18:11:58 UTC, then cases `a5e3caf2`, `924af305`,
+  `d18a4351`, `a6a2a662` created 18:13:07–18:13:46 and all still present
+  afterwards. Four leaked cases per run, forever.
+- **F-41-2 — a run could delete a concurrently-running run's in-flight cases.**
+  `cleanup_test_cases_since(p_since)` selected on `created_at >= p_since AND
+  symptom like '[AUTOTEST%'` and nothing else — no notion of which run owned a
+  case. `ci.yml` scopes concurrency to `ci-${{ github.ref }}`, so a PR run and a
+  main-branch run are in different groups and may overlap. Introduced by Loop
+  40's own fix.
+- **The first fix for F-41-2 reintroduced F-41-2.** Migration `0040` matched the
+  run tag with `LIKE '%[run=' || tag || ']%'` and allowed `_` in the tag
+  charset. `_` is a single-character wildcard in `LIKE`, so a tag of
+  `loop41-RUN___` matched `[run=loop41-RUNBBB]` and deleted the other run's
+  case. Proven live: a correctly-tagged cleanup deleted exactly its own 2 cases
+  and left the third alone; the wildcard tag then deleted the third as well.
+- **`cleanup_test_cases_since` held EXECUTE for `PUBLIC`/`anon`** (left by
+  `0039`). Never exploitable — the first statement is an unconditional
+  `is_staff()` refusal and an anonymous caller has no `auth.uid()`, verified
+  live returning `FORBIDDEN` — but an unauthenticated role should not hold
+  EXECUTE on a delete-capable function.
+
+**Material changes:**
+- `supabase/migrations/0040_maintenance_test_run_tagging_and_least_privilege.sql`
+  — adds `p_run_tag`; revokes EXECUTE from `public` and `anon`. The old
+  single-argument function is **dropped explicitly first**: `create or replace`
+  with a different arity creates a new overload rather than replacing, a trap
+  this repo has hit twice before. Catalogue re-checked after applying — one row,
+  one overload.
+- `supabase/migrations/0041_maintenance_run_tag_wildcard_fix.sql` — replaces the
+  `LIKE` match with `strpos()` (a literal substring search, where no
+  metacharacter has meaning) **and** drops `_` from the allowed charset. Two
+  changes for one bug, deliberately: the goal is to remove the class, not the
+  one character that exposed it.
+- `tests/run-tag.ts` (new) — the shared run-tag/marker helper.
+- `tests/cleanup-run.ts` (new) — the teardown body, extracted so both suites
+  share one definition of "safe" rather than two that can drift.
+- `e2e/global-teardown.ts` (new) + `playwright.config.ts` — the e2e suite now
+  cleans up after itself. That Playwright invokes a function returned from
+  `globalSetup` as the global teardown was verified in the installed runner
+  source, not assumed.
+- `.github/workflows/ci.yml` — per-job `MAINTENANCE_TEST_RUN_ID`. The
+  `-unit`/`-e2e` suffix is load-bearing: without it the two jobs of one workflow
+  run would clean each other's rows.
+- `tests/helpers.ts`, `e2e/helpers.ts` — symptoms now carry `[run=<tag>]`. Also
+  corrects a comment that still claimed automated cleanup "isn't attempted".
+- `tests/run-tag-scoping.test.ts` (new, 7 tests).
+
+**Honest limits:**
+- The isolation property in its dangerous direction (run A's cleanup leaves run
+  B's rows alone) is proven live in `LOOP_41_REPORT.md`, not in the suite. A
+  test asserting it would have to leave a second run's rows behind to show they
+  survived — leaking exactly what the feature exists to stop leaking. The suite
+  pins the safe direction (a foreign tag deletes zero) and every refusal path.
+- Local runs (no `MAINTENANCE_TEST_RUN_ID`) still use window-only cleanup. That
+  is deliberate — there is no second concurrent run locally — but it means the
+  cross-run protection is CI-scoped, not universal.
+
+**Correction to Loop 40's record:** Loop 40 reported the refill problem as
+closed. It was not. A green CI run was not evidence the cleanup worked — the
+leaked rows were sitting in the database the whole time it was green.
