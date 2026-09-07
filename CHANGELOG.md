@@ -2171,3 +2171,72 @@ identity) instead of a hand-typed placeholder UUID. Re-verified live via
 `42501` as intended. Lesson: a "shape only" UUID in a multi-tenant test
 fixture is not risk-free — it can silently collide with a real seeded
 user's id and invert what the test actually proves.
+
+## Loop 28 — 2026-09-07
+
+PR #22 (Gate 5 log + Loop 26 + Loop 27 + CI fix) merged clean — both CI
+jobs green, 122 tests passing. Started Loop 28 from a fresh `main`.
+
+Read every RLS policy in the schema in one query (`pg_policies` for the
+whole `maintenance` schema) to find what, if anything, hadn't yet been
+scrutinized by this batch's method. `cases`, as expected, has zero UPDATE
+policy (RLS default-denies with no matching policy — direct client
+UPDATE on `cases` is already impossible, confirmed, not merely assumed).
+`evidence_insert`'s "any authenticated user" (broader than its own
+comment says: "any authenticated user **involved**") turned out to be
+already reviewed and deliberately accepted in Loop 18 — `evidence-panel.tsx`
+carries a comment explaining why (reporters need to attach evidence
+before any staff RPC touches the case, and `file_ref` is a reference, not
+a real upload). Not a new finding.
+
+### RISK-20 — `case_assignments` direct-insert still allows forged staff attribution
+
+The 0025 fix (RISK-18, Loop 26) added the `emergency_confirmed` check but
+only ever validated `emergency_direct_start`, `technician_user_id`, and
+(now) the case's emergency state — every other column on
+`case_assignments`, including `assigned_by_user_id`, stayed
+client-writable on the same INSERT.
+
+Verified live as the seeded non-staff `technician` identity, on a
+genuinely confirmed emergency (real `claim_emergency`/`confirm_emergency`,
+not faked): a direct insert with `assigned_by_user_id` set to the real
+manager's staff id succeeded, producing a `case_assignments` row that
+looks exactly like a staff-mediated assignment but is a self-service
+direct-start the technician made up entirely on their own. §5.5's whole
+point of the `emergency_direct_start` carve-out is that *no* staff
+mediated it — a row that claims otherwise is a forged audit-trail entry
+on a table §29 exists specifically to make trustworthy.
+
+Migration `0027_maintenance_case_assignments_attribution_lockdown.sql`
+adds `assigned_by_user_id is null`, `is_active = true`, and
+`deactivated_at is null` to the `with_check` — the only honest state a
+brand-new self-service row can start in.
+
+**Live verification:**
+
+| Step | Result |
+|---|---|
+| Forge `assigned_by_user_id = <real manager id>` on a confirmed emergency, before fix | succeeded |
+| Same insert, after the fix | fails, `42501` RLS violation |
+| Legitimate self-insert (no attribution fields set), after the fix | succeeds, `assigned_by_user_id`/`deactivated_at` land `null`, `is_active = true` |
+| `assign_technician` (SECURITY DEFINER, the only legitimate place to set `assigned_by_user_id`) | unaffected |
+
+Logged as RISK-20, MEDIUM, RESOLVED, in `RISK_REGISTER.md`.
+
+### Tests
+
+1 new `it()` in `tests/emergency-and-notifications.test.ts`: refuses a
+direct self-insert that forges `assigned_by_user_id`, even on a genuinely
+confirmed emergency. Suite is now **123 tests across 17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+No UI changed this loop (RLS-only fix; confirmed via `grep` that this
+app's own UI never sets `emergency_direct_start` or `assigned_by_user_id`
+on a direct insert — only `assign_technician`, which is unaffected, and a
+read-only display). Re-scanned every `"use client"` file anyway — clean.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before and after the fix (table above).
