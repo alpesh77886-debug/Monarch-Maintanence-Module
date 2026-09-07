@@ -2398,3 +2398,70 @@ RPC needed fixing). Re-scanned every `"use client"` file anyway — clean.
 
 `tsc`, `lint`, `build` clean. Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` before and after the fix (table above).
+
+## Loop 31 — 2026-09-07
+
+First loop of the Loops 31-35 batch (Boss approved: "approved loops 31
+to 35"). Two pieces of work, both verification rather than a code
+change — a legitimate outcome, not every loop needs to ship a fix.
+
+### 1. Finished the `SECURITY DEFINER` RPC-guard audit
+
+Read every remaining function not yet checked in the Loops 26-30 batch
+(~25 of the ~55 total): `close_false_complaint`, `complete_pm_instance`,
+`create_recurrence_rule`, `decide_recurrence_flag`, `enter_waiting`,
+`handover_case`, `link_pm_instance_to_case`, `mark_asset_known`,
+`mark_duplicate_case`, `raise_capa`, `raise_safety_stop`,
+`record_production_impact`, `record_production_not_restarted`,
+`record_production_started_without_release`,
+`record_recurrence_root_cause`, `record_restoration`,
+`record_root_cause`, `reopen_case`, `reschedule_pm_instance`,
+`resume_wait`, `run_recurrence_scan`, `set_availability`,
+`verify_capa_effectiveness`. None showed the RISK-21/RISK-22 shape (an
+authority or actor-eligibility gate skippable by omitting a
+client-optional parameter) or any other guard mismatch against
+documented intent. `handover_case`'s ownership check
+(`v_current_owner is distinct from v_actor`) is worth noting as the
+*correct* pattern for a nullable comparison — `IS DISTINCT FROM` instead
+of `=`, which is exactly what RISK-22's old check got wrong.
+`run_recurrence_scan`/`run_pm_scan` (cron-only, `EXECUTE` revoked from
+every client role) were already confirmed unreachable by existing tests.
+
+**The RPC-guard sweep is now exhausted** — every `SECURITY DEFINER`
+function in the schema has been read against its own documented intent
+this batch, across Loops 29-31.
+
+### 2. Spot-check: did RISK-19/RISK-18 ever affect real data?
+
+The Loops 26-30 gate report (§H.2) flagged that RISK-19 (CRITICAL) was
+live from Loop 1 until Loop 27, and recommended checking whether any real
+case ever reached `CLOSED` or `emergency_confirmed = true` without a
+corresponding `case_events` trail — the signature of the gap having been
+exploited, accidentally or otherwise, rather than merely present.
+
+Ran three read-only checks against the live `maintenance` schema:
+
+1. `cases` where `status = 'CLOSED'` with no matching `case_events` row
+   from a legitimate closure path (`transition_case` or
+   `close_false_complaint`).
+2. `cases` where `emergency_confirmed = true` with no `EMERGENCY_CONFIRMED`
+   `case_events` row (the only thing `confirm_emergency` ever writes).
+3. `case_assignments` with `emergency_direct_start = true` on a case that
+   is not (or was never) a confirmed emergency (the RISK-18 shape).
+
+**Result: every row any of the three queries returned was one of this
+project's own `[AUTOTEST-Lxx]`-tagged verification rows** — the exact
+same rows created and already fully disclosed while live-verifying
+RISK-18/19 in Loops 26-27 (`MC-003975`, `MC-003973`, `MC-003770`). No
+other row matched any of the three queries. No real Boss/staff data was
+ever affected by any defect fixed in the Loops 26-30 batch.
+
+### After Loop 16's server/client boundary lesson
+
+No UI or RPC changed this loop — pure read-only verification. No
+`"use client"` re-scan needed.
+
+### Verified
+
+No code change to verify — both pieces of this loop were live read
+queries against Supabase project `maavrlqkdrisjwzhjdgg`, not migrations.

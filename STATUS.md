@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 31 — batch Loops 31-35 starting
+Current loop: Loop 31 complete — batch Loops 31-35 in progress
 Current gate: **GATE 6 CLOSED.** The Boss approved continuation for Loops
   31-35 ("approved loops 31 to 35") after reviewing
   APPROVAL_REPORT_LOOP_26_30.md. The next hard gate is after Loop 35
@@ -349,6 +349,20 @@ Batch summary (Loops 26-30, complete — see CHANGELOG.md for full detail):
     blocking impersonation of a different technician. Re-verified live in
     all four directions (both exploit variants blocked; genuine
     self-recording and staff-mediated recording unaffected).
+
+Batch summary (Loops 31-35, current batch — see CHANGELOG.md for full detail):
+  - Loop 31: two verification pieces, no code change. (1) Finished the
+    `SECURITY DEFINER` RPC-guard audit — read the ~25 remaining functions
+    not yet checked in Loops 26-30; none showed the RISK-21/RISK-22 shape
+    or any other guard mismatch. The sweep is now exhausted across the
+    whole schema (~55 functions, Loops 29-31). (2) Spot-checked (per the
+    Loops 26-30 gate report §H.2) whether RISK-19/RISK-18 ever affected
+    real data before their fixes: three read-only queries for
+    fabricated-CLOSED cases, fabricated-emergency-confirmed cases, and
+    RISK-18-shaped `case_assignments` rows. Every row found was this
+    project's own `[AUTOTEST-Lxx]` verification data from Loops 26-27
+    (`MC-003975`, `MC-003973`, `MC-003770`) — no real Boss/staff data was
+    ever affected.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +
