@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Clearance } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 export default function QcPanel({
   caseId,
@@ -74,20 +75,12 @@ export default function QcPanel({
         {error && <p className="text-sm text-red-700">{error}</p>}
         {!rejecting ? (
           <div className="flex gap-2">
-            <button
-              onClick={() => decide("CLEARED")}
-              disabled={submitting}
-              className="rounded-md bg-indigo-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
+            <Button onClick={() => decide("CLEARED")} disabled={submitting}>
               QC cleared
-            </button>
-            <button
-              onClick={() => setRejecting(true)}
-              disabled={submitting}
-              className="rounded-md border border-indigo-700 px-3 py-2 text-sm text-indigo-900"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => setRejecting(true)} disabled={submitting}>
               QC rejected
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -97,22 +90,15 @@ export default function QcPanel({
               onChange={(e) => setReason(e.target.value)}
               placeholder="Rejection reason (required)"
               rows={2}
-              className="rounded-md border border-indigo-300 px-3 py-2 text-base"
+              className="rounded-lg border border-indigo-300 px-3 py-2 text-base"
             />
             <div className="flex gap-2">
-              <button
-                onClick={() => decide("REJECTED")}
-                disabled={submitting || !reason.trim()}
-                className="rounded-md bg-indigo-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
+              <Button onClick={() => decide("REJECTED")} disabled={submitting || !reason.trim()}>
                 Confirm rejection
-              </button>
-              <button
-                onClick={() => setRejecting(false)}
-                className="rounded-md border border-indigo-300 px-3 py-2 text-sm text-indigo-900"
-              >
+              </Button>
+              <Button variant="secondary" onClick={() => setRejecting(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -128,31 +114,20 @@ export default function QcPanel({
         </p>
         {error && <p className="text-sm text-red-700">{error}</p>}
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setQcRequired(true)}
-            disabled={submitting}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-          >
+          <Button variant="secondary" onClick={() => setQcRequired(true)} disabled={submitting}>
             Set QC required = Yes
-          </button>
-          <button
-            onClick={() => setQcRequired(false)}
-            disabled={submitting}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-          >
+          </Button>
+          <Button variant="secondary" onClick={() => setQcRequired(false)} disabled={submitting}>
             Set QC required = No
-          </button>
+          </Button>
           {qcRequired && (
-            <button
-              onClick={sendToQc}
-              disabled={submitting}
-              className="rounded-md bg-indigo-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
+            <Button onClick={sendToQc} disabled={submitting}>
               Send to QC
-            </button>
+            </Button>
           )}
           {qcRequired === false && (
-            <button
+            <Button
+              variant="success"
               onClick={async () => {
                 setSubmitting(true);
                 const supabase = createClient();
@@ -165,10 +140,9 @@ export default function QcPanel({
                 router.refresh();
               }}
               disabled={submitting}
-              className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               Release (no QC needed)
-            </button>
+            </Button>
           )}
         </div>
       </div>

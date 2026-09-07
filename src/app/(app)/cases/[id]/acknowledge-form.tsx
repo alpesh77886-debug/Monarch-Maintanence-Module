@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Priority } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 export default function AcknowledgeForm({ caseId }: { caseId: string }) {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function AcknowledgeForm({ caseId }: { caseId: string }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3"
+      className="flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4"
     >
       <p className="text-sm font-medium text-blue-900">Acknowledge this case</p>
       <label className="text-sm text-blue-900">
@@ -61,13 +62,9 @@ export default function AcknowledgeForm({ caseId }: { caseId: string }) {
         />
       </label>
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
+      <Button type="submit" disabled={submitting}>
         {submitting ? "Acknowledging…" : "Acknowledge & take ownership"}
-      </button>
+      </Button>
     </form>
   );
 }

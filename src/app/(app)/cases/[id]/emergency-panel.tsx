@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 // §6: emergency is TWO-STEP — reporter/staff claim, then Executive/Manager
 // confirm. Only confirm_emergency starts the 1h clock (§7.3); there is no
@@ -89,13 +90,9 @@ export default function EmergencyPanel({
         <p className="text-xs text-orange-800">{emergencyClaimReason}</p>
         {error && <p className="text-sm text-red-700">{error}</p>}
         {canConfirm && (
-          <button
-            onClick={confirm}
-            disabled={submitting}
-            className="self-start rounded-md bg-orange-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <Button variant="warning" className="self-start" onClick={confirm} disabled={submitting}>
             Confirm Emergency (starts 1h escalation clock)
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -116,13 +113,9 @@ export default function EmergencyPanel({
         rows={2}
       />
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <button
-        onClick={claim}
-        disabled={submitting}
-        className="self-start rounded-md border border-red-700 px-3 py-2 text-sm text-red-800 disabled:opacity-50"
-      >
+      <Button variant="danger" className="self-start" onClick={claim} disabled={submitting}>
         Claim Emergency
-      </button>
+      </Button>
     </div>
   );
 }

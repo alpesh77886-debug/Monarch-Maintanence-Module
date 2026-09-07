@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 // §4.6: duplicate case handling — links to a primary case, primary is left
 // untouched, actor/time/reason recorded. See mark_duplicate_case (0011).
@@ -47,7 +48,7 @@ export default function MarkDuplicateForm({ caseId }: { caseId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-medium text-slate-900">Mark as duplicate</p>
       <input
         value={primaryCaseNumber}
@@ -63,13 +64,14 @@ export default function MarkDuplicateForm({ caseId }: { caseId: string }) {
         rows={2}
       />
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <button
+      <Button
+        variant="secondary"
+        className="self-start"
         onClick={submit}
         disabled={submitting || !primaryCaseNumber.trim()}
-        className="self-start rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-800 disabled:opacity-50"
       >
         Mark duplicate
-      </button>
+      </Button>
     </div>
   );
 }

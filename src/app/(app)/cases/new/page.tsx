@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseType } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 const CASE_TYPES: CaseType[] = [
   "BREAKDOWN",
@@ -142,13 +143,9 @@ export default function NewCasePage() {
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-slate-900 px-4 py-2 text-base font-medium text-white disabled:opacity-50"
-      >
+      <Button type="submit" disabled={submitting} className="w-full">
         {submitting ? "Submitting…" : "Submit case"}
-      </button>
+      </Button>
     </form>
   );
 }

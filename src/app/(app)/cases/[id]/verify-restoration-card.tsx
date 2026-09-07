@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Restoration } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 export default function VerifyRestorationCard({ restoration }: { restoration: Restoration }) {
   const router = useRouter();
@@ -51,20 +52,12 @@ export default function VerifyRestorationCard({ restoration }: { restoration: Re
       {error && <p className="text-sm text-red-700">{error}</p>}
       {!failing ? (
         <div className="flex gap-2">
-          <button
-            onClick={pass}
-            disabled={submitting}
-            className="rounded-md bg-purple-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <Button variant="success" onClick={pass} disabled={submitting}>
             Verified — passed
-          </button>
-          <button
-            onClick={() => setFailing(true)}
-            disabled={submitting}
-            className="rounded-md border border-purple-700 px-3 py-2 text-sm text-purple-900"
-          >
+          </Button>
+          <Button variant="secondary" onClick={() => setFailing(true)} disabled={submitting}>
             Verification failed
-          </button>
+          </Button>
         </div>
       ) : (
         <form onSubmit={fail} className="flex flex-col gap-2">
@@ -90,20 +83,12 @@ export default function VerifyRestorationCard({ restoration }: { restoration: Re
             </select>
           </label>
           <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-md bg-purple-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
+            <Button type="submit" disabled={submitting}>
               {submitting ? "Saving…" : "Confirm failure"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setFailing(false)}
-              className="rounded-md border border-purple-300 px-3 py-2 text-sm text-purple-900"
-            >
+            </Button>
+            <Button variant="secondary" type="button" onClick={() => setFailing(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}

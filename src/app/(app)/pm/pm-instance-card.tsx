@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { PmInstance } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 const STATUS_STYLES: Record<string, string> = {
   SCHEDULED: "bg-slate-100 text-slate-700",
@@ -95,7 +96,7 @@ export default function PmInstanceCard({
   const canAct = instance.status === "SCHEDULED" || instance.status === "OVERDUE";
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <p className="font-medium text-slate-900">{planTitle}</p>
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[instance.status]}`}>
@@ -129,13 +130,14 @@ export default function PmInstanceCard({
                 placeholder="Case number to link"
                 className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
               />
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={linkToCase}
                 disabled={submitting || !caseNumber.trim()}
-                className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-800 disabled:opacity-50"
               >
                 Link case
-              </button>
+              </Button>
             </div>
           )}
           <div className="flex gap-2">
@@ -151,21 +153,13 @@ export default function PmInstanceCard({
               placeholder="Reschedule reason"
               className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
             />
-            <button
-              onClick={reschedule}
-              disabled={submitting}
-              className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-800 disabled:opacity-50"
-            >
+            <Button variant="secondary" size="sm" onClick={reschedule} disabled={submitting}>
               Reschedule
-            </button>
+            </Button>
           </div>
-          <button
-            onClick={complete}
-            disabled={submitting}
-            className="self-start rounded-md bg-emerald-700 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-          >
+          <Button variant="success" size="sm" className="self-start" onClick={complete} disabled={submitting}>
             Mark completed
-          </button>
+          </Button>
         </div>
       )}
     </div>

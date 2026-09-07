@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseImpactRecord } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // §25.1 group 3 — Production Impact (minutes + kg).
 //
@@ -77,7 +78,7 @@ export default function ImpactPanel({
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       data-testid="impact-panel"
     >
       <h2 className="text-sm font-semibold text-slate-900">Production impact</h2>
@@ -150,13 +151,9 @@ export default function ImpactPanel({
           />
         </label>
         {error && <p className="text-sm text-red-700">{error}</p>}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="self-start rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-        >
+        <Button size="sm" type="submit" className="self-start" disabled={submitting}>
           {correcting ? "Record correction" : "Record impact"}
-        </button>
+        </Button>
       </form>
 
       {sorted.length > 0 && (

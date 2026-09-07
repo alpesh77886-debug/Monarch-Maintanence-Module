@@ -2736,3 +2736,62 @@ was needed this loop.
 Supabase network access). Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` as described above. CI is the source of truth for
 the actual `vitest run` result on this PR, per the disclosed limitation.
+
+## UI redesign — 2026-09-07 (Boss-directed, outside the loop-batch cadence)
+
+Gate 7 (Loops 31-35) is AWAITING BOSS — autonomous loop-batch engineering
+stays paused. This is a separate, explicit Boss-directed task ("UI design
+sudharo... buttons thik karo, design karo, navigations thik karo"), shown
+against 8 reference CMMS screenshots. Presentation-only, matching the
+Loop 21 precedent: no migration, no RPC, no RLS, no business-rule change
+— every screen still calls exactly the same queries/RPCs it did before.
+
+### What was actually wrong
+
+Reading the app against the references: the top nav was a single cramped
+row of plain text links with no active-state, no icons, and no mobile
+affordance at all — a real gap against §30's "mobile-first... common
+actions possible with minimal navigation" requirement, which this repo
+had never actually built toward on the navigation surface itself. Buttons
+were also ad hoc across ~30 files — every panel invented its own color/
+radius/shadow with no shared component, so the app read as visually
+inconsistent even though each individual screen was internally fine.
+
+### New shared design system
+
+- `src/components/ui.tsx`: `Button` (variants: primary/secondary/danger/
+  warning/success/ghost; sizes sm/md), `LinkButton`, `Badge`, `Card` — pure
+  presentational primitives, no logic, every existing `onClick`/`disabled`/
+  `type` prop forwarded unchanged everywhere they're used.
+- `src/app/(app)/app-nav.tsx`: a single default-exported `AppNav` (the
+  Loop 16 boundary lesson — one export, not two — see below) rendering
+  both a fixed bottom tab bar (mobile, `md:hidden`) and a left icon-rail
+  (`hidden md:flex`) from one shared nav-item list with active-state
+  highlighting via `usePathname`. The bottom bar is the primary/default
+  surface — §30 explicitly forbids designing desktop-first and shrinking
+  it, so the rail is an additive enhancement at `md:`, not the base design.
+
+### Applied across the app
+
+`layout.tsx` (new compact top bar + `AppNav`), `login/page.tsx`,
+`cases/page.tsx` (list + report button), `cases/new/page.tsx`,
+`cases/[id]/page.tsx` (header badges, all bottom sections now `Card`s),
+`sign-out-button.tsx`, `notification-bell.tsx` (icon bell replacing a
+text button), `availability-toggle.tsx`, and all ~28 case-detail panel/
+form components — every raw `<button>` with an ad hoc className swapped
+for `<Button variant=.../>`, preserving each button's exact behavior.
+PM and recurrence-rule cards/forms got the same treatment.
+
+### Verified
+
+`tsc`, `lint`, `build` all clean. Full `"use client"` boundary re-scan
+(every file, not just touched ones) — clean, one export each. Screenshotted
+`/login` locally (desktop 1280×800 and mobile 390×844 via Playwright
+against the dev server) since it needs no Supabase call — renders
+correctly in both. Every other route requires a real sign-in, which this
+sandbox still cannot do (RISK-05's disclosed Supabase egress block, hit
+again by a direct Chromium subprocess check this loop — the block is at
+the sandbox's outbound network layer, so it applies the same way whether
+the target is `localhost` or a live Vercel preview). Full authenticated
+visual verification is therefore a CI/Vercel-preview/manual-device check,
+same disclosed limitation as every prior UI loop in this project.

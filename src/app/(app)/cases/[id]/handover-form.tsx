@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { StaffMember } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // §22.1: manual handover is the preferred path. §5.6: ownership history is
 // preserved and case age does not reset — both are enforced in
@@ -51,7 +52,7 @@ export default function HandoverForm({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-medium text-slate-900">Hand over this case</p>
       <select
         value={toUserId}
@@ -72,13 +73,9 @@ export default function HandoverForm({
         className="rounded-md border border-slate-300 p-2 text-sm"
       />
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <button
-        onClick={submit}
-        disabled={submitting || !toUserId}
-        className="self-start rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-800 disabled:opacity-50"
-      >
+      <Button variant="secondary" className="self-start" onClick={submit} disabled={submitting || !toUserId}>
         Hand over
-      </button>
+      </Button>
     </div>
   );
 }

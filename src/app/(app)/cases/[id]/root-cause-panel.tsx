@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseRootCause } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // §9 item 6 + §9.1 — validated root cause.
 //
@@ -59,7 +60,7 @@ export default function RootCausePanel({
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       data-testid="root-cause-panel"
     >
       <h2 className="text-sm font-semibold text-slate-900">Root cause (§9)</h2>
@@ -105,13 +106,14 @@ export default function RootCausePanel({
           />
         </label>
         {error && <p className="text-sm text-red-700">{error}</p>}
-        <button
+        <Button
+          size="sm"
           type="submit"
+          className="self-start"
           disabled={submitting || !rootCause.trim() || !basis.trim()}
-          className="self-start rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-50"
         >
           {correcting ? "Record correction" : "Record root cause"}
-        </button>
+        </Button>
       </form>
 
       {sorted.length > 0 && (

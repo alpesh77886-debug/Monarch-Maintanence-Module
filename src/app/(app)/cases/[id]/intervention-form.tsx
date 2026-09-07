@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 export default function InterventionForm({
   caseId,
@@ -49,19 +50,16 @@ export default function InterventionForm({
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="self-start rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-      >
+      <Button variant="secondary" className="self-start" onClick={() => setOpen(true)}>
         + Record intervention
-      </button>
+      </Button>
     );
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
     >
       <label className="text-sm text-slate-700">
         Action taken
@@ -91,20 +89,12 @@ export default function InterventionForm({
       </label>
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : "Save intervention"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700"
-        >
+        </Button>
+        <Button variant="secondary" type="button" onClick={() => setOpen(false)}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

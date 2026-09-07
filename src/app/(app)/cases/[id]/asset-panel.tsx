@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseAsset } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // §5.1: "Exact asset may be unknown at creation. Never silently map an
 // unknown asset. A case may later be linked to one or more assets/machines."
@@ -59,7 +60,7 @@ export default function AssetPanel({
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       data-testid="asset-panel"
     >
       <h2 className="text-sm font-semibold text-slate-900">Asset / machine (§5.1)</h2>
@@ -101,13 +102,9 @@ export default function AssetPanel({
           />
         </label>
         {error && <p className="text-sm text-red-700">{error}</p>}
-        <button
-          type="submit"
-          disabled={submitting || !assetName.trim()}
-          className="self-start rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-        >
+        <Button size="sm" type="submit" className="self-start" disabled={submitting || !assetName.trim()}>
           Link asset
-        </button>
+        </Button>
       </form>
     </section>
   );

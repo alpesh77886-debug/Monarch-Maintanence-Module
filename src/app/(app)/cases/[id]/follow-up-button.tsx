@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 // §10: temporary restoration always needs a permanent-repair follow-up.
 // TEMPORARILY_RESTORED has no direct edge to TECHNICALLY_RESTORED in the
@@ -36,20 +37,12 @@ export default function FollowUpButton({ caseId }: { caseId: string }) {
       </p>
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex gap-2">
-        <button
-          onClick={() => resume("IN_REPAIR")}
-          disabled={submitting}
-          className="rounded-md bg-orange-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
+        <Button variant="warning" onClick={() => resume("IN_REPAIR")} disabled={submitting}>
           Resume repair (follow-up)
-        </button>
-        <button
-          onClick={() => resume("DIAGNOSING")}
-          disabled={submitting}
-          className="rounded-md border border-orange-700 px-3 py-2 text-sm text-orange-900 disabled:opacity-50"
-        >
+        </Button>
+        <Button variant="secondary" onClick={() => resume("DIAGNOSING")} disabled={submitting}>
           Back to diagnosing
-        </button>
+        </Button>
       </div>
     </div>
   );
