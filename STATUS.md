@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 28 complete — batch Loops 26-30 in progress
+Current loop: Loop 29 complete — batch Loops 26-30 in progress
 Current gate: **GATE 5 CLOSED.** The Boss approved continuation for Loops
   26-30 ("me aage ki loops ke liye approve kar raha hu 26 se 30") after
   reviewing APPROVAL_REPORT_LOOP_21_25.md. The next hard gate is after
@@ -34,7 +34,14 @@ Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   on the `case_assignments` direct self-insert path; a self-service
   technician could forge it to a real staff member's id, falsely claiming
   staff mediation that never happened — MEDIUM, an audit-trail integrity
-  gap rather than a lifecycle/authority bypass) all RESOLVED and verified
+  gap rather than a lifecycle/authority bypass), and RISK-21 (Loop 29 —
+  `record_spare_usage`'s `>₹12,000` Manager-approval gate (§3.3, named
+  LOCKED in `CLAUDE.md`) was entirely conditional on a client-optional
+  `p_spare_request_id` parameter; omitting it skipped the gate completely
+  and also left the usage row untraceable to any named spare at all,
+  violating §16.1's "mandatory V1" chain — HIGH, and the first finding
+  this batch reachable through the shipped UI's own default dropdown
+  selection, not only a direct API call) all RESOLVED and verified
   against the live deployment. No CRITICAL or HIGH defects currently open.
 Highest severity open: none.
 
@@ -62,8 +69,10 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   `emergency_direct_start`, RISK-18, previously zero coverage), +4 Loop 27
   (`cases_insert` column lockdown, RISK-19, previously zero coverage on
   columns beyond `reporter_user_id`), +1 Loop 28 (`case_assignments`
-  attribution lockdown, RISK-20) —
-  **123 tests across 17 files** (counted from `it()` blocks), all confirmed
+  attribution lockdown, RISK-20), +1 Loop 29 (`record_spare_usage`
+  requires a linked request, RISK-21; 2 pre-existing tests also updated,
+  see CHANGELOG) —
+  **124 tests across 17 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -135,7 +144,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0027 (Loop 28), all live on
+Migrations applied: 0008 (Loop 7) through 0028 (Loop 29), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -298,6 +307,22 @@ Batch summary (Loops 26-30, current batch — see CHANGELOG.md for full detail):
     self-service row can start in. Re-verified: forgery now fails
     (`42501`), legitimate self-insert unaffected, `assign_technician`
     (SECURITY DEFINER) unaffected.
+  - Loop 29: RISK-21 — HIGH. Switched angle: read every `SECURITY
+    DEFINER` RPC's guards against its own documented intent instead of
+    RLS policies. `record_spare_usage`'s `>₹12,000` approval gate (§3.3,
+    named LOCKED in CLAUDE.md) ran only `if p_spare_request_id is not
+    null` — omitting that optional parameter skipped the gate entirely,
+    and (since `spare_usage` has no `spare_name` of its own) also left
+    the row untraceable to any named spare, violating §16.1's mandatory
+    traceability chain. Reachable via the shipped UI's own default
+    dropdown option ("(not linked to a request)"), not just a direct API
+    call — the first such finding this batch. Migration 0028 makes
+    `record_spare_usage` require `p_spare_request_id`; `spares-panel.tsx`
+    updated to remove the unsafe default and guide raising a request
+    first. Re-verified: omitted-link call now fails
+    (`SPARE_REQUEST_REQUIRED`); linked low-value usage still succeeds;
+    linked unapproved high-value usage still correctly blocks
+    (`APPROVAL_REQUIRED`, unchanged).
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

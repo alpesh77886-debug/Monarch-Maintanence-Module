@@ -209,17 +209,26 @@ describe("Spare usage (§16.1)", () => {
       .single();
     const caseId = created!.id as string;
 
+    const { data: request } = await exec.client.rpc("raise_spare_request", {
+      p_case_id: caseId,
+      p_spare_name: testSymptom("bearing"),
+      p_quantity_requested: 2,
+    });
+    const requestId = (request as { spare_request_id: string }).spare_request_id;
+
     // not staff, not assigned -> forbidden
     let { error } = await tech.client.rpc("record_spare_usage", {
       p_case_id: caseId,
       p_quantity: 1,
+      p_spare_request_id: requestId,
     });
     expect(error?.message).toMatch(/FORBIDDEN/);
 
-    // staff -> allowed, no request link needed
+    // staff -> allowed, linked to the request
     ({ error } = await exec.client.rpc("record_spare_usage", {
       p_case_id: caseId,
       p_quantity: 1,
+      p_spare_request_id: requestId,
       p_asset_ref: "AUTOTEST-ASSET",
       p_outcome: "installed",
     }));
@@ -230,6 +239,7 @@ describe("Spare usage (§16.1)", () => {
     ({ error } = await tech.client.rpc("record_spare_usage", {
       p_case_id: caseId,
       p_quantity: 1,
+      p_spare_request_id: requestId,
     }));
     expect(error).toBeNull();
 
@@ -238,6 +248,38 @@ describe("Spare usage (§16.1)", () => {
       .select("*")
       .eq("case_id", caseId);
     expect(usageRows?.length).toBe(2);
+  });
+});
+
+// Loop 29 (RISK-21): record_spare_usage's >₹12,000 approval gate was
+// entirely conditional on p_spare_request_id being supplied — but that
+// parameter defaults to null and nothing forced a caller to pass it,
+// so any staff member or assigned technician could record usage with
+// zero request, zero approval, and (since spare_usage has no spare_name
+// column of its own) zero identification of which spare was even used —
+// violating §16.1's "mandatory" traceability chain as well as §3.3.
+// Reachable not just via a direct RPC call but via this app's own
+// shipped UI (spares-panel.tsx previously defaulted its usage form to
+// "(not linked to a request)"). Fixed by requiring p_spare_request_id.
+describe("Spare usage requires a linked request (§16.1, §3.3, RISK-21)", () => {
+  it("rejects record_spare_usage with no spare_request_id", async () => {
+    const exec = await signInAs("executive");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("RISK-21 usage without request"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    const { error } = await exec.client.rpc("record_spare_usage", {
+      p_case_id: caseId,
+      p_quantity: 1,
+    });
+    expect(error?.message).toMatch(/SPARE_REQUEST_REQUIRED/);
   });
 });
 
@@ -310,10 +352,11 @@ describe("Stores reference updates (§16.2, Loop 24)", () => {
   });
 
   it("set_spare_usage_stores_reference is staff-only, requires a status, and updates the row", async () => {
-    const { exec, caseId } = await seedRequest("stores usage");
+    const { exec, caseId, requestId } = await seedRequest("stores usage");
     const { data: usage } = await exec.client.rpc("record_spare_usage", {
       p_case_id: caseId,
       p_quantity: 1,
+      p_spare_request_id: requestId,
     });
     const usageId = (usage as { spare_usage_id: string }).spare_usage_id;
 

@@ -2240,3 +2240,85 @@ read-only display). Re-scanned every `"use client"` file anyway — clean.
 
 `tsc`, `lint`, `build` clean. Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` before and after the fix (table above).
+
+## Loop 29 — 2026-09-07
+
+PR #23 (Loop 28) merged clean — both CI jobs green, 123 tests passing.
+Started Loop 29 from a fresh `main`.
+
+Switched angle per the recommendation from earlier gate reports: instead
+of continuing to read RLS `qual`/`with_check` (exhausted across the whole
+schema by Loop 28's single-query sweep), read every `SECURITY DEFINER`
+RPC's own internal guards against its own documented intent. Listed all
+55 `SECURITY DEFINER` functions in the schema and started with the ones
+touching §3.3's named financial-authority boundary, since `CLAUDE.md`
+calls the ₹12,000 rule out explicitly as LOCKED and non-negotiable.
+
+### RISK-21 — `record_spare_usage` lets the ₹12,000 approval gate be skipped by simply not linking a request
+
+`record_spare_usage`'s `>₹12,000` Manager-approval check (added Loop 8,
+migration 0009) only runs `if p_spare_request_id is not null` — but that
+parameter defaults to `NULL` and nothing required a caller to supply it.
+
+Verified live as the seeded non-staff `technician` identity, assigned to
+a case: calling `record_spare_usage` with `p_spare_request_id` omitted
+succeeded outright — no request, no approval, no Manager review, for a
+spare of any value. Worse: `maintenance.spare_usage` has no `spare_name`
+column of its own — the *only* place a spare's name is recorded is
+`spare_requests.spare_name`, reachable only via the link. An unlinked
+usage row therefore isn't just unapproved, it is untraceable to any named
+spare at all — an unconditional violation of §16.1 ("Spare usage
+traceability is mandatory V1", chain starts with "which spare was
+used"), not a judgment call or a PENDING/interpretation matter.
+
+This is also the first finding this batch that's reachable through the
+app's own shipped UI with zero adversarial effort, not just a direct API
+call: `spares-panel.tsx`'s "Record spare usage" dropdown defaulted to an
+explicit `(not linked to a request)` option.
+
+Migration `0028_maintenance_spare_usage_requires_request.sql` makes
+`record_spare_usage` raise `SPARE_REQUEST_REQUIRED` when
+`p_spare_request_id is null`. This isn't a new business rule — §16.1's
+traceability mandate already required every usage to name its spare;
+the fix just makes the RPC actually enforce what the pack already locks,
+closing the §3.3 financial-authority bypass as the same side effect.
+
+`spares-panel.tsx` updated: the "(not linked to a request)" option is
+gone; if a case has no spare requests yet, the usage form is replaced
+with guidance to raise one first; a client-side check gives an immediate
+error instead of a round trip if none is selected.
+
+**Live verification:**
+
+| Step | Result |
+|---|---|
+| `record_spare_usage` with `p_spare_request_id` omitted, before fix | succeeded — no request, no approval, unnamed spare |
+| Same call, after the fix | fails, `SPARE_REQUEST_REQUIRED` |
+| Linked to a real, low-value (≤₹12,000) request, after the fix | succeeds |
+| Linked to a real, unapproved >₹12,000 request, after the fix | fails, `APPROVAL_REQUIRED` (unchanged, still correct) |
+
+Logged as RISK-21, HIGH, RESOLVED, in `RISK_REGISTER.md`.
+
+### Tests
+
+1 new `it()` in `tests/spares.test.ts` for the `SPARE_REQUEST_REQUIRED`
+rejection. 2 existing tests updated: they previously called
+`record_spare_usage` with no linked request and asserted success — that
+was exercising the very gap this loop closes, not a legitimate case, so
+both now raise a request first and link it. Suite is now **124 tests
+across 17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+`spares-panel.tsx` (a `"use client"` file) changed this loop. Re-scanned
+every `"use client"` file for stray named exports — clean, only
+`export default` on the changed file, matching every prior loop's
+finding.
+
+### Verified
+
+`tsc`, `lint`, `build` clean (one `react/no-unescaped-entities` lint
+error caught and fixed — an apostrophe in new guidance text). Live-verified
+against Supabase project `maavrlqkdrisjwzhjdgg` before and after the fix
+(table above), including confirming the pre-existing >₹12,000
+`APPROVAL_REQUIRED` path is unchanged by this fix.
