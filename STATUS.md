@@ -1,10 +1,10 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 25 (complete) — END OF BATCH (Loops 21-25)
-Current gate: **GATE 5 OPEN — APPROVAL_REPORT_LOOP_21_25.md written, awaiting
-  the Boss.** Autonomous development is PAUSED. Loop 26 does not begin until
-  the Boss gives explicit continuation language (IMPLEMENTATION_PACK.md
-  §19.9/§19.13). Silence or "looks good" is NOT approval. See APPROVAL_GATE.md.
+Current loop: Loop 26 — batch Loops 26-30 starting
+Current gate: **GATE 5 CLOSED.** The Boss approved continuation for Loops
+  26-30 ("me aage ki loops ke liye approve kar raha hu 26 se 30") after
+  reviewing APPROVAL_REPORT_LOOP_21_25.md. The next hard gate is after
+  Loop 30 (IMPLEMENTATION_PACK.md §19.9/§19.13). See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -178,10 +178,7 @@ Batch summary (Loops 16-20 — see CHANGELOG.md for full per-loop detail):
     (Loop 15) could never produce a match before this loop — verified live
     that it now does (3 cases sharing one linked asset -> 1 flag).
 
-Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Loops 21-25 are
-  complete and APPROVAL_REPORT_LOOP_21_25.md is written. Not resuming Loop 26+
-  until the Boss gives explicit continuation language (APPROVAL_GATE.md /
-  IMPLEMENTATION_PACK.md §19.13).
+Approval state: Gate 5 approved. Loops 26-30 in progress.
 
 Batch summary (Loops 21-25 — see CHANGELOG.md for full per-loop detail):
   - Loop 21: dashboard/KPI visual upgrade. Boss-scoped explicitly to
