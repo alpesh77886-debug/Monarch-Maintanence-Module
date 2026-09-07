@@ -1,22 +1,17 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Boss-directed FORENSIC REMEDIATION (P0/P1/P2 fix pack)
-  complete — see FORENSIC_REMEDIATION_FINAL.md. Closed F-01 (CRITICAL: any
-  Maintenance Executive/Manager could make the final QC clearance decision;
-  RISK-23), F-02/03/04 (HIGH: four SELECT policies were USING(true), so any
-  authenticated account could read the whole plant's maintenance history;
-  RISK-24), plus F-06/07/08/09. Migrations 0031-0033. Preceded by two other
-  Boss-directed tasks today: a UI redesign and a load/navigation performance
-  fix (both presentation/infrastructure only).
-  PRODUCTION READINESS VERDICT: **NOT READY** — three blockers, all Boss
-  decisions rather than unfinished engineering: (1) maintenance.qc_authority
-  is empty by design, so QC-required cases stop at CLEARANCE_PENDING until
-  the real QC identities are named (§12 evidence-controlled); (2) one
-  Supabase project serves both production and CI; (3) leaked-password
-  protection is disabled.
-  IMPORTANT live-data fact: the database holds 7,592 cases of which ZERO are
-  real business records — every one is test-tagged. Nothing operational has
-  ever been polluted; the contamination risk is entirely forward-looking.
+Current loop: Loop 36 complete (batch 36-40 open). Loop 36 completed the
+  forensic brief's Phase 4 red-team matrix as a permanent regression suite:
+  17 attacks across non-staff, QC, Executive and Manager identities, all
+  already refused server-side — no new defects. It specifically re-attacked
+  the NEW QC identity introduced by F-01 to check it opened no lateral door
+  into Maintenance authority; it did not. Preceded today by the Boss-directed
+  forensic remediation (RISK-23 QC authority, RISK-24 read scope), a UI
+  redesign, and a load/navigation performance fix.
+  PRODUCTION READINESS VERDICT: **NOT READY** — unchanged, three Boss-side
+  blockers (maintenance.qc_authority is empty by design; one Supabase project
+  serves both production and CI; leaked-password protection is disabled).
+  Live-data fact: 7,592 cases, ZERO of them real business records.
 Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
   loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
   until the Boss gives explicit continuation language for the next audit

@@ -3171,3 +3171,71 @@ it is recorded as *unexplained* rather than dismissed as a flake; if it recurs
 on the next run it will be root-caused properly rather than re-run again.
 
 3 new regression tests cover the two real defects.
+
+## Loop 36 — 2026-09-07
+
+**Summary:** Completed the forensic brief's Phase 4 red-team matrix as a
+permanent regression suite. **No new defects found** — all 17 attacks were
+already refused server-side.
+
+**Requirements affected:** §29 (authorization enforced at the backend
+boundary), §3.3 (₹12,000 LOCKED financial authority), §4 (LOCKED lifecycle
+graph), §6 (emergency two-step), §12 (QC ownership).
+
+**Why this loop:** the remediation brief listed a red-team matrix under Phase 4,
+but only two slices of it were actually exercised there — QC authority and read
+scope. The rest (lifecycle mutation, assignment, safety stop, emergency
+confirmation, send-to-QC, spare approval, reopen, lifecycle jumps) was never
+run as a set. A matrix that is only partly run is not a matrix.
+
+There was also a specific reason to re-attack now: **F-01 introduced a brand new
+identity type.** Adding an identity is exactly the kind of change that opens a
+lateral door somewhere unrelated, and nothing had yet checked whether the QC
+identity could do Maintenance work through some other RPC.
+
+**Findings — all clean, run live before any test was written:**
+
+| Actor | Attack | Result |
+|---|---|---|
+| non-staff | `transition_case` | FORBIDDEN |
+| non-staff | `assign_technician` | FORBIDDEN |
+| non-staff | `raise_safety_stop` | FORBIDDEN |
+| non-staff | `confirm_emergency` | FORBIDDEN |
+| non-staff | `send_to_qc` | FORBIDDEN |
+| non-staff | `reopen_case` | FORBIDDEN |
+| non-staff | approve >₹12,000 spare | FORBIDDEN |
+| **QC identity** | approve >₹12,000 spare | FORBIDDEN |
+| **QC identity** | `acknowledge_case` | FORBIDDEN |
+| **QC identity** | `raise_safety_stop` | FORBIDDEN |
+| **QC identity** | `assign_technician` / `reopen_case` | FORBIDDEN |
+| **QC identity** | `transition_case` to CLOSED | FORBIDDEN |
+| **Executive** | approve >₹12,000 spare | FORBIDDEN (Manager-only holds) |
+| Executive | jump `ACKNOWLEDGED → CLOSED` | INVALID_TRANSITION |
+| Executive | jump `ACKNOWLEDGED → MAINTENANCE_RELEASED` | INVALID_TRANSITION |
+| Manager | approve >₹12,000 spare | SUCCEEDED (correct) |
+
+The ₹12,000 request was also verified to carry
+`requires_manager_approval = true` in the data itself — the gate is a stored
+fact, not a UI decision.
+
+**Material changes:** `tests/red-team-matrix.test.ts` (new, 4 suites). No
+migration, no RPC, no RLS, no UI change — there was nothing to fix.
+
+**A note on what a clean loop is worth:** finding nothing is only meaningful if
+the check is repeatable. The value here is not the sweep, which was already
+implied by earlier loops' individual guards; it is that the whole matrix now
+runs on every CI push, including against the identity type that did not exist
+this morning.
+
+**Implementation detail worth recording:** the attacks are stored as thunks,
+not pre-built promises. An array of already-fired `client.rpc(...)` calls
+executes every attack concurrently the moment the array is built, before a
+single assertion runs — so one attack could influence another's outcome and the
+failure message would point at the wrong row. Deferring each call until its own
+assertion keeps them independent and sequential.
+
+**Tests:** 4 new suites. `tsc`, `lint` clean.
+
+**Known limitations:** unchanged — the three Boss-side blockers from
+`FORENSIC_REMEDIATION_FINAL.md` §16 remain open and are deliberately not loop
+work.
