@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,10 +35,17 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-lg"
       >
-        <h1 className="text-lg font-semibold text-slate-900">MONARCH Maintenance</h1>
-        <p className="mt-1 text-sm text-slate-500">Sign in with your staff account.</p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-base font-bold text-white">
+            M
+          </span>
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900">MONARCH Maintenance</h1>
+            <p className="text-sm text-slate-500">Sign in with your staff account</p>
+          </div>
+        </div>
 
         <label className="mt-6 block text-sm font-medium text-slate-700">
           Email
@@ -46,7 +54,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             autoComplete="email"
           />
         </label>
@@ -58,22 +66,18 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             autoComplete="current-password"
           />
         </label>
 
         {error && (
-          <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-6 w-full rounded-md bg-slate-900 px-4 py-2 text-base font-medium text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} className="mt-6 w-full text-base">
           {loading ? "Signing in…" : "Sign in"}
-        </button>
+        </Button>
       </form>
     </main>
   );

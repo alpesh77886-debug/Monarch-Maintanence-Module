@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Priority } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // §5.4: "Executive can change priority. Manager has final override."
 //
@@ -52,7 +53,7 @@ export default function PriorityPanel({
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
+    <section className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-900">Priority</h2>
         <span className="text-sm font-medium text-slate-700">{priority ?? "not set"}</span>
@@ -71,15 +72,16 @@ export default function PriorityPanel({
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             {PRIORITIES.filter((p) => p !== priority).map((p) => (
-              <button
+              <Button
                 key={p}
+                variant="secondary"
+                size="sm"
                 type="button"
                 onClick={() => setChoosing(p)}
                 disabled={submitting}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 disabled:opacity-50"
               >
                 Set {p}
-              </button>
+              </Button>
             ))}
           </div>
           {choosing && (
@@ -91,24 +93,25 @@ export default function PriorityPanel({
                 className="rounded-md border border-slate-300 p-1.5 text-sm"
               />
               <div className="flex gap-2">
-                <button
+                <Button
+                  size="sm"
                   type="button"
                   onClick={() => apply(choosing)}
                   disabled={submitting || !reason.trim()}
-                  className="self-start rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-50"
                 >
                   Confirm
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   onClick={() => {
                     setChoosing(null);
                     setReason("");
                   }}
-                  className="self-start rounded-md border border-slate-300 px-3 py-1.5 text-sm"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}

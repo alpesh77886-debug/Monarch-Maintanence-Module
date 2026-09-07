@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 // §14.2 PTW seam. Deliberately thin: this records "PTW Required = Yes/No"
 // and a linked proof reference — it does not decide WHO may issue, perform,
@@ -69,7 +70,7 @@ export default function PtwPanel({
 
   return (
     <section
-      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       data-testid="ptw-panel"
     >
       <h2 className="text-sm font-semibold text-slate-900">
@@ -100,22 +101,24 @@ export default function PtwPanel({
             className="rounded-md border border-slate-300 p-1.5 text-sm"
           />
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               onClick={() => setRequired(true)}
               disabled={submitting || !requireReason.trim()}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 disabled:opacity-50"
             >
               PTW required = Yes
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               onClick={() => setRequired(false)}
               disabled={submitting || !requireReason.trim()}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 disabled:opacity-50"
             >
               PTW required = No
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -128,14 +131,15 @@ export default function PtwPanel({
             placeholder="Permit / proof reference"
             className="rounded-md border border-slate-300 p-1.5 text-sm"
           />
-          <button
+          <Button
+            size="sm"
             type="button"
+            className="self-start"
             onClick={linkProof}
             disabled={submitting || !proofRef.trim()}
-            className="self-start rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-50"
           >
             Link proof
-          </button>
+          </Button>
           <p className="text-xs text-slate-500">
             Repair work cannot start until a proof is linked (§14.2).
           </p>

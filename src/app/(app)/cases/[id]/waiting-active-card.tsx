@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseWait } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 export default function WaitingActiveCard({ wait }: { wait: CaseWait }) {
   const router = useRouter();
@@ -45,21 +46,17 @@ export default function WaitingActiveCard({ wait }: { wait: CaseWait }) {
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex gap-2">
         {wait.reason_type === "EXTERNAL" && !wait.resume_ready_at && (
-          <button
-            onClick={() => callRpc("mark_wait_resolved")}
-            disabled={submitting}
-            className="rounded-md bg-amber-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <Button variant="warning" onClick={() => callRpc("mark_wait_resolved")} disabled={submitting}>
             Mark dependency resolved
-          </button>
+          </Button>
         )}
-        <button
+        <Button
+          variant="secondary"
           onClick={() => callRpc("resume_wait")}
           disabled={submitting || !canResume}
-          className="rounded-md border border-amber-700 px-3 py-2 text-sm text-amber-900 disabled:opacity-50"
         >
           Resume
-        </button>
+        </Button>
       </div>
     </div>
   );

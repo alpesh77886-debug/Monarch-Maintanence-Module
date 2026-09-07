@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 // Loop 23: §18 configuration UI for `create_recurrence_rule` — Manager-only
 // at the RPC layer, so this form is only ever rendered for a Manager (see
@@ -56,7 +57,7 @@ export default function CreateRecurrenceRuleForm() {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-medium text-slate-900">New recurrence rule (§18)</p>
       <p className="text-xs text-slate-500">
         PENDING-04: no threshold or window is supplied by this app. Enter only a
@@ -105,13 +106,9 @@ export default function CreateRecurrenceRuleForm() {
         className="rounded-md border border-slate-300 p-2 text-sm"
       />
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <button
-        onClick={submit}
-        disabled={submitting || !canSubmit}
-        className="self-start rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
+      <Button className="self-start" onClick={submit} disabled={submitting || !canSubmit}>
         Create rule
-      </button>
+      </Button>
     </div>
   );
 }

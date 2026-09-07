@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { RecurrenceRule } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // Loop 23: `set_recurrence_rule_active` toggle — Manager-only, and the RPC
 // itself requires a reason for either direction, so this never silently
@@ -43,7 +44,7 @@ export default function RecurrenceRuleCard({
 
   return (
     <div
-      className={`rounded-lg border p-3 text-sm ${
+      className={`rounded-xl border p-4 text-sm shadow-sm ${
         rule.is_active ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50"
       }`}
     >
@@ -67,13 +68,9 @@ export default function RecurrenceRuleCard({
       <p className="mt-1 text-slate-700">{rule.approval_note}</p>
       {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
       {isManager && (
-        <button
-          onClick={toggle}
-          disabled={submitting}
-          className="mt-2 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700 disabled:opacity-50"
-        >
+        <Button variant="secondary" size="sm" className="mt-2" onClick={toggle} disabled={submitting}>
           {rule.is_active ? "Deactivate" : "Reactivate"}
-        </button>
+        </Button>
       )}
     </div>
   );

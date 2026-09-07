@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { SafetyStop, ProductionBoundaryEvent } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // §13 production restart boundary. Nothing in this panel authorises or blocks
 // a line start — Maintenance must not become Production's line-start
@@ -53,7 +54,7 @@ export default function ProductionBoundaryPanel({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3">
+    <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-900">
         Production restart boundary
       </h2>
@@ -75,7 +76,9 @@ export default function ProductionBoundaryPanel({
             placeholder="Reason for lifting the stop"
             className="rounded-md border border-red-300 p-2 text-sm"
           />
-          <button
+          <Button
+            variant="danger"
+            className="self-start"
             onClick={() =>
               call(
                 "lift_safety_stop",
@@ -84,10 +87,9 @@ export default function ProductionBoundaryPanel({
               )
             }
             disabled={submitting || !liftReason.trim()}
-            className="self-start rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             Lift stop
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-2 rounded-md border border-slate-100 p-2">
@@ -122,7 +124,9 @@ export default function ProductionBoundaryPanel({
             placeholder="Reason for the stop"
             className="rounded-md border border-slate-300 p-2 text-sm"
           />
-          <button
+          <Button
+            variant="danger"
+            className="self-start"
             onClick={() =>
               call(
                 "raise_safety_stop",
@@ -141,10 +145,9 @@ export default function ProductionBoundaryPanel({
               )
             }
             disabled={submitting || !stopReason.trim()}
-            className="self-start rounded-md border border-red-700 px-3 py-2 text-sm text-red-800 disabled:opacity-50"
           >
             Raise stop
-          </button>
+          </Button>
         </div>
       )}
 
@@ -163,7 +166,9 @@ export default function ProductionBoundaryPanel({
             placeholder="Context — who started it, what was observed"
             className="rounded-md border border-slate-300 p-2 text-sm"
           />
-          <button
+          <Button
+            variant="warning"
+            className="self-start"
             onClick={() =>
               call(
                 "record_production_started_without_release",
@@ -177,10 +182,9 @@ export default function ProductionBoundaryPanel({
               )
             }
             disabled={submitting || !breachReason.trim()}
-            className="self-start rounded-md border border-amber-700 px-3 py-2 text-sm text-amber-800 disabled:opacity-50"
           >
             Record breach
-          </button>
+          </Button>
         </div>
       )}
 
@@ -194,7 +198,9 @@ export default function ProductionBoundaryPanel({
           placeholder="Context — why it did not restart"
           className="rounded-md border border-slate-300 p-2 text-sm"
         />
-        <button
+        <Button
+          variant="secondary"
+          className="self-start"
           onClick={() =>
             call(
               "record_production_not_restarted",
@@ -203,10 +209,9 @@ export default function ProductionBoundaryPanel({
             )
           }
           disabled={submitting || !notRestartedReason.trim()}
-          className="self-start rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-800 disabled:opacity-50"
         >
           Record not restarted
-        </button>
+        </Button>
       </div>
 
       {error && <p className="text-sm text-red-700">{error}</p>}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 // §17.1/§17.2: any staff may propose a RECURRING plan (needs Manager
 // approval before it generates instances); only Manager may create a
@@ -38,7 +39,7 @@ export default function CreatePlanForm({ isManager }: { isManager: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-medium text-slate-900">New PM plan</p>
       <input
         value={title}
@@ -75,13 +76,9 @@ export default function CreatePlanForm({ isManager }: { isManager: boolean }) {
         />
       )}
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <button
-        onClick={submit}
-        disabled={submitting || !title.trim()}
-        className="self-start rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-      >
+      <Button className="self-start" onClick={submit} disabled={submitting || !title.trim()}>
         Create plan
-      </button>
+      </Button>
     </div>
   );
 }

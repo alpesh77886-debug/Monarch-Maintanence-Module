@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "./sign-out-button";
 import NotificationBell from "./notification-bell";
 import AvailabilityToggle from "./availability-toggle";
+import AppNav from "./app-nav";
 import type { AppNotification } from "@/lib/supabase/database.types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,39 +36,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-3">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/cases" className="text-base font-semibold text-slate-900">
-              MONARCH Maintenance
-            </Link>
-            {isStaff && (
-              <>
-                <Link href="/dashboard" className="text-sm font-medium text-slate-600">
-                  Shift
-                </Link>
-                <Link href="/pm" className="text-sm font-medium text-slate-600">
-                  PM
-                </Link>
-                <Link href="/recurrence-rules" className="text-sm font-medium text-slate-600">
-                  Recurrence
-                </Link>
-                <Link href="/kpi" className="text-sm font-medium text-slate-600">
-                  KPIs
-                </Link>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-sm text-slate-600">
-            <span className="hidden sm:inline">{staffName}</span>
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-30 flex h-14 items-center border-b border-slate-200 bg-white px-4">
+        <div className="flex w-full items-center justify-between gap-3">
+          <Link href="/cases" className="flex items-center gap-2 text-base font-semibold text-slate-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+              M
+            </span>
+            <span className="hidden sm:inline">MONARCH Maintenance</span>
+          </Link>
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            {staffName && <span className="hidden truncate sm:inline">{staffName}</span>}
             {isStaff && <AvailabilityToggle isAvailable={isAvailable} />}
             {user && <NotificationBell notifications={notifications} />}
             <SignOutButton />
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>
+
+      <div className="flex">
+        {isStaff && <AppNav />}
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-20 pt-4 md:pb-4">{children}</main>
+      </div>
     </div>
   );
 }

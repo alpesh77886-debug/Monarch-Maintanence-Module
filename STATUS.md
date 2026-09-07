@@ -1,10 +1,14 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 35 complete — batch Loops 31-35 complete, gate report pending
-Current gate: **GATE 6 CLOSED.** The Boss approved continuation for Loops
-  31-35 ("approved loops 31 to 35") after reviewing
-  APPROVAL_REPORT_LOOP_26_30.md. The next hard gate is after Loop 35
-  (IMPLEMENTATION_PACK.md §19.9/§19.13). See APPROVAL_GATE.md.
+Current loop: Loops 31-35 batch complete, gate report merged. A Boss-
+  directed UI redesign (presentation-only, matching the Loop 21 precedent)
+  followed outside the loop-batch cadence — see CHANGELOG.md "UI redesign
+  — 2026-09-07."
+Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
+  loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
+  until the Boss gives explicit continuation language for Loop 36+. The UI
+  redesign task above is a separate, explicit Boss instruction, not a
+  continuation of the audit batches. See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { RecurrenceFlag, CapaLink, StaffMember } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui";
 
 // §18 recurrence + §19 CAPA.
 //
@@ -60,7 +61,7 @@ export default function RecurrenceCapaPanel({
 
   return (
     <section
-      className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       data-testid="recurrence-capa-panel"
     >
       <h2 className="text-sm font-semibold text-slate-900">Recurrence &amp; CAPA</h2>
@@ -124,7 +125,8 @@ export default function RecurrenceCapaPanel({
                       className="rounded-md border border-slate-300 p-1.5 text-sm"
                     />
                     <div className="flex gap-2">
-                      <button
+                      <Button
+                        size="sm"
                         type="button"
                         disabled={busy}
                         onClick={() =>
@@ -134,11 +136,12 @@ export default function RecurrenceCapaPanel({
                             p_reason: decisionReason[f.id] ?? "",
                           })
                         }
-                        className="rounded-md bg-slate-900 px-3 py-1 text-xs text-white disabled:opacity-50"
                       >
                         Confirm recurrence
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         type="button"
                         disabled={busy}
                         onClick={() =>
@@ -148,10 +151,9 @@ export default function RecurrenceCapaPanel({
                             p_reason: decisionReason[f.id] ?? "",
                           })
                         }
-                        className="rounded-md border border-slate-300 px-3 py-1 text-xs disabled:opacity-50"
                       >
                         Dismiss
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -184,8 +186,11 @@ export default function RecurrenceCapaPanel({
                           placeholder="Root cause, in your own words"
                           className="rounded-md border border-slate-300 p-1.5 text-sm"
                         />
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           type="button"
+                          className="self-start"
                           disabled={busy}
                           onClick={() =>
                             call(
@@ -197,10 +202,9 @@ export default function RecurrenceCapaPanel({
                               () => setRootCause({ ...rootCause, [f.id]: "" })
                             )
                           }
-                          className="self-start rounded-md border border-slate-300 px-3 py-1 text-xs disabled:opacity-50"
                         >
                           Record root cause
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -260,7 +264,8 @@ export default function RecurrenceCapaPanel({
                         className="rounded-md border border-slate-300 p-1.5 text-sm"
                       />
                       <div className="flex gap-2">
-                        <button
+                        <Button
+                          size="sm"
                           type="button"
                           disabled={busy}
                           onClick={() =>
@@ -270,11 +275,12 @@ export default function RecurrenceCapaPanel({
                               p_verification_note: verifyNote[c.id] ?? "",
                             })
                           }
-                          className="rounded-md bg-slate-900 px-3 py-1 text-xs text-white disabled:opacity-50"
                         >
                           Verify effective
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           type="button"
                           disabled={busy}
                           onClick={() =>
@@ -284,10 +290,9 @@ export default function RecurrenceCapaPanel({
                               p_verification_note: verifyNote[c.id] ?? "",
                             })
                           }
-                          className="rounded-md border border-slate-300 px-3 py-1 text-xs disabled:opacity-50"
                         >
                           Verify NOT effective
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -327,8 +332,10 @@ export default function RecurrenceCapaPanel({
           </select>
           {/* Only Managers are listed because §19 fixes CAPA ownership there;
               raise_capa re-checks it server-side regardless. */}
-          <button
+          <Button
+            size="sm"
             type="button"
+            className="self-start"
             disabled={busy}
             onClick={() =>
               call(
@@ -346,10 +353,9 @@ export default function RecurrenceCapaPanel({
                 }
               )
             }
-            className="self-start rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-50"
           >
             Raise CAPA
-          </button>
+          </Button>
         </div>
       </div>
     </section>

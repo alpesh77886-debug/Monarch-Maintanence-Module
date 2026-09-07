@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui";
 
 export default function CloseReopenActions({
   caseId,
@@ -52,22 +53,14 @@ export default function CloseReopenActions({
     <div className="flex flex-col gap-2">
       {error && <p className="text-sm text-red-700">{error}</p>}
       {status === "MAINTENANCE_RELEASED" && (
-        <button
-          onClick={close}
-          disabled={submitting}
-          className="self-start rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
+        <Button className="self-start" onClick={close} disabled={submitting}>
           Close case
-        </button>
+        </Button>
       )}
       {status === "CLOSED" && (
-        <button
-          onClick={reopen}
-          disabled={submitting}
-          className="self-start rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-        >
+        <Button variant="secondary" className="self-start" onClick={reopen} disabled={submitting}>
           Reopen (same problem recurred)
-        </button>
+        </Button>
       )}
     </div>
   );
