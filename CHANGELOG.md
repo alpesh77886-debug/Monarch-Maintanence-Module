@@ -3416,3 +3416,71 @@ rewrite history to make a metric look better (§27). The fix stops new
 duplicates; it does not erase the evidence of the old ones.
 
 **Tests:** 5 new. `tsc`, `lint` clean.
+
+## Loop 39 — 2026-09-07
+
+**Summary:** Took an angle no prior loop had — instead of auditing what the
+code *does*, cross-referenced all 60 schema functions against whether anything
+in `src/` or `tests/` actually *calls* them. One real finding, fixed
+(RISK-27), and two corrections to my own first reading.
+
+**Requirements affected:** §28 (Take Ownership, first-valid-actor), §24
+(HUMAN REQUIRED), §22.1 (shift-end UNASSIGNED), §37 (test matrix).
+
+### RISK-27 — a built, tested capability no user could reach
+
+`take_ownership` is named explicitly in §28 and listed in §24's HUMAN REQUIRED
+list. It existed, was correct, and was tested — including §28's first-valid-actor
+race guard. **Nothing in the application ever called it.**
+
+Acknowledging a case assigns ownership, so a `REPORTED` case was covered. A
+case that *loses* its owner later was not — and that state is **designed, not
+accidental**: §22.1's `handover_all_open_cases` deliberately sets the owner to
+NULL at shift end when nobody is available, and the dashboard deliberately
+lists those cases under "Unassigned — waiting for a Maintenance owner".
+
+So the application created the state, highlighted it on the dashboard, and
+offered no way to resolve it. Live-verified: **4 cases were unassigned AND past
+the statuses the Acknowledge button is offered on** (`ACKNOWLEDGED`,
+`IN_REPAIR`) — genuinely unclaimable through the UI.
+
+Fixed by wiring the existing RPC to a button, gated on
+`isStaffRow && !current_owner_user_id && !caseIsTerminal && !canAcknowledge`.
+That last clause matters: acknowledging already assigns ownership, so offering
+both on a `REPORTED` case would be two buttons doing one thing. No migration,
+no RPC change — the server side was already correct and already race-safe.
+§28's deterministic conflict response (`ALREADY_OWNED`) is shown to the user
+rather than swallowed, so the loser of a simultaneous claim learns why nothing
+happened.
+
+### Two corrections to my own first reading
+
+Both are recorded because in each case the first reading would have produced a
+false finding.
+
+**1. `mark_asset_known` is not dead code.** The cross-reference flagged it as
+called by neither `src/` nor `tests/`. That is true and irrelevant: it is a
+**trigger** function (`execute function maintenance.mark_asset_known()` in
+0021), so being uncalled as an RPC is correct by design. It is genuinely
+exercised — `tests/case-assets.test.ts` asserts the trigger flips
+`cases.asset_known` when a real asset is linked. Reporting it as dead surface
+would have been wrong.
+
+**2. The five "untested" UI-reachable RPCs are a known, documented limitation,
+not a discovery.** `complete_pm_instance`, `reschedule_pm_instance`,
+`link_pm_instance_to_case`, `decide_recurrence_flag` and
+`record_recurrence_root_cause` have no vitest coverage — but `tests/pm.test.ts`
+already explains why, in a comment written in Loop 10: instances only come into
+existence via `run_pm_scan`, which is cron-only with EXECUTE revoked from every
+client role (a fact that file also *asserts*), so there is no client-reachable
+way to create the precondition. The same holds for recurrence flags and
+`run_recurrence_scan`. Those RPCs were verified live via `execute_sql` at the
+time instead. Presenting this as a new §37 gap would have been claiming
+someone else's already-documented decision as my own finding.
+
+**Material changes:** `take-ownership-button.tsx` (new), case-detail page
+wiring, `tests/take-ownership-reachability.test.ts` (3 tests), RISK-27 entry.
+No migration, no RPC change.
+
+**Tests:** 3 new. `tsc`, `lint`, `build` clean. Full `"use client"` boundary
+re-scan across 36 client files — clean.

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AcknowledgeForm from "./acknowledge-form";
+import TakeOwnershipButton from "./take-ownership-button";
 import ObservationForm from "./observation-form";
 import AssignTechnicianForm from "./assign-technician-form";
 import InterventionForm from "./intervention-form";
@@ -183,6 +184,10 @@ export default async function CaseDetailPage({
   // §6: reporter or staff may claim; only staff may confirm, and only once
   // claimed. Not offered once the case is CLOSED/REJECTED/DUPLICATE.
   const caseIsTerminal = ["CLOSED", "REJECTED", "DUPLICATE"].includes(caseRow.status);
+
+  // §28 "Take Ownership" / §24 HUMAN REQUIRED "acknowledge/take ownership".
+  const canTakeOwnership =
+    !!isStaffRow && !caseRow.current_owner_user_id && !caseIsTerminal && !canAcknowledge;
   const canClaimEmergency =
     !caseIsTerminal &&
     !caseRow.emergency_confirmed &&
@@ -264,6 +269,14 @@ export default async function CaseDetailPage({
       )}
 
       {canAcknowledge && <AcknowledgeForm caseId={caseRow.id} />}
+
+      {/* Loop 39 (RISK-27): acknowledging assigns ownership, so a REPORTED
+          case never needed this. A case that LOSES its owner later did —
+          §22.1's shift-end handover sets the owner to NULL by design when
+          nobody is available, and the dashboard lists exactly those cases as
+          needing an owner. Offered only when Acknowledge is not, so there are
+          never two buttons doing the same thing. */}
+      {canTakeOwnership && <TakeOwnershipButton caseId={caseRow.id} />}
 
       {isStaffRow && caseRow.current_owner_user_id && (
         <ObservationForm caseId={caseRow.id} interventions={interventions ?? []} />
