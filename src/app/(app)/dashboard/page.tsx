@@ -45,19 +45,16 @@ export default async function DashboardPage() {
     );
   }
 
-  const { data: allCases } = await supabase
-    .from("cases")
-    .select("id, case_number, status, priority, symptom, current_owner_user_id, created_at, closed_at")
-    .order("created_at", { ascending: true });
-
-  const { data: staff } = await supabase
-    .from("staff")
-    .select("id, full_name, role, is_active, is_available");
-
-  const { data: overduePm } = await supabase
-    .from("pm_instances")
-    .select("id")
-    .eq("status", "OVERDUE");
+  // Loop 37 (performance): three independent reads, issued together instead
+  // of one after the other. Queries themselves unchanged.
+  const [{ data: allCases }, { data: staff }, { data: overduePm }] = await Promise.all([
+    supabase
+      .from("cases")
+      .select("id, case_number, status, priority, symptom, current_owner_user_id, created_at, closed_at")
+      .order("created_at", { ascending: true }),
+    supabase.from("staff").select("id, full_name, role, is_active, is_available"),
+    supabase.from("pm_instances").select("id").eq("status", "OVERDUE"),
+  ]);
 
   const cases = (allCases ?? []) as Pick<
     MaintenanceCase,

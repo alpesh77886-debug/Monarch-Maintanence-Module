@@ -2795,3 +2795,89 @@ the sandbox's outbound network layer, so it applies the same way whether
 the target is `localhost` or a live Vercel preview). Full authenticated
 visual verification is therefore a CI/Vercel-preview/manual-device check,
 same disclosed limitation as every prior UI loop in this project.
+
+## Performance — app load/navigation latency — 2026-09-07
+
+Boss-directed, outside the loop-batch cadence (Gate 7 remains AWAITING
+BOSS): *"application ki load hone me aur navigate hone me bahut time le
+rahi hai... even form and button bhi action me time le rahe hai... solve on
+priority... 3 loop me check karo, test and solve."* Structured as three
+loops — 36 diagnose, 37 fix, 38 verify. Presentation/infrastructure only:
+no migration, no RPC, no RLS policy, no lifecycle rule, no authority
+boundary was touched. Every query below is byte-for-byte the same query it
+was before; only *when* it is issued changed.
+
+### Loop 36 — diagnose (measure first, guess never)
+
+The database was ruled out before anything was changed. `explain analyze`
+on the case-list query against the live project returned **Execution Time
+6.783 ms**, Planning 10.895 ms, using `Index Scan Backward using
+cases_created_at_idx`; the newest case carried 1 event, 0 observations,
+0 interventions. There is no slow query and no missing index. Three real
+causes were found instead:
+
+| # | Root cause | Evidence |
+|---|---|---|
+| 1 | Vercel functions ran in `iad1` (Washington DC); Supabase is in `ap-southeast-1` (Singapore) | deployment `regions: ["iad1"]` vs `get_project` region |
+| 2 | Every server page issued its reads strictly one after another — 24 sequential round trips on case-detail, plus 3 in the layout and 1 in middleware, ≈28 per navigation | app-wide `Promise.all` count was **0** |
+| 3 | Every button calls `router.refresh()`, which re-runs the whole server page — so button latency *is* page latency | 33 call sites |
+
+Cause 1 multiplies cause 2: ~28 sequential trips, each crossing a
+continent and back, is where the wall-clock went. Cause 3 is why forms and
+buttons felt as slow as a fresh page load — because they *were* a fresh
+page load.
+
+### Loop 37 — fix
+
+- **`vercel.json` (new)** — `"regions": ["sin1"]`, putting the functions in
+  Singapore next to Supabase. This is the single largest change: it cuts
+  the per-round-trip latency for *all* ~28 trips at once, including the
+  middleware and layout trips no page-level change can touch.
+  Deliberately **not** done with the `preferredRegion` route segment
+  export: per the bundled Next.js docs in `node_modules/next/dist/docs/`,
+  `preferredRegion` is deprecated in this version and on Vercel accepts
+  only `'auto' | 'global' | 'home'` — passing a region code like `'sin1'`
+  there throws. Region pinning belongs in `vercel.json`.
+- **`cases/[id]/page.tsx`** — 24 sequential awaits collapsed into 2
+  parallel waves. Wave 1 issues the 22 mutually independent reads together;
+  wave 2 issues the only 2 genuinely dependent reads (the staff row needs
+  `user.id`, the duplicate's case number needs `caseRow`) together.
+- **`layout.tsx`** — staff row + unread notifications in one wave. Highest
+  leverage after case-detail because this layout wraps *every* page, so its
+  round trips are paid on every single navigation.
+- **`dashboard/page.tsx`** (cases + staff + overdue PM), **`kpi/page.tsx`**
+  (10 aggregate reads in one wave), **`pm/page.tsx`**, and
+  **`recurrence-rules/page.tsx`** — same treatment.
+
+`src/proxy.ts` was read and deliberately left unchanged. It calls
+`supabase.auth.getUser()` on every request, which is one more round trip
+than `getSession()` would be — but `getUser()` validates the JWT
+server-side and `getSession()` does not. Security over speed, per
+`CLAUDE.md`. That middleware refresh is also what makes the parallel waves
+safe: the access token is refreshed one layer *above* the page, so the
+concurrent queries cannot race a token refresh or run on a stale token.
+
+### Honest cost of the change
+
+On a URL whose case id does not exist, all 22 wave-1 queries now run before
+`notFound()`, where previously only the `cases` lookup ran. That is extra
+work on a 404 path — every one of those queries is an indexed `case_id`
+lookup returning zero rows, RLS still applies to each, and no data is
+exposed that wasn't already scoped. It is a real (small) cost of
+parallelising, recorded here rather than glossed over.
+
+`router.refresh()` (cause 3) was **not** separately rewritten. It is the
+correct primitive for a server-rendered mutation, and after causes 1 and 2
+the page it re-runs is itself much cheaper — a refresh now costs ~2 parallel
+waves at Singapore latency instead of ~28 sequential cross-continent trips.
+Whether that is sufficient is a Loop 38 measurement, not an assumption.
+
+### Verified
+
+`tsc`, `lint`, `build` all clean. Full `"use client"` boundary re-scan
+across all 35 client files — zero stray non-default exports (the Loop 16
+lesson). Destructuring order re-checked against promise order by hand as
+well as by `tsc`. Live authenticated timing from inside this sandbox
+remains impossible (RISK-05's disclosed Supabase egress block); CI and the
+deployed Vercel function region are the sources of truth, checked in
+Loop 38.

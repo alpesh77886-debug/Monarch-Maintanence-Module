@@ -1,14 +1,23 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loops 31-35 batch complete, gate report merged. A Boss-
-  directed UI redesign (presentation-only, matching the Loop 21 precedent)
-  followed outside the loop-batch cadence — see CHANGELOG.md "UI redesign
-  — 2026-09-07."
+Current loop: Loops 31-35 batch complete, gate report merged. Two
+  Boss-directed, presentation/infrastructure-only tasks followed outside
+  the loop-batch cadence (both matching the Loop 21 precedent — no
+  migration, RPC, RLS policy or lifecycle rule touched): a UI redesign
+  (CHANGELOG.md "UI redesign — 2026-09-07") and a load/navigation
+  performance fix (CHANGELOG.md "Performance — app load/navigation
+  latency — 2026-09-07"). The performance work is structured as Loop 36
+  diagnose / Loop 37 fix / Loop 38 verify, per the Boss's own "3 loop me
+  check karo, test and solve" instruction; 36 and 37 are done, 38 is the
+  deployed-region + timing verification.
 Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
   loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
-  until the Boss gives explicit continuation language for Loop 36+. The UI
-  redesign task above is a separate, explicit Boss instruction, not a
-  continuation of the audit batches. See APPROVAL_GATE.md.
+  until the Boss gives explicit continuation language for the next audit
+  batch. The UI-redesign and performance tasks above are separate,
+  explicit Boss instructions, not a continuation of the audit batches —
+  the "Loop 36/37/38" numbering there is the Boss's own three-step
+  framing for that one task, not a resumption of the gated cadence.
+  See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
