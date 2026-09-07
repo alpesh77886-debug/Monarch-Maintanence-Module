@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../src/lib/supabase/config";
+import { runMarker } from "./run-tag";
 
 // ---------------------------------------------------------------------------
 // F-05 — test writes must never happen silently against an unacknowledged
@@ -101,10 +102,18 @@ export function signInAs(role: Role): Promise<SignedIn> {
   return session;
 }
 
-// Every case this suite creates is tagged so it's trivially identifiable
-// (and safely ignorable) in the live app — see tests/README.md for why
-// automated cleanup isn't attempted (no DELETE policy exists on cases or
-// any audit table, deliberately, per §0 rule 6 / §27 append-only history).
+// Every case this suite creates is tagged so it's trivially identifiable in
+// the live app, and so the run's own teardown can find it again.
+//
+// (This comment used to say automated cleanup "isn't attempted" because no
+// DELETE policy exists on cases. That is still true of the client — there is
+// still no DELETE policy — but Loop 40 added a guarded SECURITY DEFINER path
+// that removes a run's own synthetic rows. Append-only business history per
+// §0 rule 6 / §27 is unaffected: the cleanup refuses anything that is not
+// prefix-proven synthetic.)
 export function testSymptom(label: string): string {
-  return `[AUTOTEST] ${label} (${new Date().toISOString()})`;
+  // The [run=...] marker (empty when MAINTENANCE_TEST_RUN_ID is unset) is what
+  // lets this run's teardown delete its own cases WITHOUT deleting a
+  // concurrently-running workflow's in-flight ones. See tests/run-tag.ts.
+  return `[AUTOTEST]${runMarker()} ${label} (${new Date().toISOString()})`;
 }

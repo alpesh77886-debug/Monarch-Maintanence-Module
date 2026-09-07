@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { runMarker } from "../tests/run-tag";
 
 // ---------------------------------------------------------------------------
 // F-05 — test writes must never happen silently against an unacknowledged
@@ -84,7 +85,10 @@ export async function signIn(page: Page, account: AccountName) {
 // Every row these tests create is tagged so it is trivially identifiable in
 // the live project — same convention as the Vitest suite (tests/README.md).
 export function e2eSymptom(label: string): string {
-  return `[AUTOTEST-E2E] ${label} (${new Date().toISOString()})`;
+  // Same [run=...] marker as the Vitest suite. The e2e job carries its own
+  // MAINTENANCE_TEST_RUN_ID suffix, so the two jobs of one workflow run cannot
+  // clean up each other's rows either. See tests/run-tag.ts.
+  return `[AUTOTEST-E2E]${runMarker()} ${label} (${new Date().toISOString()})`;
 }
 
 export async function reportCase(page: Page, symptom: string): Promise<string> {

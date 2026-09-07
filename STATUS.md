@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loops 36-40 complete (Gate 8 approved). A Boss-directed
+Current loop: Loop 41 complete (Gate 8 approved). A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
@@ -11,32 +11,45 @@ Current loop: Loops 36-40 complete (Gate 8 approved). A Boss-directed
   non-open deliberately untouched). Zero orphans. 114 open rather than 10
   because 103 are blocked by a DUPLICATE case pointing at them and deleting
   resolved cases is forbidden — safety outranks the number. Test runs now
-  clean up their own data, so the database no longer refills.
+  clean up their own data. Loop 41 then checked that refill claim against
+  the next real CI run and found it did NOT hold: Playwright had no
+  teardown at all (4 leaked cases per run), and the cleanup could delete a
+  CONCURRENTLY-RUNNING workflow's in-flight cases because it selected on a
+  time window with no notion of run ownership. Both fixed — every synthetic
+  case now carries a [run=<tag>] marker and a run deletes only its own. The
+  first version of that fix was itself wrong (it matched the tag with LIKE,
+  where '_' is a wildcard, so 'RUN___' matched 'RUNBBB') and was caught by
+  its own red-team test. See LOOP_41_REPORT.md.
   Boss-side items: QC identities ANSWERED (they will come from the Quality
   module at integration; qc_authority staying empty is now a decision, not
   a gap). Leaked-password protection deferred by the Boss to last. Two new
   questions: whether to also remove the 103 duplicate-primary cases, and
   the Sarvam Screen Architecture document needed to action the UX sections.
-Current gate: **GATE 8 (Loops 36-40) AWAITING BOSS.** Autonomous loop work
-  is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13 until the Boss gives
-  explicit continuation language for Loop 41+. See
-  APPROVAL_REPORT_LOOP_36_40.md and APPROVAL_GATE.md.
+Current gate: **GATE 8 (Loops 36-40) APPROVED.** Loop 41 is complete;
+  Gate 9 falls after Loop 45. See APPROVAL_GATE.md for the exact Boss
+  language and the condition it was attached to.
 
-Four items need the Boss and are NOT loop work — none has been guessed at:
-  1. Name the real QC identities (maintenance.qc_authority is empty by
-     design, so QC-required cases stop at CLEARANCE_PENDING).
+Items that need the Boss and are NOT loop work — none has been guessed at:
+  1. QC identities — ANSWERED. The QC login name comes from the Quality
+     module at integration; maintenance.qc_authority staying empty is now
+     a recorded decision, not a gap.
   2. Separate test and production databases, or accept the shared project.
+     STILL OPEN — mitigated by run tagging and a scoped teardown, not removed.
   3. Enable leaked-password protection (Supabase dashboard → Auth).
-  4. RISK-25 — should an INTERNAL wait escalate, and from what instant?
+     DEFERRED by the Boss to last.
+  4. RISK-25 — CLOSED. The Boss supplied the three INTERNAL reasons and the
+     escalation rule; implemented and live-verified.
+  5. Whether to also remove the 103 open cases that a DUPLICATE case points
+     at. Doing so means deleting the linked resolved cases, which §16
+     forbids without an explicit instruction.
+  6. The Sarvam Maintenance Screen Architecture document, needed to action
+     the UX sections (§4/§5/§27). Never supplied; that work is recorded as
+     NOT TOUCHED, not as done.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
   RISK-13 (Loop 8 — `is_manager()` NULL-propagation authorization bypass),
   RISK-14 (Loop 9 — a rewrite of `transition_case` silently dropped the
-Current gate: **GATE 8 (Loops 36-40) AWAITING BOSS.** Autonomous loop work
-  is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13 until the Boss gives
-  explicit continuation language for Loop 41+. See
-  APPROVAL_REPORT_LOOP_36_40.md and APPROVAL_GATE.md.
   locked boundary, same shape as the Loop 8 spares fix), and RISK-18
   (Loop 26 — `case_assignments_insert`'s `emergency_direct_start` path
   never checked the target case was an actual confirmed emergency; a

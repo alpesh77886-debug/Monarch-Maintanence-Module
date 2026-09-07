@@ -1,6 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../src/lib/supabase/config";
-import { CREDS } from "./helpers";
+import { cleanupRun } from "./cleanup-run";
 
 // §21 — a successful test run cleans up its own synthetic data.
 //
@@ -16,42 +14,16 @@ import { CREDS } from "./helpers";
 // MAINTENANCE_KEEP_TEST_DATA=1 to keep a run's data for forensic debugging.
 // That is stated here rather than implied, because the brief asks for
 // failed-run retention and this delivers it as a switch, not as magic.
+//
+// Loop 41: the body moved to tests/cleanup-run.ts so the Playwright suite —
+// which previously had no teardown at all and leaked four cases per CI run —
+// can share exactly the same one.
 
 export async function setup() {
   const startedAt = new Date().toISOString();
   process.env.MAINTENANCE_TEST_RUN_START = startedAt;
 
   return async function teardown() {
-    if (process.env.MAINTENANCE_KEEP_TEST_DATA === "1") {
-      console.log("[cleanup] MAINTENANCE_KEEP_TEST_DATA=1 — keeping this run's data.");
-      return;
-    }
-    if (process.env.MAINTENANCE_TEST_WRITES_OK !== "1") return;
-
-    try {
-      const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        db: { schema: "maintenance" },
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
-      const { error: signInError } = await client.auth.signInWithPassword(CREDS.executive);
-      if (signInError) {
-        console.warn(`[cleanup] skipped — sign-in failed: ${signInError.message}`);
-        return;
-      }
-
-      // Only this run's window, and only [AUTOTEST-prefixed cases: the RPC
-      // delegates to cleanup_synthetic_cases, which refuses anything else.
-      const { data, error } = await client.rpc("cleanup_test_cases_since", {
-        p_since: startedAt,
-      });
-      if (error) {
-        console.warn(`[cleanup] skipped — ${error.message}`);
-        return;
-      }
-      console.log(`[cleanup] removed ${(data as { deleted_cases: number }).deleted_cases} synthetic case(s) created by this run.`);
-    } catch (err) {
-      // Cleanup must never turn a green run red.
-      console.warn(`[cleanup] skipped — ${(err as Error).message}`);
-    }
+    await cleanupRun("vitest", startedAt);
   };
 }
