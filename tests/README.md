@@ -96,6 +96,16 @@ NULL-propagation bug in the old check (`NULL = v_actor` evaluates to
 pre-existing tests in the file already covered assigned/self and
 assigned/impersonation and needed no changes.
 
+Loop 34 adds 1 `it()` to `tests/observations-clearances-audit.test.ts`:
+inserts all 9 canonical §8 fields (`intervention_id`/`observation`/
+`action`/`result`/`current_condition`/`pending_action`/`blocker`/
+`next_step`/`evidence_ref`), including a real intervention link from
+`record_intervention`, and asserts every one round-trips. The existing
+4 observations tests (Loop 25) were RLS-focused and only ever exercised
+`observation`/`current_condition` — this is the first test to touch the
+other 5 columns at all, closing the same coverage gap
+`observation-form.tsx` had on the UI side.
+
 Loop 8 (`spares.test.ts`) adds: the §3.3 ₹12,000 threshold computation
 (exactly ₹12,000 vs ₹12,000.01), spare-name validation, both tables'
 direct-insert RLS denials, the full approval gate (non-staff and

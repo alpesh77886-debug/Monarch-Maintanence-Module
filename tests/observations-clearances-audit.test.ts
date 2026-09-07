@@ -99,6 +99,55 @@ describe("observations (§9 journal entries) — RLS (Loop 25)", () => {
       .single();
     expect(after!.observation).toBe("original");
   });
+
+  // Loop 34: §8's canonical continuity-journal structure names 9 fields
+  // per entry (intervention/step reference, observation, action, result,
+  // current condition, pending action, blocker, next step, evidence
+  // reference) — all 9 have existed as columns since Loop 1, but
+  // observation-form.tsx only ever exposed 4 of them (observation, action,
+  // current_condition, next_step), so result/pending_action/blocker/
+  // intervention_id/evidence_ref were silently unreachable through the
+  // app for a "mandatory V1 feature." RLS itself was never the problem
+  // (already unrestricted on these columns) — this is a UI completeness
+  // fix, verified here at the data layer since the columns are what the
+  // RLS policy actually gates.
+  it("accepts all 9 canonical §8 fields, including intervention linkage and evidence reference", async () => {
+    const exec = await signInAs("executive");
+    const caseId = await driveToInRepair(exec, testSymptom("observation full fields"));
+
+    const { data: intervention } = await exec.client.rpc("record_intervention", {
+      p_case_id: caseId,
+      p_action_taken: "autotest: replaced seal",
+      p_technician_user_id: exec.userId,
+    });
+    const interventionId = (intervention as { intervention_id: string }).intervention_id;
+
+    const { error } = await exec.client.from("observations").insert({
+      case_id: caseId,
+      actor_user_id: exec.userId,
+      intervention_id: interventionId,
+      observation: "leak observed",
+      action: "replaced seal",
+      result: "leak stopped",
+      current_condition: "running normally",
+      pending_action: "monitor for 24h",
+      blocker: "none",
+      next_step: "close case if stable",
+      evidence_ref: "photo-ref-001",
+    });
+    expect(error).toBeNull();
+
+    const { data } = await exec.client
+      .from("observations")
+      .select("*")
+      .eq("case_id", caseId)
+      .single();
+    expect(data!.intervention_id).toBe(interventionId);
+    expect(data!.result).toBe("leak stopped");
+    expect(data!.pending_action).toBe("monitor for 24h");
+    expect(data!.blocker).toBe("none");
+    expect(data!.evidence_ref).toBe("photo-ref-001");
+  });
 });
 
 describe("clearances (§12 QC) — RLS (Loop 25)", () => {

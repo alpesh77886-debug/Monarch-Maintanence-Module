@@ -185,6 +185,7 @@ export interface CaseObservation {
   id: string;
   case_id: string;
   actor_user_id: string;
+  intervention_id: string | null;
   observation: string | null;
   action: string | null;
   result: string | null;
@@ -192,6 +193,7 @@ export interface CaseObservation {
   pending_action: string | null;
   blocker: string | null;
   next_step: string | null;
+  evidence_ref: string | null;
   created_at: string;
 }
 
