@@ -3484,3 +3484,26 @@ No migration, no RPC change.
 
 **Tests:** 3 new. `tsc`, `lint`, `build` clean. Full `"use client"` boundary
 re-scan across 36 client files — clean.
+
+## Loop 40 — 2026-09-07 — batch close (Loops 36–40)
+
+**Summary:** Batch-closing loop. No engineering change — wrote
+`APPROVAL_REPORT_LOOP_36_40.md`, logged Gate 8 as AWAITING BOSS, and stopped.
+
+**Batch outcome:** three genuine findings across five loops — RISK-25 (open,
+needs Boss evidence), RISK-26 (fixed), RISK-27 (fixed). One migration (0035).
+
+**Stated plainly in the report rather than buried:** Loop 36 found nothing new,
+Loop 38's first lead was a false alarm that turned out to be arithmetic, and
+two of Loop 39's three observations were wrong and caught before they became
+findings. That is a lower yield than Loops 26–30 (5 defects in 5 loops). The
+audit surface is not inexhaustible, and saying so is more useful than
+manufacturing findings to fill a batch.
+
+**Four items now sit with the Boss** — none is unfinished engineering, each
+needs evidence or a credential: the QC authority list is empty by design;
+production and CI share one Supabase project; leaked-password protection is
+off; and RISK-25 needs a threshold the pack never states.
+
+**Gate:** GATE 8 AWAITING BOSS. Autonomous loop work is paused per §19.9/§19.13.
+Loop 41 will not start without explicit continuation language.

@@ -9,19 +9,23 @@
 | 5 (Loops 21–25) | [`APPROVAL_REPORT_LOOP_21_25.md`](./APPROVAL_REPORT_LOOP_21_25.md) | Approved — "me aage ki loops ke liye approve kar raha hu 26 se 30" | 2026-09-07 |
 | 6 (Loops 26–30) | [`APPROVAL_REPORT_LOOP_26_30.md`](./APPROVAL_REPORT_LOOP_26_30.md) | Approved — "approved loops 31 to 35" | 2026-09-07 |
 | 7 (Loops 31–35) | [`APPROVAL_REPORT_LOOP_31_35.md`](./APPROVAL_REPORT_LOOP_31_35.md) | Approved — "ye karlo iske baad you can proceed for 36 to 40 loop" (given alongside the forensic remediation brief) | 2026-09-07 |
+| 8 (Loops 36–40) | [`APPROVAL_REPORT_LOOP_36_40.md`](./APPROVAL_REPORT_LOOP_36_40.md) | **AWAITING BOSS** | — |
 
-Current state: **Gate 7 approved; Loops 36-40 open.** The Boss supplied a
-forensic remediation brief with the instruction "ye karlo iske baad you can
-proceed for 36 to 40 loop" — the remediation was completed first (see
-`FORENSIC_REMEDIATION_FINAL.md`, merged in PR #36) and the loop batch then
-opened on that explicit continuation language. The next hard gate is after
-Loop 40.
+Current state: **GATE 8 (Loops 36-40) AWAITING BOSS.** Loops 36-40 are
+complete and merged. Autonomous loop work is PAUSED per
+IMPLEMENTATION_PACK.md §19.9/§19.13; Loop 41 will not start without
+explicit continuation language.
 
-Note on scope: three items from the remediation remain open and are NOT
-loop work — they need Boss evidence or credentials, not engineering
-(`maintenance.qc_authority` is empty; production and CI share one Supabase
-project; leaked-password protection is disabled). Loop work in this batch
-must not "resolve" them by inventing an answer.
+Four items need the Boss and are NOT loop work — each needs evidence or a
+credential, and none has been guessed at:
+  1. Name the real QC identities (`maintenance.qc_authority` is empty by
+     design, so QC-required cases stop at CLEARANCE_PENDING).
+  2. Separate test and production databases, or accept the current shared
+     project.
+  3. Enable leaked-password protection (Supabase dashboard → Auth).
+  4. RISK-25 — should an INTERNAL wait escalate, and from what instant?
+     The pack conflicts with itself here (§7.2 vs §23/§24) and closing it
+     needs a threshold the pack never states.
 
 Silence, "looks good", or an unrelated reply is NOT approval (`IMPLEMENTATION_PACK.md`
 §19.13). Explicit continuation language is required, e.g. "Approved, continue next 5
