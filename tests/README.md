@@ -77,6 +77,16 @@ staff mediation of a self-service assignment (RISK-20). Covers the
 denial of that forgery; the existing Loop 26 tests already cover that a
 plain, unforged self-insert still works.
 
+Loop 29 adds 1 `it()` to `tests/spares.test.ts` for `record_spare_usage`'s
+now-mandatory `p_spare_request_id` (RISK-21): the >₹12,000 approval gate
+was entirely conditional on that optional parameter, so omitting it
+skipped Manager approval AND left the usage row unable to name which
+spare was even used (§16.1). 2 pre-existing tests in the same file were
+also updated — they previously called `record_spare_usage` with no
+linked request and asserted success, which was exercising the gap this
+loop closes, not a legitimate scenario, so both now raise a request
+first.
+
 Loop 8 (`spares.test.ts`) adds: the §3.3 ₹12,000 threshold computation
 (exactly ₹12,000 vs ₹12,000.01), spare-name validation, both tables'
 direct-insert RLS denials, the full approval gate (non-staff and

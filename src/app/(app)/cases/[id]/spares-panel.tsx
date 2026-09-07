@@ -136,12 +136,22 @@ export default function SparesPanel({
 
   async function recordUsage() {
     setError(null);
+    // §16.1 mandates every usage be traceable to "which spare was used" —
+    // spare_usage has no spare_name of its own, only via the linked
+    // request — and §3.3's >₹12,000 gate lives on that same request.
+    // record_spare_usage now rejects a null p_spare_request_id server-side
+    // (RISK-21); this mirrors that requirement client-side so the error
+    // is immediate rather than a round trip.
+    if (!usageSpareRequestId) {
+      setError("Select the spare request this usage is for — raise one first if none exists yet.");
+      return;
+    }
     setSubmitting(true);
     const supabase = createClient();
     const { error } = await supabase.rpc("record_spare_usage", {
       p_case_id: caseId,
       p_quantity: Number(usageQuantity),
-      p_spare_request_id: usageSpareRequestId || null,
+      p_spare_request_id: usageSpareRequestId,
       p_asset_ref: usageAssetRef || null,
       p_outcome: usageOutcome || null,
     });
@@ -319,7 +329,17 @@ export default function SparesPanel({
         ))}
       </div>
 
-      {canRecordUsage && (
+      {canRecordUsage && spareRequests.length === 0 && (
+        <div className="border-t border-slate-100 pt-3">
+          <p className="text-xs text-slate-500">
+            No spare requests yet on this case — raise one above before recording usage. Every
+            usage must reference the spare request it&apos;s for (§16.1 traceability, §3.3
+            financial authority).
+          </p>
+        </div>
+      )}
+
+      {canRecordUsage && spareRequests.length > 0 && (
         <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
           <p className="text-xs font-medium text-slate-700">Record spare usage</p>
           <select
@@ -327,7 +347,7 @@ export default function SparesPanel({
             onChange={(e) => setUsageSpareRequestId(e.target.value)}
             className="rounded-md border border-slate-300 p-2 text-sm"
           >
-            <option value="">(not linked to a request)</option>
+            <option value="">(select the spare request this usage is for)</option>
             {spareRequests.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.spare_name}
