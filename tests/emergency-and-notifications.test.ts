@@ -288,9 +288,13 @@ describe("case_assignments emergency_direct_start (§5.5, §6, RISK-18)", () => 
     await exec.client.rpc("claim_emergency", { p_case_id: caseId, p_reason: "autotest" });
     await mgr.client.rpc("confirm_emergency", { p_case_id: caseId });
 
+    // Genuinely a different real user (exec, not tech) — a placeholder UUID
+    // isn't safe here: an arbitrary-looking UUID can collide with a real
+    // seeded user's own id, silently turning "impersonation" into a
+    // legitimate self-insert (see CHANGELOG Loop 27 CI fix).
     const { error } = await tech.client.from("case_assignments").insert({
       case_id: caseId,
-      technician_user_id: "91a2fd36-5a35-4c36-8f5a-e0cd0e492f75", // shape only; RLS rejects before this matters
+      technician_user_id: exec.userId,
       emergency_direct_start: true,
     });
     expect(error).not.toBeNull();

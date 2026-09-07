@@ -2149,3 +2149,25 @@ file anyway — clean.
 `maavrlqkdrisjwzhjdgg` before and after the fix (tables above), including
 confirming every lifecycle-mutating RPC is `SECURITY DEFINER` and
 therefore unaffected by the tightened INSERT policy.
+
+### CI fix — a real bug in Loop 26's own "impersonation" test, not a flake
+
+PR #22's `lint-and-build` job (run on the Loop 26 commit) failed one test:
+`case_assignments emergency_direct_start ... refuses a direct self-insert
+claiming a different technician_user_id`. Root-caused, not re-run
+blind: the test used the literal string
+`"91a2fd36-5a35-4c36-8f5a-e0cd0e492f75"` as a "shape only" placeholder for
+"a different technician" — but that UUID **is** the real seeded
+`tech1@monarch.test` identity's own `auth.users.id` (confirmed live via
+`select id from auth.users where email = 'tech1@monarch.test'`). Since
+the test signs in *as* `tech1`, `technician_user_id` ended up equal to
+`auth.uid()` — not impersonation at all, so the insert legitimately
+succeeded and `expect(error).not.toBeNull()` correctly failed.
+
+Fixed by using `exec.userId` (a real, different, already-signed-in seeded
+identity) instead of a hand-typed placeholder UUID. Re-verified live via
+`execute_sql`, replaying the exact scenario (create → `claim_emergency` →
+`confirm_emergency` → attempted impersonating insert): now fails with
+`42501` as intended. Lesson: a "shape only" UUID in a multi-tenant test
+fixture is not risk-free — it can silently collide with a real seeded
+user's id and invert what the test actually proves.
