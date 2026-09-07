@@ -1,19 +1,19 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 38 complete (batch 36-40). Loop 36 turned the forensic
-  brief's red-team matrix into a permanent suite (17 attacks, all refused).
-  Loop 37 audited escalation paths and found RISK-25 (INTERNAL waits can
-  never escalate — evidence-controlled, deliberately NOT fixed). Loop 38
-  verified PM generation/overdue are correct despite a ratio that looks
-  broken (164 approved plans, 3 instances — frequencies are 14-30 days on a
-  1-day-old database; 0 plans are actually owed an instance), and found and
-  FIXED RISK-26: three sites delivered the same notification twice to the
-  same person when the case owner was also a Manager. Proven by microsecond-
-  identical timestamps, so not a race — a double-send by construction.
-  Migration 0035 dedupes the recipient set without dropping any recipient.
+Current loop: Loop 39 complete (batch 36-40; Loop 40 closes it). Loop 36
+  red-team suite (17 attacks, all refused). Loop 37 found RISK-25 (INTERNAL
+  waits can never escalate — evidence-controlled, NOT fixed). Loop 38 found
+  and FIXED RISK-26 (same notification delivered twice when the case owner
+  was also a Manager; proven by microsecond-identical timestamps).
+  Loop 39 cross-referenced all 60 schema functions against actual callers
+  and found RISK-27: take_ownership was built, correct and tested but NO
+  button ever called it — while §22.1 shift-end handover deliberately
+  creates unowned cases and the dashboard lists them as needing an owner.
+  4 cases were live-verified as unclaimable through the UI. Fixed by wiring
+  the existing RPC; no migration, no RPC change.
   PRODUCTION READINESS VERDICT: **NOT READY** — three Boss-side blockers
   plus RISK-25 as a fourth open evidence question.
-  Live-data fact: 8,254 cases, ZERO of them real business records.
+  Live-data fact: 8,254+ cases, ZERO of them real business records.
 Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
   loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
   until the Boss gives explicit continuation language for the next audit
