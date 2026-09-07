@@ -58,6 +58,17 @@ impersonating a different `technician_user_id`, and confirms the
 legitimate path (via real `claim_emergency`/`confirm_emergency`) still
 works after the fix.
 
+Loop 27 adds 4 `it()`s to `tests/lifecycle.test.ts` for `cases_insert`'s
+column lockdown (RISK-19): the policy had only ever checked
+`reporter_user_id`, so every other column on `cases` — including `status`
+itself — was client-writable at creation. Covers denial of a
+self-inserted `emergency_confirmed=true`, denial of a self-inserted
+already-`CLOSED` case with a fabricated closure, denial of self-setting
+`current_owner_user_id`/`priority`, and confirms the real intake form's
+own payload (`case_type`/`symptom`/`area`/`line`/`asset_known`/
+`major_complex_flag`/`reporter_user_id` only) still succeeds and lands at
+`status='REPORTED'` with every other locked column at its safe default.
+
 Loop 8 (`spares.test.ts`) adds: the §3.3 ₹12,000 threshold computation
 (exactly ₹12,000 vs ₹12,000.01), spare-name validation, both tables'
 direct-insert RLS denials, the full approval gate (non-staff and

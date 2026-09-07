@@ -217,3 +217,82 @@ describe("Append-only enforcement (§0 rule 6, §27)", () => {
     expect(error).not.toBeNull();
   });
 });
+
+// Loop 27 (RISK-19): cases_insert's with_check (migration 0002) validated
+// only reporter_user_id = auth.uid() — every other column, including
+// status, all emergency_* columns, qc_required, current_owner_user_id, and
+// closed_at/closure_reason, was fully client-writable at INSERT time. Any
+// authenticated non-staff user (no RPC involved) could self-confirm a fake
+// emergency or insert an already-CLOSED case with a fabricated closure,
+// bypassing the §6 two-step ceremony and the §4 LOCKED lifecycle graph at
+// the root, with zero real audit trail. Fixed in migration 0026 by turning
+// cases_insert into an allow-list: every non-intake column must land at
+// its safe default/null, matching exactly what the real intake form
+// (src/app/(app)/cases/new/page.tsx) submits.
+describe("cases_insert column lockdown (§4, §6, RISK-19)", () => {
+  it("refuses a reporter self-setting emergency_confirmed at creation", async () => {
+    const tech = await signInAs("technician");
+    const { error } = await tech.client.from("cases").insert({
+      case_type: "BREAKDOWN",
+      symptom: testSymptom("RISK-19 fake emergency_confirmed"),
+      reporter_user_id: tech.userId,
+      emergency_confirmed: true,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("refuses a reporter self-inserting an already-CLOSED case", async () => {
+    const tech = await signInAs("technician");
+    const { error } = await tech.client.from("cases").insert({
+      case_type: "BREAKDOWN",
+      symptom: testSymptom("RISK-19 fake closed case"),
+      reporter_user_id: tech.userId,
+      status: "CLOSED",
+      closure_reason: "forged closure",
+      qc_required: false,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("refuses a reporter self-setting current_owner_user_id or priority at creation", async () => {
+    const exec = await signInAs("executive");
+    let { error } = await exec.client.from("cases").insert({
+      case_type: "BREAKDOWN",
+      symptom: testSymptom("RISK-19 fake owner"),
+      reporter_user_id: exec.userId,
+      current_owner_user_id: exec.userId,
+    });
+    expect(error).not.toBeNull();
+
+    ({ error } = await exec.client.from("cases").insert({
+      case_type: "BREAKDOWN",
+      symptom: testSymptom("RISK-19 fake priority"),
+      reporter_user_id: exec.userId,
+      priority: "HIGH",
+    }));
+    expect(error).not.toBeNull();
+  });
+
+  it("still allows the real intake payload, landing at safe defaults", async () => {
+    const exec = await signInAs("executive");
+    const { data, error } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("RISK-19 legitimate intake"),
+        area: "Line 3",
+        line: "L3",
+        asset_known: false,
+        major_complex_flag: false,
+        reporter_user_id: exec.userId,
+      })
+      .select("status, emergency_confirmed, qc_required, current_owner_user_id, closed_at")
+      .single();
+    expect(error).toBeNull();
+    expect(data!.status).toBe("REPORTED");
+    expect(data!.emergency_confirmed).toBe(false);
+    expect(data!.qc_required).toBeNull();
+    expect(data!.current_owner_user_id).toBeNull();
+    expect(data!.closed_at).toBeNull();
+  });
+});

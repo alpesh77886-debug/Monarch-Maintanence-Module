@@ -2073,3 +2073,79 @@ clean.
 
 `tsc`, `lint`, `build` clean. Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` before and after the fix (table above).
+
+## Loop 27 — 2026-09-07
+
+Continued Loop 26's RLS-policy audit, applied to `cases_insert` — the
+single most consequential insert policy in the schema, since every other
+table's row exists only because a `cases` row already does.
+
+### RISK-19 — a live-exploitable bypass of the entire §4 LOCKED lifecycle graph, at case creation
+
+`cases_insert` (migration 0002, Loop 1) has always been
+`with check (reporter_user_id = auth.uid())` — one column checked out of
+the ~40 on `maintenance.cases`. Every other column, including `status`
+itself, every `emergency_*` column, `qc_required`, `ptw_required`,
+`current_owner_user_id`, `priority`, `closed_at`, and `closure_reason`,
+was fully client-writable at INSERT time. A `default` (e.g. `status
+default 'REPORTED'`) is not a constraint — a client that explicitly
+supplies its own value for that column simply overrides the default.
+
+Verified live as the seeded non-staff `technician` identity, no RPC
+involved:
+
+| Exploit attempt | Result before fix |
+|---|---|
+| Direct insert with `emergency_confirmed = true` | succeeded — a fake emergency, self-confirmed, with zero claim/confirm ceremony |
+| Direct insert with `status = 'CLOSED'`, a fabricated `closure_reason`, and `closed_at` | succeeded — case `MC-003975`, a fully-formed "closed" case that never touched a single `status_transitions` edge or a single lifecycle RPC |
+
+This is assessed as **more severe than RISK-18**: it needs no staff
+access, no RPC, and no prior case state at all — a brand-new INSERT
+statement can fabricate a fully-closed case out of nothing, with none of
+the §4 LOCKED lifecycle graph's edges ever consulted and none of the
+§6/§27 audit-trail RPCs ever invoked. It also meant Loop 26's RISK-18 fix
+was independently circumventable on its own: fake `emergency_confirmed =
+true` here first, then walk the (now "legitimate"-looking)
+`emergency_direct_start` path RISK-18 just closed.
+
+Migration `0026_maintenance_cases_insert_column_lockdown.sql` rewrites
+`cases_insert` as an allow-list rather than a blacklist: `reporter_user_id
+= auth.uid()` plus an explicit `is null` / `= false` / `= 'REPORTED'`
+check on every other column, matching exactly the fields the real intake
+form (`src/app/(app)/cases/new/page.tsx`) submits — `case_type`,
+`symptom`, `area`, `line`, `asset_known`, `major_complex_flag`,
+`reporter_user_id`. Because it's an allow-list, a future column added to
+`maintenance.cases` is closed-by-default at INSERT until a later
+migration explicitly opens it here — the same shape of gap can't
+reappear silently.
+
+**Live verification:**
+
+| Step | Result |
+|---|---|
+| `emergency_confirmed = true` self-insert, after the fix | fails, `42501` RLS violation |
+| `status = 'CLOSED'` self-insert with fabricated closure, after the fix | fails, `42501` RLS violation |
+| Real intake payload (7 fields above only) | succeeds — lands at `status = 'REPORTED'`, `emergency_confirmed = false`, `qc_required = null`, `current_owner_user_id = null`, `closed_at = null` |
+| `acknowledge_case`, `claim_emergency`, `confirm_emergency`, `transition_case`, `change_priority` | all confirmed `SECURITY DEFINER` — bypass RLS entirely, unaffected by this policy change |
+
+Logged as RISK-19, CRITICAL, RESOLVED, in `RISK_REGISTER.md`.
+
+### Tests
+
+4 new `it()`s in `tests/lifecycle.test.ts`: refuses a reporter
+self-setting `emergency_confirmed` at creation, refuses self-inserting an
+already-`CLOSED` case, refuses self-setting `current_owner_user_id` or
+`priority`, and confirms the real intake payload still succeeds and lands
+at safe defaults. Suite is now **122 tests across 17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+No UI changed this loop (RLS-only fix). Re-scanned every `"use client"`
+file anyway — clean.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before and after the fix (tables above), including
+confirming every lifecycle-mutating RPC is `SECURITY DEFINER` and
+therefore unaffected by the tightened INSERT policy.
