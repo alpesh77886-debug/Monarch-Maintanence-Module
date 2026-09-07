@@ -1780,3 +1780,151 @@ policies are unchanged. Suite is now **98 tests across 16 files**.
 `tsc`, `lint`, `build` clean. Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` before shipping (table above). The sandbox cannot
 reach Supabase for `npm test`; real signal is CI as always.
+
+## Loop 23 — 2026-09-07
+
+Third loop of the Loops 21-25 batch. This time the sweep looked for
+**RPCs with zero callers anywhere in `src/`**, not just dead columns —
+`grep -rl "\"<fn>\"" src/` for every `create or replace function
+maintenance.<fn>` across all migrations. Eleven came back unused; nine were
+false positives by design: `is_staff`/`is_manager`/`current_staff_role`
+(SQL-only policy helpers, never client-facing), `next_case_number`/
+`mark_asset_known` (internal trigger/sequence helpers), and
+`run_escalation_scan`/`run_pm_scan`/`run_recurrence_scan` (cron-only,
+`revoke execute ... from ... authenticated` on purpose, asserted by
+existing tests). `take_ownership` is also a false positive — it's called
+internally by `acknowledge_case` and the emergency-claim path, both of
+which are wired to UI; checked it specifically against §5.6 ("cases may be
+transferred between Executives") since it sounded relevant, and found
+`handover_case`/`handover_all_open_cases` (Loop 12) already fully satisfy
+§5.6 — no gap there.
+
+### The two real ones: §18 configuration was fully built and fully untested-by-UI
+
+`create_recurrence_rule` and `set_recurrence_rule_active` (Loop 15) were
+completely correct and completely unreachable from this app. The only way
+anyone had ever called them — including every "verified live" table in the
+Loop 15/20/21 CHANGELOG entries above — was direct SQL against the live
+database, by me, for testing, followed immediately by deactivating the
+test rule again. That means even once the Boss supplies PENDING-04
+evidence, a Manager would have had no tool to act on it inside the app
+itself.
+
+No migration — both RPCs and their guards (Manager-only, mandatory
+`approval_note`, `INVALID_THRESHOLD`, `INVALID_WINDOW`, `REASON_REQUIRED`,
+`RULE_NOT_FOUND`) already existed and were already correct. This loop is
+UI plumbing plus, in one place, closing a real automated-test gap that
+predates it.
+
+**This does not resolve PENDING-04.** Nothing in the new form defaults or
+suggests a threshold/window value — both inputs start empty, and
+`approval_note` is required exactly so a Manager who does use this tool
+still has to write down the Boss-approved basis for the numbers they
+typed in. The page's own copy says as much.
+
+### UI
+
+New `/recurrence-rules` page (added to nav as "Recurrence"), staff-visible
+to read (matches `recurrence_rules_select`'s existing `is_staff()` RLS),
+Manager-only to act on (matches both RPCs' `is_manager()` guard —
+`CreateRecurrenceRuleForm` is only rendered for a Manager at all, not
+merely disabled, since an Executive has zero ability to call
+`create_recurrence_rule`). `RecurrenceRuleCard` lists every rule
+(active and inactive, so a Manager can see history) with a
+Manager-only activate/deactivate toggle that always demands a reason,
+matching the audited-not-deleted discipline this project has used for
+every prior test rule.
+
+### Live verification (staff JWT, role switch at the top level)
+
+| Step | Result |
+|---|---|
+| Manager creates a rule via `create_recurrence_rule` | succeeds |
+| Executive calls `set_recurrence_rule_active` on it | `FORBIDDEN` |
+| Manager deactivates it | succeeds |
+| `recurrence_rules` where `is_active` afterward | 0 (PENDING-04 invariant intact) |
+
+### After Loop 16's server/client boundary lesson
+
+Re-scanned every `"use client"` file in the app (34 files now, two new:
+`create-recurrence-rule-form.tsx`, `recurrence-rule-card.tsx`). Clean.
+
+### Tests
+
+`set_recurrence_rule_active` had **zero automated coverage** before this
+loop — only the ad-hoc live verification runs referenced above, never
+written down as a regression test. Added 3 `it()`s to
+`recurrence-capa.test.ts`: Manager-only, `REASON_REQUIRED` +
+`RULE_NOT_FOUND`, and a real toggle observed via a follow-up `select`.
+Every test rule created is deactivated again within the same test.
+`create_recurrence_rule`'s own guards were already covered and were not
+duplicated. Suite is now **101 tests across 16 files**.
+
+### Verified
+
+`tsc`, `lint`, `build` clean (new `/recurrence-rules` route compiles).
+Live-verified against Supabase project `maavrlqkdrisjwzhjdgg` before
+shipping (table above).
+
+## Loop 24 — 2026-09-07
+
+Fourth loop of the Loops 21-25 batch. §16.2's own text names the exact
+capability this loop closes: "V1 may record: ... explicit Stores/reference
+identifiers ... When Stores truth is unavailable, use an explicit status
+such as `STORES_REFERENCE_PENDING`."
+
+### §16.2 explicit Stores reference identifiers
+
+`spare_requests.stores_reference_status` and `spare_usage.
+stores_reference_status` have existed since Loop 1 (`not null default
+'STORES_REFERENCE_PENDING'`) alongside a nullable `stores_reference_id` on
+both — exactly the seam §16.2 describes. No RPC had ever written to
+either: every request/usage row created since Loop 8 sits at the default
+forever, because nothing could change it. "V1 may record ... explicit
+Stores/reference identifiers" described a capability that did not exist.
+
+Migration `0023_maintenance_spare_stores_reference.sql`: two new RPCs,
+`set_spare_request_stores_reference` and `set_spare_usage_stores_reference`
+(staff-only, mandatory status, optional reference id and reason). Neither
+column carries a `check` constraint, unlike almost every other status
+column in this schema (`recurrence_flags.status`, `capa_links.status`) —
+read as a deliberate signal, not an oversight, that the real status
+vocabulary is Stores' own to define once Phase-3 integration exists. So
+these RPCs accept whatever status text a Maintenance staff member is told
+by Stores rather than constraining it to a set this migration would have
+had to invent.
+
+### Live verification (staff JWT, role switch at the top level)
+
+| Step | Result |
+|---|---|
+| New spare request, before any update | `STORES_REFERENCE_PENDING` / `null` |
+| A signed-out-of-staff caller (`sub` = random uuid) calls the RPC | `FORBIDDEN` |
+| Staff sets status + reference id | row updated exactly as sent (`STORES_ISSUED` / `PO-1234`) |
+| Empty status string | `STATUS_REQUIRED` |
+| Unknown request/usage id | `SPARE_REQUEST_NOT_FOUND` / `SPARE_USAGE_NOT_FOUND` |
+
+### UI
+
+`spares-panel.tsx`: every spare request and usage row now shows its
+current Stores status and reference id, and a staff-only inline
+status + reference-id + Update control (new `isStaff` prop, wired from the
+page's existing `isStaffRow` check — deliberately not gated on
+`isManager`, since this is plain data entry like `asset_ref`/`outcome`,
+not a §3.3 financial-authority decision).
+
+### After Loop 16's server/client boundary lesson
+
+Re-scanned every `"use client"` file in the app. Clean.
+
+### Tests
+
+`tests/spares.test.ts`: 5 new `it()`s — the default-on-creation value, both
+RPCs' staff-only + `STATUS_REQUIRED` guards, a successful update on each
+table, and the not-found guard on both. Suite is now **106 tests across
+16 files**.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before shipping (table above).

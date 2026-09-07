@@ -59,6 +59,13 @@ also a permanent regression test for RISK-13 (`is_manager()` NULL
 propagation) — it specifically exercises the non-staff-caller path that
 the bug affected.
 
+Loop 24 adds 5 more `it()`s to this same file for
+`set_spare_request_stores_reference`/`set_spare_usage_stores_reference`
+(§16.2), which had no callers anywhere before this loop despite both
+columns defaulting correctly since Loop 1: the default-on-creation value,
+staff-only + `STATUS_REQUIRED` on each RPC, a successful update on each
+table, and the not-found guard on both.
+
 ## Known tradeoffs (deliberate, not oversights)
 
 - **No separate test/staging Supabase project.** Tests run against the same
@@ -184,6 +191,16 @@ cannot reach it without a test-only backdoor RPC — the same reasoning that
 kept the PM instance-lifecycle RPCs out of `pm.test.ts`. The whole
 scan → flag → confirm → root cause → CAPA → verify chain was verified live
 instead; see CHANGELOG.md Loop 15 for the run and its results.
+
+Loop 23 adds 3 more `it()`s to this same file for
+`set_recurrence_rule_active`, which had **zero** automated coverage before
+this loop despite existing since Loop 15 — every prior "verified live"
+table in this suite's own CHANGELOG entries used direct SQL, not this RPC,
+to clean up test rules. Covers Manager-only, `REASON_REQUIRED` +
+`RULE_NOT_FOUND`, and a real toggle confirmed via a follow-up `select`.
+Every rule created in these tests is deactivated again within the same
+test — never left active, protecting the PENDING-04 guard test above from
+a leftover.
 
 Loop 16 (`priority-and-ptw.test.ts`) adds: §5.4 `change_priority` — staff-only,
 reason-required, and the Manager-override lock chain (an Executive changes

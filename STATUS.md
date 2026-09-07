@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 22 (complete) — batch Loops 21-25 in progress
+Current loop: Loop 24 (complete) — batch Loops 21-25 in progress
 Current gate: **GATE 4 CLOSED.** The Boss approved continuation for Loops
   21-25 via an explicit choice (visual-style-upgrade-only scope for the
   dashboard/KPI work, confirmed before Loop 21 began) after reviewing
@@ -37,7 +37,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   §14.2 PTW gate), +6 Loop 17 (§9.1 validated root cause), +4 Loop 18
   (§5.1 evidence attachment), +2 Loop 19 (§5.1/§24 major/complex intake),
   +4 Loop 20 (§5.1 asset linkage), +1 Loop 22 (§10 restoration follow-up
-  flag) — **98 tests across 16 files** (counted
+  flag), +3 Loop 23 (§18 `set_recurrence_rule_active`, previously
+  zero coverage), +5 Loop 24 (§16.2 Stores reference RPCs, previously
+  zero coverage) — **106 tests across 16 files** (counted
   from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
@@ -110,7 +112,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0022 (Loop 22), all live on
+Migrations applied: 0008 (Loop 7) through 0023 (Loop 24), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -199,6 +201,25 @@ Batch summary (Loops 21-25, current batch — see CHANGELOG.md for full detail):
     anywhere) and deliberately left it alone — Loop 18's general evidence
     table already covers "preserve evidence" for restorations; a second,
     parallel free-text pointer would be redundant, not a fix.
+  - Loop 23: §18 recurrence-rule configuration UI. `create_recurrence_rule`
+    and `set_recurrence_rule_active` (Loop 15) were fully correct and
+    fully unreachable from this app — the only caller had ever been direct
+    SQL, by me, for testing. New `/recurrence-rules` page (staff-read,
+    Manager-act, matching each RPC's own guard) does not resolve
+    PENDING-04 — no field defaults a threshold/window, and
+    `approval_note` stays mandatory. Closed a real automated-test gap
+    found along the way: `set_recurrence_rule_active` had zero coverage
+    before this loop.
+  - Loop 24: §16.2 explicit Stores reference identifiers.
+    `stores_reference_status`/`stores_reference_id` on `spare_requests`
+    and `spare_usage` have existed since Loop 1 (default
+    `STORES_REFERENCE_PENDING`/`null`) but no RPC could ever change them.
+    New RPCs `set_spare_request_stores_reference`/
+    `set_spare_usage_stores_reference` (staff-only, mandatory status —
+    deliberately unconstrained text, matching the column's own lack of a
+    `check` constraint since the real vocabulary is Stores' own once
+    Phase-3 integration exists). `spares-panel.tsx` now shows and lets
+    staff update the Stores status/reference per row.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

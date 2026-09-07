@@ -240,3 +240,126 @@ describe("Spare usage (§16.1)", () => {
     expect(usageRows?.length).toBe(2);
   });
 });
+
+// Loop 24: §16.2 explicit Stores reference identifiers. Both
+// stores_reference_status columns have existed since Loop 1
+// (default 'STORES_REFERENCE_PENDING') but no RPC could ever change them —
+// checked here for the first time.
+describe("Stores reference updates (§16.2, Loop 24)", () => {
+  async function seedRequest(label: string) {
+    const exec = await signInAs("executive");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({ case_type: "BREAKDOWN", symptom: testSymptom(label), reporter_user_id: exec.userId })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+    const { data: req } = await exec.client.rpc("raise_spare_request", {
+      p_case_id: caseId,
+      p_spare_name: testSymptom("bearing"),
+      p_quantity_requested: 1,
+    });
+    return { exec, caseId, requestId: (req as { spare_request_id: string }).spare_request_id };
+  }
+
+  it("spare_requests default to STORES_REFERENCE_PENDING with no reference id (§16.2)", async () => {
+    const { exec, requestId } = await seedRequest("stores default");
+    const { data } = await exec.client
+      .from("spare_requests")
+      .select("stores_reference_status, stores_reference_id")
+      .eq("id", requestId)
+      .single();
+    expect(data!.stores_reference_status).toBe("STORES_REFERENCE_PENDING");
+    expect(data!.stores_reference_id).toBeNull();
+  });
+
+  it("set_spare_request_stores_reference is staff-only and requires a status", async () => {
+    const { requestId } = await seedRequest("stores request guards");
+    const tech = await signInAs("technician");
+    let { error } = await tech.client.rpc("set_spare_request_stores_reference", {
+      p_spare_request_id: requestId,
+      p_stores_reference_status: "STORES_ISSUED",
+    });
+    expect(error?.message).toMatch(/FORBIDDEN/);
+
+    const exec = await signInAs("executive");
+    ({ error } = await exec.client.rpc("set_spare_request_stores_reference", {
+      p_spare_request_id: requestId,
+      p_stores_reference_status: "   ",
+    }));
+    expect(error?.message).toMatch(/STATUS_REQUIRED/);
+  });
+
+  it("updates the status and reference id on a spare request", async () => {
+    const { exec, requestId } = await seedRequest("stores request update");
+    const { error } = await exec.client.rpc("set_spare_request_stores_reference", {
+      p_spare_request_id: requestId,
+      p_stores_reference_status: "STORES_ISSUED",
+      p_stores_reference_id: "PO-9001",
+      p_reason: "autotest",
+    });
+    expect(error).toBeNull();
+
+    const { data } = await exec.client
+      .from("spare_requests")
+      .select("stores_reference_status, stores_reference_id")
+      .eq("id", requestId)
+      .single();
+    expect(data!.stores_reference_status).toBe("STORES_ISSUED");
+    expect(data!.stores_reference_id).toBe("PO-9001");
+  });
+
+  it("set_spare_usage_stores_reference is staff-only, requires a status, and updates the row", async () => {
+    const { exec, caseId } = await seedRequest("stores usage");
+    const { data: usage } = await exec.client.rpc("record_spare_usage", {
+      p_case_id: caseId,
+      p_quantity: 1,
+    });
+    const usageId = (usage as { spare_usage_id: string }).spare_usage_id;
+
+    const tech = await signInAs("technician");
+    let { error } = await tech.client.rpc("set_spare_usage_stores_reference", {
+      p_spare_usage_id: usageId,
+      p_stores_reference_status: "STORES_ISSUED",
+    });
+    expect(error?.message).toMatch(/FORBIDDEN/);
+
+    ({ error } = await exec.client.rpc("set_spare_usage_stores_reference", {
+      p_spare_usage_id: usageId,
+      p_stores_reference_status: "",
+    }));
+    expect(error?.message).toMatch(/STATUS_REQUIRED/);
+
+    ({ error } = await exec.client.rpc("set_spare_usage_stores_reference", {
+      p_spare_usage_id: usageId,
+      p_stores_reference_status: "STORES_ISSUED",
+      p_stores_reference_id: "PO-9002",
+    }));
+    expect(error).toBeNull();
+
+    const { data } = await exec.client
+      .from("spare_usage")
+      .select("stores_reference_status, stores_reference_id")
+      .eq("id", usageId)
+      .single();
+    expect(data!.stores_reference_status).toBe("STORES_ISSUED");
+    expect(data!.stores_reference_id).toBe("PO-9002");
+  });
+
+  it("rejects an unknown spare_request_id / spare_usage_id", async () => {
+    const exec = await signInAs("executive");
+    const unknown = "00000000-0000-0000-0000-000000000000";
+
+    let { error } = await exec.client.rpc("set_spare_request_stores_reference", {
+      p_spare_request_id: unknown,
+      p_stores_reference_status: "STORES_ISSUED",
+    });
+    expect(error?.message).toMatch(/SPARE_REQUEST_NOT_FOUND/);
+
+    ({ error } = await exec.client.rpc("set_spare_usage_stores_reference", {
+      p_spare_usage_id: unknown,
+      p_stores_reference_status: "STORES_ISSUED",
+    }));
+    expect(error?.message).toMatch(/SPARE_USAGE_NOT_FOUND/);
+  });
+});

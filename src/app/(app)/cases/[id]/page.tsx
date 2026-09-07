@@ -347,6 +347,7 @@ export default async function CaseDetailPage({
         canRaise={canRaiseSpareRequest}
         canRecordUsage={canRecordSpareUsage}
         isManager={isManager}
+        isStaff={!!isStaffRow}
       />
 
       {isStaffRow && (
