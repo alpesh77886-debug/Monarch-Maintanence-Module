@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 27 complete — batch Loops 26-30 in progress
+Current loop: Loop 28 complete — batch Loops 26-30 in progress
 Current gate: **GATE 5 CLOSED.** The Boss approved continuation for Loops
   26-30 ("me aage ki loops ke liye approve kar raha hu 26 se 30") after
   reviewing APPROVAL_REPORT_LOOP_21_25.md. The next hard gate is after
@@ -29,7 +29,12 @@ Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   `status = 'CLOSED'`, bypassing the entire §4 LOCKED lifecycle graph and
   §6 two-step emergency gate at the root, with zero RPC/audit-trail
   involvement — CRITICAL, the highest-severity defect found in this
-  project to date, strictly worse than RISK-18) all RESOLVED and verified
+  project to date, strictly worse than RISK-18), and RISK-20 (Loop 28 —
+  the 0025 fix for RISK-18 still left `assigned_by_user_id` client-writable
+  on the `case_assignments` direct self-insert path; a self-service
+  technician could forge it to a real staff member's id, falsely claiming
+  staff mediation that never happened — MEDIUM, an audit-trail integrity
+  gap rather than a lifecycle/authority bypass) all RESOLVED and verified
   against the live deployment. No CRITICAL or HIGH defects currently open.
 Highest severity open: none.
 
@@ -56,8 +61,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   new file, previously zero coverage), +3 Loop 26 (`case_assignments`
   `emergency_direct_start`, RISK-18, previously zero coverage), +4 Loop 27
   (`cases_insert` column lockdown, RISK-19, previously zero coverage on
-  columns beyond `reporter_user_id`) —
-  **122 tests across 17 files** (counted from `it()` blocks), all confirmed
+  columns beyond `reporter_user_id`), +1 Loop 28 (`case_assignments`
+  attribution lockdown, RISK-20) —
+  **123 tests across 17 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -129,7 +135,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0026 (Loop 27), all live on
+Migrations applied: 0008 (Loop 7) through 0027 (Loop 28), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -279,6 +285,19 @@ Batch summary (Loops 26-30, current batch — see CHANGELOG.md for full detail):
     Re-verified: both exploits now fail (`42501`), the real intake payload
     still succeeds at safe defaults, and every lifecycle RPC is confirmed
     `SECURITY DEFINER` (bypasses RLS, unaffected).
+  - Loop 28: RISK-20 — MEDIUM, an audit-trail integrity gap on
+    `case_assignments`. The 0025/RISK-18 fix checked `emergency_confirmed`
+    but still left `assigned_by_user_id`/`is_active`/`deactivated_at`
+    client-writable on the direct self-insert path. Live-verified: a
+    self-service technician could forge `assigned_by_user_id` to a real
+    staff member's id on a genuinely confirmed emergency, producing a row
+    that looks staff-mediated but isn't — defeating the whole point of the
+    `emergency_direct_start` carve-out (that no staff mediated it).
+    Migration 0027 forces `assigned_by_user_id is null`/`is_active =
+    true`/`deactivated_at is null` — the only honest state a fresh
+    self-service row can start in. Re-verified: forgery now fails
+    (`42501`), legitimate self-insert unaffected, `assign_technician`
+    (SECURITY DEFINER) unaffected.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

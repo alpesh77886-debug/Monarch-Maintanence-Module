@@ -330,4 +330,39 @@ describe("case_assignments emergency_direct_start (§5.5, §6, RISK-18)", () => 
     expect(error).toBeNull();
     expect(data!.is_active).toBe(true);
   });
+
+  // Loop 28 (RISK-20): the 0025 fix closed the emergency_confirmed gap but
+  // left every other column on case_assignments client-writable on the
+  // direct-insert path — a self-service technician could forge
+  // assigned_by_user_id to a real staff member's id, falsely claiming
+  // staff mediation that never happened, defeating the very point of the
+  // direct-start carve-out (that no staff mediated it). Fixed in migration
+  // 0027 by forcing assigned_by_user_id/is_active/deactivated_at to the
+  // only honest state a fresh self-service row can start in.
+  it("refuses a direct self-insert that forges assigned_by_user_id, even on a confirmed emergency", async () => {
+    const exec = await signInAs("executive");
+    const mgr = await signInAs("manager");
+    const tech = await signInAs("technician");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("direct-start forged attribution"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    await exec.client.rpc("claim_emergency", { p_case_id: caseId, p_reason: "autotest" });
+    await mgr.client.rpc("confirm_emergency", { p_case_id: caseId });
+
+    const { error } = await tech.client.from("case_assignments").insert({
+      case_id: caseId,
+      technician_user_id: tech.userId,
+      emergency_direct_start: true,
+      assigned_by_user_id: mgr.userId,
+    });
+    expect(error).not.toBeNull();
+  });
 });

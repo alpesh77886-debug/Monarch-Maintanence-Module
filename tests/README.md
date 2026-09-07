@@ -69,6 +69,14 @@ own payload (`case_type`/`symptom`/`area`/`line`/`asset_known`/
 `major_complex_flag`/`reporter_user_id` only) still succeeds and lands at
 `status='REPORTED'` with every other locked column at its safe default.
 
+Loop 28 adds 1 `it()` to `tests/emergency-and-notifications.test.ts`:
+`case_assignments`' direct-insert path (fixed for the emergency gate in
+Loop 26) still let `assigned_by_user_id` be forged to a real staff
+member's id even on a genuinely confirmed emergency, falsely claiming
+staff mediation of a self-service assignment (RISK-20). Covers the
+denial of that forgery; the existing Loop 26 tests already cover that a
+plain, unforged self-insert still works.
+
 Loop 8 (`spares.test.ts`) adds: the §3.3 ₹12,000 threshold computation
 (exactly ₹12,000 vs ₹12,000.01), spare-name validation, both tables'
 direct-insert RLS denials, the full approval gate (non-staff and
