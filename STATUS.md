@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 32 complete — batch Loops 31-35 in progress
+Current loop: Loop 33 complete — batch Loops 31-35 in progress
 Current gate: **GATE 6 CLOSED.** The Boss approved continuation for Loops
   31-35 ("approved loops 31 to 35") after reviewing
   APPROVAL_REPORT_LOOP_26_30.md. The next hard gate is after Loop 35
@@ -375,6 +375,19 @@ Batch summary (Loops 31-35, current batch — see CHANGELOG.md for full detail):
     (RISK-04) rather than receiving it from the Boss. RISK-04's entry
     updated with these 4 concrete table names instead, so it's
     actionable when the Boss provides guidance.
+  - Loop 33: cross-referenced 3 pack sections not yet closely read
+    against implementation (§24 Automation vs Human Decision, §28
+    Idempotency/Concurrency, §37 Test Matrix), same method as Loop 24.
+    Checked trigger functions first — only 1 exists in the whole schema,
+    already reviewed. All three sections came back clean: §24's
+    security-relevant AUTO/NEVER-AUTOMATE items match actual code (e.g.
+    `TEMPORARILY_RESTORED` has no lifecycle-graph edge to `CLOSED`,
+    confirmed live); §28's every listed concurrency-sensitive operation
+    uses `for update` or an atomic `update...where` guard; §37's
+    "concurrent accept race" is tested, and the one uncovered item (no
+    receiver on handover) is an already-disclosed, deliberate
+    manual-verification-only gap from Loop 12, not a new finding. No
+    code change this loop.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +
