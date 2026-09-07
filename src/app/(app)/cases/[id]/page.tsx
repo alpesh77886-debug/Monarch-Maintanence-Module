@@ -24,6 +24,7 @@ import PtwPanel from "./ptw-panel";
 import RootCausePanel from "./root-cause-panel";
 import EvidencePanel from "./evidence-panel";
 import AssetPanel from "./asset-panel";
+import RestorationHistoryPanel from "./restoration-history-panel";
 import Link from "next/link";
 import type {
   StaffMember,
@@ -114,6 +115,12 @@ export default async function CaseDetailPage({
     .eq("restoration_type", "TECHNICAL")
     .is("verification_result", null)
     .maybeSingle();
+
+  const { data: restorationHistory } = await supabase
+    .from("restorations")
+    .select("*")
+    .eq("case_id", id)
+    .order("recorded_at", { ascending: true });
 
   const { data: pendingClearance } = await supabase
     .from("clearances")
@@ -330,6 +337,8 @@ export default async function CaseDetailPage({
       ) : (
         canRecordRestoration && <RestorationForm caseId={caseRow.id} />
       )}
+
+      {isStaffRow && <RestorationHistoryPanel restorations={restorationHistory ?? []} />}
 
       <SparesPanel
         caseId={caseRow.id}

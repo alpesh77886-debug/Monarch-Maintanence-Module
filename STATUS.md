@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 21 (complete) — batch Loops 21-25 in progress
+Current loop: Loop 22 (complete) — batch Loops 21-25 in progress
 Current gate: **GATE 4 CLOSED.** The Boss approved continuation for Loops
   21-25 via an explicit choice (visual-style-upgrade-only scope for the
   dashboard/KPI work, confirmed before Loop 21 began) after reviewing
@@ -36,7 +36,8 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   +9 Loop 15 (§18 recurrence, §19 CAPA), +10 Loop 16 (§5.4 priority override,
   §14.2 PTW gate), +6 Loop 17 (§9.1 validated root cause), +4 Loop 18
   (§5.1 evidence attachment), +2 Loop 19 (§5.1/§24 major/complex intake),
-  +4 Loop 20 (§5.1 asset linkage) — **97 tests across 16 files** (counted
+  +4 Loop 20 (§5.1 asset linkage), +1 Loop 22 (§10 restoration follow-up
+  flag) — **98 tests across 16 files** (counted
   from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
@@ -109,7 +110,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0021 (Loop 20), all live on
+Migrations applied: 0008 (Loop 7) through 0022 (Loop 22), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -120,7 +121,9 @@ Migrations applied: 0008 (Loop 7) through 0021 (Loop 20), all live on
   `pg_class.reloptions` right after creation), applying the RISK-15 lesson
   prospectively rather than needing a second fix. Loop 18 adds NO migration —
   `maintenance.evidence` and its RLS have existed since Loops 1/2 and were
-  simply never used until now.
+  simply never used until now. 0022 (Loop 22) edits `record_restoration`,
+  also built from the LIVE definition per RISK-14 — only the
+  `follow_up_required` value is new, the rest byte-identical to what was live.
 
 PR #12 (Loop 16) needed two post-open CI fixes before it merged: a test-helper
   logic bug, and a genuine Next.js server/client boundary bug (a plain helper
@@ -181,6 +184,21 @@ Batch summary (Loops 21-25, current batch — see CHANGELOG.md for full detail):
     "not implemented yet" — false since Loop 15 — and never queried either
     table. Now shows real counts (verified live: 2 recurrence flags, 15
     CAPA links already existed and were invisible before this loop).
+  - Loop 22: §10 permanent-repair follow-up responsibility.
+    `restorations.follow_up_required` has existed since Loop 1 but
+    `record_restoration` never set it. The rest of §10 was already
+    correctly built (Loop 5's RISK-12 transition-graph guard + the
+    existing `FollowUpButton` UI) — the real gap was narrower: once a case
+    moved past `TEMPORARILY_RESTORED`, the fact it ever needed a stop-gap
+    fix became unrecoverable from the schema. Migration 0022 sets
+    `follow_up_required = (restoration_type = 'TEMPORARY')` on insert,
+    built from the LIVE `record_restoration` definition per the standing
+    RISK-14 rule. New `restoration-history-panel.tsx` on the case page
+    (nothing showed TEMPORARY restorations before this loop) and a new
+    `/kpi` metric. Investigated `evidence_ref` (also zero references
+    anywhere) and deliberately left it alone — Loop 18's general evidence
+    table already covers "preserve evidence" for restorations; a second,
+    parallel free-text pointer would be redundant, not a fix.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

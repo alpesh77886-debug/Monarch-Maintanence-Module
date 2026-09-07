@@ -237,6 +237,11 @@ export interface Restoration {
   details: string | null;
   verification_result: "PASSED" | "FAILED" | null;
   verification_failure_reason: string | null;
+  // §10: set true only for a TEMPORARY restoration (Loop 22) — the schema's
+  // record that this restoration generated a permanent-repair follow-up
+  // responsibility for the Executive, independent of the case's current
+  // status (which moves on once the follow-up happens).
+  follow_up_required: boolean;
 }
 
 export interface Clearance {

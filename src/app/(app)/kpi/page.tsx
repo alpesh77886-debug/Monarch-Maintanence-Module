@@ -106,6 +106,10 @@ export default async function KpiPage() {
     .from("spare_requests")
     .select("id, estimated_amount, requires_manager_approval, approved_at");
 
+  const { data: restorationRows } = await supabase
+    .from("restorations")
+    .select("case_id, restoration_type, follow_up_required");
+
   const cases = (caseRows ?? []) as Pick<
     MaintenanceCase,
     | "id"
@@ -187,6 +191,18 @@ export default async function KpiPage() {
   const reopenedCaseIds = new Set((reopenEvents ?? []).map((e) => e.case_id as string));
   const boundaryBreaches = cases.filter((c) => c.production_started_without_release).length;
   const notRestarted = cases.filter((c) => c.production_not_restarted).length;
+
+  // §10: a TEMPORARY restoration always generates a permanent-repair
+  // follow-up responsibility (Loop 22) — restorations.follow_up_required is
+  // set true only for those. Counted here for the same reason recurrence/CAPA
+  // are: the mechanism exists but nothing previously reported on it.
+  const restorations = (restorationRows ?? []) as {
+    case_id: string;
+    restoration_type: string;
+    follow_up_required: boolean;
+  }[];
+  const temporaryRestorations = restorations.filter((r) => r.restoration_type === "TEMPORARY");
+  const casesWithTemporaryRestoration = new Set(temporaryRestorations.map((r) => r.case_id)).size;
 
   // --- Group 8: Financial Impact -------------------------------------------
   const spares = (spareRows ?? []) as {
@@ -317,6 +333,13 @@ export default async function KpiPage() {
           label="Cases reopened at least once"
           value={String(reopenedCaseIds.size)}
           coverage={`${total} cases`}
+        />
+        <Metric
+          label="Cases with a temporary restoration (§10)"
+          value={String(casesWithTemporaryRestoration)}
+          coverage={`${temporaryRestorations.length} temporary restoration${
+            temporaryRestorations.length === 1 ? "" : "s"
+          } recorded, each generating a permanent-repair follow-up`}
         />
         <Metric
           label="Confirmed emergencies"
