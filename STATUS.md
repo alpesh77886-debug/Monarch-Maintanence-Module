@@ -1,11 +1,10 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 30 complete — batch Loops 26-30 finished, awaiting Gate 6
-Current gate: **GATE 6 — AWAITING BOSS.** Loops 26-30 are complete.
-  APPROVAL_REPORT_LOOP_26_30.md is the batch-closing gate report; per
-  IMPLEMENTATION_PACK.md §19.9/§19.13, autonomous work is now PAUSED until
-  the Boss explicitly approves continuation for the next batch (Loops
-  31-35). See APPROVAL_GATE.md.
+Current loop: Loop 31 — batch Loops 31-35 starting
+Current gate: **GATE 6 CLOSED.** The Boss approved continuation for Loops
+  31-35 ("approved loops 31 to 35") after reviewing
+  APPROVAL_REPORT_LOOP_26_30.md. The next hard gate is after Loop 35
+  (IMPLEMENTATION_PACK.md §19.9/§19.13). See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -272,7 +271,7 @@ Batch summary (Loops 21-25 — see CHANGELOG.md for full per-loop detail):
     `tests/observations-clearances-audit.test.ts` (9 tests) closes all
     three tables' coverage gaps.
 
-Batch summary (Loops 26-30, current batch — see CHANGELOG.md for full detail):
+Batch summary (Loops 26-30, complete — see CHANGELOG.md for full detail):
   - Loop 26: RISK-18 — a live-exploitable authority bypass on
     `case_assignments`. Widened Loop 25's RLS audit to read every policy's
     live `qual`/`with_check` against its own migration's comment.
