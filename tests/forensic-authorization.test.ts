@@ -170,6 +170,67 @@ describe("F-01 — QC decision authority boundary", () => {
   });
 });
 
+describe("F-01b — the QC identity's grant is narrow (0034 regression)", () => {
+  // 0031 let a QC identity past qc_decision's gates but transition_case still
+  // refused it, so no QC decision could ever complete. 0034 grants exactly the
+  // two QC-decision edges. These tests pin that the grant did not widen into
+  // general lifecycle authority.
+  it("cannot perform an ordinary lifecycle transition", async () => {
+    const exec = await signInAs("executive");
+    const qc = await signInAs("qc");
+
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("F-01b qc overreach"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+
+    const { error } = await qc.client.rpc("transition_case", {
+      p_case_id: created!.id,
+      p_new_status: "ASSESSED",
+    });
+    expect(error?.message).toMatch(/FORBIDDEN/);
+  });
+
+  it("cannot release a case that never went through a clearance", async () => {
+    const exec = await signInAs("executive");
+    const qc = await signInAs("qc");
+
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("F-01b qc skips clearance"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    await exec.client.rpc("acknowledge_case", { p_case_id: caseId, p_priority: "MEDIUM" });
+    for (const status of ["ASSESSED", "ASSIGNED", "DIAGNOSING", "IN_REPAIR"]) {
+      await exec.client.rpc("transition_case", { p_case_id: caseId, p_new_status: status });
+    }
+    await exec.client.rpc("record_restoration", {
+      p_case_id: caseId,
+      p_restoration_type: "TECHNICAL",
+      p_details: "autotest",
+    });
+
+    // TECHNICALLY_RESTORED, not CLEARANCE_PENDING — a QC identity must not be
+    // able to release it directly and skip the clearance record entirely.
+    const { error } = await qc.client.rpc("transition_case", {
+      p_case_id: caseId,
+      p_new_status: "MAINTENANCE_RELEASED",
+    });
+    expect(error?.message).toMatch(/CLEARANCE_PENDING/);
+  });
+});
+
 describe("F-02/03/04 — read scope is enforced by RLS, not by the UI", () => {
   it("an unrelated authenticated identity cannot read a case it neither reported nor is assigned to", async () => {
     const exec = await signInAs("executive");

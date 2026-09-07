@@ -331,6 +331,46 @@ describe("case_assignments emergency_direct_start (§5.5, §6, RISK-18)", () => 
     expect(data!.is_active).toBe(true);
   });
 
+  // 0034 regression: tightening cases_select (0032) silently broke this
+  // policy, because its emergency check was an EXISTS over `cases` evaluated
+  // as the inserting user. A technician who cannot SEE the case must still be
+  // able to make the legitimate emergency self-insert — an authorization
+  // decision must never depend on the actor's read visibility.
+  it("still works for a technician who cannot read the case yet", async () => {
+    const exec = await signInAs("executive");
+    const mgr = await signInAs("manager");
+    const tech = await signInAs("technician");
+
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("emergency insert without read visibility"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id")
+      .single();
+    const caseId = created!.id as string;
+
+    await exec.client.rpc("claim_emergency", { p_case_id: caseId, p_reason: "autotest" });
+    await mgr.client.rpc("confirm_emergency", { p_case_id: caseId });
+
+    // Precondition: the technician genuinely cannot read this case yet.
+    const { data: beforeSeen } = await tech.client.from("cases").select("id").eq("id", caseId);
+    expect(beforeSeen).toEqual([]);
+
+    const { error } = await tech.client.from("case_assignments").insert({
+      case_id: caseId,
+      technician_user_id: tech.userId,
+      emergency_direct_start: true,
+    });
+    expect(error).toBeNull();
+
+    // ...and once assigned, the 0032 assignee branch makes it visible.
+    const { data: afterSeen } = await tech.client.from("cases").select("id").eq("id", caseId);
+    expect(afterSeen?.length).toBe(1);
+  });
+
   // Loop 28 (RISK-20): the 0025 fix closed the emergency_confirmed gap but
   // left every other column on case_assignments client-writable on the
   // direct-insert path — a self-service technician could forge

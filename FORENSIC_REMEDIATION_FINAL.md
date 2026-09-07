@@ -158,6 +158,17 @@ stated rather than papered over.
 `tsc` clean · `npm run lint` clean · `npm run build` clean · full `"use client"`
 boundary re-scan across 35 client files clean.
 
+**First CI run: 138 passed, 5 failed — two real defects introduced by this
+remediation, both fixed in migration 0034 and re-verified live end to end.**
+(i) `qc_decision` could never complete, because `transition_case` still
+refused the non-staff QC identity; the original four-identity probe used a
+non-existent clearance id and so verified the refusal path only, never the
+success path. (ii) Tightening `cases_select` silently broke
+`case_assignments_insert`, whose emergency check was an `EXISTS` over `cases`
+evaluated as the inserting user. A third failure (`audit_log is staff-only to
+read`) was not reproduced — the same code path passed twice in the same run and
+in a direct SQL probe — and is recorded as unexplained rather than dismissed.
+
 New suite `tests/forensic-authorization.test.ts` — 15 cases covering the F-01
 authority matrix (4 identities), QC audit actor, QC idempotency + rejection
 return path, F-02/03/04 read scope (staff / reporter / assignee / unrelated),

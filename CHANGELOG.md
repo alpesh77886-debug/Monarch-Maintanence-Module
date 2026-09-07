@@ -3106,3 +3106,68 @@ re-scan across 35 client files — clean. 15 new regression tests in
 `tests/forensic-authorization.test.ts`; the QC scenario test updated to use the
 QC identity. Suites cannot run in this sandbox (RISK-05 egress block) — CI is
 the source of truth.
+
+### Forensic remediation — two self-inflicted defects, caught by CI (migration 0034)
+
+The first CI run on the remediation PR failed 5 of 143 tests. Both real
+failures were introduced by the remediation itself, and both are recorded here
+because one of them exposes a genuine weakness in how 0031 was verified.
+
+**(1) `qc_decision` could never actually complete.** `qc_decision` correctly
+admitted only a QC-authority identity, then called `transition_case` — whose
+own first line is `if not is_staff() then raise FORBIDDEN`. A QC identity is
+deliberately *not* staff, so every real QC decision failed. Three tests caught
+it, including the pre-existing Scenario B test that has passed since Loop 5.
+
+**Why the live probe missed it, stated plainly:** the four-identity probe used
+a *non-existent* clearance id, on the reasoning that reaching
+`CLEARANCE_NOT_FOUND` proves the authority gates opened. It does — but it stops
+exactly one step before the transition, so it verified the gates and nothing
+past them. A probe that only exercises the refusal path cannot tell you the
+success path works. The test suite caught what the probe could not.
+
+Fixed in 0034 by granting the QC identity exactly the two transitions that
+*are* the QC decision — `CLEARANCE_PENDING → MAINTENANCE_RELEASED` and
+`CLEARANCE_PENDING → QC_REJECTED` — and nothing else. Every other transition
+stays staff-only, and a second check after the status is read refuses a QC
+identity on any case not actually in `CLEARANCE_PENDING`, so it cannot skip
+the clearance record.
+
+Re-verified end to end this time, on a real case with a real clearance:
+`CLEARANCE_PENDING` → Executive refused → QC identity **SUCCEEDED** → case
+reached `MAINTENANCE_RELEASED` → exactly 1 audit row with the QC actor → and
+the same QC identity was still refused when it tried to `CLOSED` a case.
+
+**(2) Tightening `cases_select` silently broke `case_assignments_insert`.** The
+RISK-18 fix (0025) gated the emergency self-insert on
+`exists (select 1 from cases where … emergency_confirmed)`. That subquery is
+evaluated **as the inserting user**, so it was itself subject to
+`cases_select`. While that policy was `USING (true)` the coupling was
+invisible; once 0032 scoped case reads, a technician who is neither reporter
+nor already assigned could no longer see the case, the `EXISTS` returned false,
+and the legitimate emergency self-insert was refused.
+
+This is the general hazard worth recording as a standing lesson for this repo:
+**an authorization check must never depend on the actor's read visibility**, or
+narrowing a SELECT policy silently narrows a WITH CHECK policy somewhere else.
+0034 moves the check into a SECURITY DEFINER helper
+(`case_is_confirmed_emergency`) so it answers the same question regardless of
+who is asking. Authority is unchanged — the RISK-18 emergency gate and the
+RISK-20 attribution pins both still hold.
+
+Verified live in all four directions: the technician still cannot *see* the
+case (0032 holds), still *can* self-insert on a confirmed emergency (0034
+fixes it), still *cannot* self-insert on a non-emergency case (RISK-18 holds),
+and *can* see the case once assigned (0032's assignee branch works).
+
+**(3) One failure was not reproduced and is not claimed as fixed.**
+`observations-clearances-audit.test.ts > audit_log is staff-only to read`
+failed inside `driveToInRepair`. The same helper, same identity and same insert
+passed twice elsewhere in the same file in the same run, and a direct SQL probe
+of that exact insert-and-read-back as the Executive identity succeeded. The run
+also coincided with PostgREST reloading its schema cache after three migrations
+added a table and several functions. That is consistent with a transient, but
+it is recorded as *unexplained* rather than dismissed as a flake; if it recurs
+on the next run it will be root-caused properly rather than re-run again.
+
+3 new regression tests cover the two real defects.
