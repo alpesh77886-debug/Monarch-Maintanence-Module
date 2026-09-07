@@ -2322,3 +2322,79 @@ error caught and fixed — an apostrophe in new guidance text). Live-verified
 against Supabase project `maavrlqkdrisjwzhjdgg` before and after the fix
 (table above), including confirming the pre-existing >₹12,000
 `APPROVAL_REQUIRED` path is unchanged by this fix.
+
+## Loop 30 — 2026-09-07
+
+Last loop of the Loops 26-30 batch. PR #24 (Loop 29) merged clean — both
+CI jobs green, 124 tests passing. Started Loop 30 from a fresh `main`.
+
+Continued the `SECURITY DEFINER` RPC audit from Loop 29, reading the
+remaining ~40 functions not yet checked. Most held up: `approve_pm_plan`,
+`create_pm_plan`, `link_ptw_proof`, `set_ptw_required`, `set_qc_required`,
+`qc_decision`, `send_to_qc`, `transition_case`, `take_ownership`,
+`find_user_by_email` all gate on server-side state or `is_staff()`/
+`is_manager()`, never on a client-optional parameter the way
+`record_spare_usage` did.
+
+### RISK-22 — `record_intervention` never verified the caller was actually assigned to the case
+
+`record_intervention`'s actor check (Loop 3, migration 0004) was
+`is_staff() OR p_technician_user_id = v_actor` — comparing a
+client-supplied id to the caller's own id, never checking
+`case_assignments` at all. `record_spare_usage`'s own migration comment
+(Loop 8, 0009) already described `record_intervention`'s intent as
+"staff, or the actively assigned technician on this case" — a documented
+intent the original 0004 code never actually implemented.
+
+Two compounding problems, both live-verified as the seeded non-staff
+`technician` identity with **zero assignment** to a fresh case:
+
+1. No assignment check at all: passing `p_technician_user_id` = their own
+   id succeeded outright — any signed-in non-staff user could fabricate
+   an intervention on any case, assigned or not.
+2. A NULL-propagation bug on top: `p_technician_user_id` defaults to
+   `NULL`, and `NULL = v_actor` evaluates to `NULL` (not `false`) in SQL.
+   `not (false or NULL)` is `NULL`, and PL/pgSQL's `if NULL then` does
+   not raise — so simply *omitting* the parameter also silently passed
+   the check, independent of problem 1.
+
+This app's own UI (`page.tsx`'s `isAssignedTechnician`/`isStaffRow`
+gating the intervention form) already got this right — this was a pure
+server-side enforcement gap, exactly what §29 warns against ("the UI is
+not a security boundary").
+
+Migration `0029_maintenance_record_intervention_assignment_check.sql`
+replaces the check with the same `case_assignments`-based pattern
+`record_spare_usage` already established, plus a separate explicit check
+that a non-staff caller still cannot claim to be a *different*
+technician than themselves.
+
+**Live verification, all four directions:**
+
+| Step | Result |
+|---|---|
+| Unassigned technician, `p_technician_user_id` = own id | fails, `FORBIDDEN` |
+| Unassigned technician, `p_technician_user_id` omitted (NULL-propagation variant) | fails, `FORBIDDEN` |
+| Genuinely assigned technician, self-recording | succeeds |
+| Genuinely assigned technician, claiming a different technician's id | fails, `FORBIDDEN` |
+| Staff recording on behalf of any technician (no assignment required) | succeeds, unaffected |
+
+Logged as RISK-22, HIGH, RESOLVED, in `RISK_REGISTER.md`.
+
+### Tests
+
+2 new `it()`s in `tests/assignment-and-waiting.test.ts`: an unassigned
+non-staff caller is refused both with explicit self-attribution and with
+the parameter omitted. The 2 pre-existing tests in the same file already
+exercised assigned/self and assigned/impersonation paths correctly and
+needed no changes. Suite is now **126 tests across 17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+No UI changed this loop (the UI already gated this correctly; only the
+RPC needed fixing). Re-scanned every `"use client"` file anyway — clean.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before and after the fix (table above).

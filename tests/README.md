@@ -87,6 +87,15 @@ linked request and asserted success, which was exercising the gap this
 loop closes, not a legitimate scenario, so both now raise a request
 first.
 
+Loop 30 adds 2 `it()`s to `tests/assignment-and-waiting.test.ts`: an
+unassigned non-staff caller is refused by `record_intervention` (RISK-22)
+both when explicitly self-attributing and when omitting
+`p_technician_user_id` entirely — the latter previously slipped through a
+NULL-propagation bug in the old check (`NULL = v_actor` evaluates to
+`NULL`, which PL/pgSQL's `if` treats as false, not true). The 2
+pre-existing tests in the file already covered assigned/self and
+assigned/impersonation and needed no changes.
+
 Loop 8 (`spares.test.ts`) adds: the §3.3 ₹12,000 threshold computation
 (exactly ₹12,000 vs ₹12,000.01), spare-name validation, both tables'
 direct-insert RLS denials, the full approval gate (non-staff and
