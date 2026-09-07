@@ -2002,3 +2002,172 @@ Suite is now **115 tests across 17 files**.
 client"` boundary re-scan is a formality — re-ran it anyway, clean.
 Live-verified against Supabase project `maavrlqkdrisjwzhjdgg` before and
 after the fix (tables above).
+
+## Loop 26 — 2026-09-07
+
+First loop of the Loops 26-30 batch (Boss approved: "me aage ki loops ke
+liye approve kar raha hu 26 se 30"). Continued Loop 25's RLS-policy audit
+method, widened: pulled every policy's live `qual`/`with_check` via
+`pg_policies` for the whole `maintenance` schema in one query, and read
+each one against what its own migration's comment claims it does — not
+just "is there a test", but "does the policy actually match its own
+documented intent."
+
+### RISK-18 — a live-exploitable authority bypass on `case_assignments`
+
+`case_assignments_insert` (migration 0004, Loop 3) is commented as "the
+emergency direct-start path (§5.5: 'technician can start directly')...
+deliberately immediate and self-service" — but its actual check,
+`with check (emergency_direct_start AND technician_user_id = auth.uid())`,
+never verified the target case was an actual confirmed emergency.
+`emergency_direct_start` is a plain client-supplied column value on the
+INSERT itself, not derived from anything server-side.
+
+Verified live, and this one is **genuinely exploitable, not merely a
+server-side gap like RISK-17**: signed in as the seeded non-staff
+`technician` identity, a direct insert with `emergency_direct_start = true`
+succeeded against a case whose `emergency_confirmed` was `false` (never
+even claimed as an emergency), producing an `is_active = true`
+`case_assignments` row. That matters because `page.tsx`'s own
+`isAssignedTechnician` check is defined purely as "an active
+`case_assignments` row for this technician" — and grants
+`canRecordIntervention`/`canRecordSpareUsage`. So any non-staff technician
+identity could self-grant intervention/spare-usage recording rights on
+**any case in the system**, any time, bypassing both §5.5's staff-mediated
+assignment and §6's two-step emergency confirmation gate entirely — not
+via a UI button (nothing in this app's own UI ever sets
+`emergency_direct_start`; `grep` found it only ever *displayed*), but via
+a direct client insert, which any signed-in user can issue.
+
+Migration `0025_maintenance_case_assignments_emergency_gate.sql`: the
+policy now also requires `exists (select 1 from cases where id = case_id
+and emergency_confirmed = true)`.
+
+**Live verification, all three directions:**
+
+| Step | Result |
+|---|---|
+| Technician direct-inserts `emergency_direct_start=true` on a case with `emergency_confirmed=false`, before the fix | succeeded — `is_active=true` row created |
+| Same insert, after the fix | fails, `42501` RLS violation |
+| Same insert, on a case genuinely taken through `claim_emergency`→`confirm_emergency` | succeeds — legitimate path preserved |
+| Staff-mediated `assign_technician` (SECURITY DEFINER, bypasses RLS) | unaffected |
+
+Logged as RISK-18, RESOLVED, in `RISK_REGISTER.md`.
+
+### Tests
+
+3 new `it()`s in `tests/emergency-and-notifications.test.ts` (zero prior
+coverage of `emergency_direct_start`/`case_assignments` insert existed —
+this path had gone untested since Loop 3): denies the self-insert on a
+non-emergency case, denies impersonating a different
+`technician_user_id` even on a confirmed emergency, and confirms the
+legitimate path still works end to end. Suite is now **118 tests across
+17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+No UI changed this loop. Re-scanned every `"use client"` file anyway —
+clean.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before and after the fix (table above).
+
+## Loop 27 — 2026-09-07
+
+Continued Loop 26's RLS-policy audit, applied to `cases_insert` — the
+single most consequential insert policy in the schema, since every other
+table's row exists only because a `cases` row already does.
+
+### RISK-19 — a live-exploitable bypass of the entire §4 LOCKED lifecycle graph, at case creation
+
+`cases_insert` (migration 0002, Loop 1) has always been
+`with check (reporter_user_id = auth.uid())` — one column checked out of
+the ~40 on `maintenance.cases`. Every other column, including `status`
+itself, every `emergency_*` column, `qc_required`, `ptw_required`,
+`current_owner_user_id`, `priority`, `closed_at`, and `closure_reason`,
+was fully client-writable at INSERT time. A `default` (e.g. `status
+default 'REPORTED'`) is not a constraint — a client that explicitly
+supplies its own value for that column simply overrides the default.
+
+Verified live as the seeded non-staff `technician` identity, no RPC
+involved:
+
+| Exploit attempt | Result before fix |
+|---|---|
+| Direct insert with `emergency_confirmed = true` | succeeded — a fake emergency, self-confirmed, with zero claim/confirm ceremony |
+| Direct insert with `status = 'CLOSED'`, a fabricated `closure_reason`, and `closed_at` | succeeded — case `MC-003975`, a fully-formed "closed" case that never touched a single `status_transitions` edge or a single lifecycle RPC |
+
+This is assessed as **more severe than RISK-18**: it needs no staff
+access, no RPC, and no prior case state at all — a brand-new INSERT
+statement can fabricate a fully-closed case out of nothing, with none of
+the §4 LOCKED lifecycle graph's edges ever consulted and none of the
+§6/§27 audit-trail RPCs ever invoked. It also meant Loop 26's RISK-18 fix
+was independently circumventable on its own: fake `emergency_confirmed =
+true` here first, then walk the (now "legitimate"-looking)
+`emergency_direct_start` path RISK-18 just closed.
+
+Migration `0026_maintenance_cases_insert_column_lockdown.sql` rewrites
+`cases_insert` as an allow-list rather than a blacklist: `reporter_user_id
+= auth.uid()` plus an explicit `is null` / `= false` / `= 'REPORTED'`
+check on every other column, matching exactly the fields the real intake
+form (`src/app/(app)/cases/new/page.tsx`) submits — `case_type`,
+`symptom`, `area`, `line`, `asset_known`, `major_complex_flag`,
+`reporter_user_id`. Because it's an allow-list, a future column added to
+`maintenance.cases` is closed-by-default at INSERT until a later
+migration explicitly opens it here — the same shape of gap can't
+reappear silently.
+
+**Live verification:**
+
+| Step | Result |
+|---|---|
+| `emergency_confirmed = true` self-insert, after the fix | fails, `42501` RLS violation |
+| `status = 'CLOSED'` self-insert with fabricated closure, after the fix | fails, `42501` RLS violation |
+| Real intake payload (7 fields above only) | succeeds — lands at `status = 'REPORTED'`, `emergency_confirmed = false`, `qc_required = null`, `current_owner_user_id = null`, `closed_at = null` |
+| `acknowledge_case`, `claim_emergency`, `confirm_emergency`, `transition_case`, `change_priority` | all confirmed `SECURITY DEFINER` — bypass RLS entirely, unaffected by this policy change |
+
+Logged as RISK-19, CRITICAL, RESOLVED, in `RISK_REGISTER.md`.
+
+### Tests
+
+4 new `it()`s in `tests/lifecycle.test.ts`: refuses a reporter
+self-setting `emergency_confirmed` at creation, refuses self-inserting an
+already-`CLOSED` case, refuses self-setting `current_owner_user_id` or
+`priority`, and confirms the real intake payload still succeeds and lands
+at safe defaults. Suite is now **122 tests across 17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+No UI changed this loop (RLS-only fix). Re-scanned every `"use client"`
+file anyway — clean.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before and after the fix (tables above), including
+confirming every lifecycle-mutating RPC is `SECURITY DEFINER` and
+therefore unaffected by the tightened INSERT policy.
+
+### CI fix — a real bug in Loop 26's own "impersonation" test, not a flake
+
+PR #22's `lint-and-build` job (run on the Loop 26 commit) failed one test:
+`case_assignments emergency_direct_start ... refuses a direct self-insert
+claiming a different technician_user_id`. Root-caused, not re-run
+blind: the test used the literal string
+`"91a2fd36-5a35-4c36-8f5a-e0cd0e492f75"` as a "shape only" placeholder for
+"a different technician" — but that UUID **is** the real seeded
+`tech1@monarch.test` identity's own `auth.users.id` (confirmed live via
+`select id from auth.users where email = 'tech1@monarch.test'`). Since
+the test signs in *as* `tech1`, `technician_user_id` ended up equal to
+`auth.uid()` — not impersonation at all, so the insert legitimately
+succeeded and `expect(error).not.toBeNull()` correctly failed.
+
+Fixed by using `exec.userId` (a real, different, already-signed-in seeded
+identity) instead of a hand-typed placeholder UUID. Re-verified live via
+`execute_sql`, replaying the exact scenario (create → `claim_emergency` →
+`confirm_emergency` → attempted impersonating insert): now fails with
+`42501` as intended. Lesson: a "shape only" UUID in a multi-tenant test
+fixture is not risk-free — it can silently collide with a real seeded
+user's id and invert what the test actually proves.

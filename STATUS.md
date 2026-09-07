@@ -1,10 +1,10 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 25 (complete) — END OF BATCH (Loops 21-25)
-Current gate: **GATE 5 OPEN — APPROVAL_REPORT_LOOP_21_25.md written, awaiting
-  the Boss.** Autonomous development is PAUSED. Loop 26 does not begin until
-  the Boss gives explicit continuation language (IMPLEMENTATION_PACK.md
-  §19.9/§19.13). Silence or "looks good" is NOT approval. See APPROVAL_GATE.md.
+Current loop: Loop 27 complete — batch Loops 26-30 in progress
+Current gate: **GATE 5 CLOSED.** The Boss approved continuation for Loops
+  26-30 ("me aage ki loops ke liye approve kar raha hu 26 se 30") after
+  reviewing APPROVAL_REPORT_LOOP_21_25.md. The next hard gate is after
+  Loop 30 (IMPLEMENTATION_PACK.md §19.9/§19.13). See APPROVAL_GATE.md.
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
@@ -14,14 +14,23 @@ Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   first view in this schema shipped without `security_invoker` and read
   past RLS; measured live, fixed, regression-tested), and RISK-16 (Loop 14
   — the test suite exhausted Supabase's auth rate limit, producing red CI
-  that was infrastructure, not product), and RISK-17 (Loop 25 —
+  that was infrastructure, not product), RISK-17 (Loop 25 —
   `clearances_insert` allowed a direct client insert bypassing
   `send_to_qc`'s TECHNICALLY_RESTORED guard entirely; not live-exploitable
   as a lifecycle bypass since `transition_case`'s own graph check still
   protects the actual status, but a real server-side enforcement gap on a
-  locked boundary, same shape as the Loop 8 spares fix) all RESOLVED and
-  verified against the live deployment. No CRITICAL or HIGH defects
-  currently open.
+  locked boundary, same shape as the Loop 8 spares fix), and RISK-18
+  (Loop 26 — `case_assignments_insert`'s `emergency_direct_start` path
+  never checked the target case was an actual confirmed emergency; a
+  non-staff technician could self-grant intervention/spare-usage rights
+  on ANY case), and RISK-19 (Loop 27 — `cases_insert` validated only
+  `reporter_user_id`; any signed-in non-staff user could self-insert a
+  case with `emergency_confirmed = true` or a fully-fabricated
+  `status = 'CLOSED'`, bypassing the entire §4 LOCKED lifecycle graph and
+  §6 two-step emergency gate at the root, with zero RPC/audit-trail
+  involvement — CRITICAL, the highest-severity defect found in this
+  project to date, strictly worse than RISK-18) all RESOLVED and verified
+  against the live deployment. No CRITICAL or HIGH defects currently open.
 Highest severity open: none.
 
 Vercel status: LINKED and GREEN. Team `Monarch` (monarch-92be), project
@@ -44,8 +53,11 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   flag), +3 Loop 23 (§18 `set_recurrence_rule_active`, previously
   zero coverage), +5 Loop 24 (§16.2 Stores reference RPCs, previously
   zero coverage), +9 Loop 25 (`observations`/`clearances`/`audit_log` RLS,
-  new file, previously zero coverage) — **115 tests across 17 files**
-  (counted from `it()` blocks), all confirmed
+  new file, previously zero coverage), +3 Loop 26 (`case_assignments`
+  `emergency_direct_start`, RISK-18, previously zero coverage), +4 Loop 27
+  (`cases_insert` column lockdown, RISK-19, previously zero coverage on
+  columns beyond `reporter_user_id`) —
+  **122 tests across 17 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -117,7 +129,7 @@ Batch summary (Loops 6-10 — see CHANGELOG.md for full per-loop detail):
     file) is now called out explicitly in CHANGELOG.md as a standing
     process rule for this repo.
 
-Migrations applied: 0008 (Loop 7) through 0024 (Loop 25), all live on
+Migrations applied: 0008 (Loop 7) through 0026 (Loop 27), all live on
   Supabase project `maavrlqkdrisjwzhjdgg` and verified via `execute_sql`
   before each was pushed. 0019 (Loop 16) touches `transition_case` for the
   third time (adding the §14.2 PTW gate), built from the LIVE function
@@ -178,10 +190,7 @@ Batch summary (Loops 16-20 — see CHANGELOG.md for full per-loop detail):
     (Loop 15) could never produce a match before this loop — verified live
     that it now does (3 cases sharing one linked asset -> 1 flag).
 
-Approval state: HARD GATE — AUTONOMOUS DEVELOPMENT PAUSED. Loops 21-25 are
-  complete and APPROVAL_REPORT_LOOP_21_25.md is written. Not resuming Loop 26+
-  until the Boss gives explicit continuation language (APPROVAL_GATE.md /
-  IMPLEMENTATION_PACK.md §19.13).
+Approval state: Gate 5 approved. Loops 26-30 in progress.
 
 Batch summary (Loops 21-25 — see CHANGELOG.md for full per-loop detail):
   - Loop 21: dashboard/KPI visual upgrade. Boss-scoped explicitly to
@@ -238,6 +247,38 @@ Batch summary (Loops 21-25 — see CHANGELOG.md for full per-loop detail):
     (RPC-only, matching the Loop 8 spares precedent). New
     `tests/observations-clearances-audit.test.ts` (9 tests) closes all
     three tables' coverage gaps.
+
+Batch summary (Loops 26-30, current batch — see CHANGELOG.md for full detail):
+  - Loop 26: RISK-18 — a live-exploitable authority bypass on
+    `case_assignments`. Widened Loop 25's RLS audit to read every policy's
+    live `qual`/`with_check` against its own migration's comment.
+    `case_assignments_insert`'s `emergency_direct_start` path never
+    checked the target case was an actual confirmed emergency — a
+    non-staff technician could self-insert an active assignment row on
+    ANY case, self-granting `canRecordIntervention`/`canRecordSpareUsage`
+    (page.tsx's `isAssignedTechnician` check) with zero emergency
+    requirement and zero staff mediation. Verified genuinely exploitable
+    live, not theoretical. Migration 0025 adds an `emergency_confirmed`
+    check; re-verified all three directions (exploit blocked, legitimate
+    path preserved, staff-mediated `assign_technician` unaffected).
+  - Loop 27: RISK-19 — CRITICAL, the most severe defect found in this
+    project to date. `cases_insert` (the schema's single most
+    consequential insert policy) validated only `reporter_user_id`,
+    leaving every other column on `cases` — `status`, all `emergency_*`
+    columns, `qc_required`, `current_owner_user_id`, `closed_at`,
+    `closure_reason` — fully client-writable at INSERT time. Live-verified
+    as a non-staff user: self-inserted a case with `emergency_confirmed =
+    true` (no claim/confirm ceremony), and separately self-inserted a
+    fully-fabricated `status = 'CLOSED'` case, bypassing the entire §4
+    LOCKED lifecycle graph and §6 two-step gate at the root, with no RPC
+    and no audit trail — and independently un-did Loop 26's RISK-18 fix
+    (fake the emergency first, then walk the now-"legitimate"
+    `emergency_direct_start` path). Migration 0026 rewrites `cases_insert`
+    as an allow-list matching exactly the real intake form's fields;
+    every other column forced to `is null`/`= false`/`= 'REPORTED'`.
+    Re-verified: both exploits now fail (`42501`), the real intake payload
+    still succeeds at safe defaults, and every lifecycle RPC is confirmed
+    `SECURITY DEFINER` (bypasses RLS, unaffected).
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +
