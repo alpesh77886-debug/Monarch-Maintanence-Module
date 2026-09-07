@@ -139,12 +139,22 @@ export default async function CaseDetailPage({
 
   // The only two reads that genuinely depend on results above — also issued
   // together rather than one after the other.
-  const [{ data: isStaffRow }, { data: primaryCase }] = await Promise.all([
+  const [{ data: isStaffRow }, { data: primaryCase }, { data: qcGrant }] = await Promise.all([
     supabase.from("staff").select("id, role").eq("id", user?.id ?? "").maybeSingle(),
     caseRow.duplicate_of_case_id
       ? supabase.from("cases").select("case_number").eq("id", caseRow.duplicate_of_case_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    // F-01: does the viewer hold an active QC authority grant? This decides
+    // only what the QC panel *shows* — qc_decision enforces the same rule
+    // server-side regardless of what the UI renders.
+    supabase
+      .from("qc_authority")
+      .select("user_id")
+      .eq("user_id", user?.id ?? "")
+      .eq("is_active", true)
+      .maybeSingle(),
   ]);
+  const isQcAuthority = !!qcGrant;
 
   const duplicatePrimaryCaseNumber: string | null = primaryCase?.case_number ?? null;
 
@@ -297,6 +307,7 @@ export default async function CaseDetailPage({
           status={caseRow.status}
           qcRequired={caseRow.qc_required}
           pendingClearance={pendingClearance ?? null}
+          isQcAuthority={isQcAuthority}
         />
       )}
 

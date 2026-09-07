@@ -1,6 +1,39 @@
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../src/lib/supabase/config";
 
+// ---------------------------------------------------------------------------
+// F-05 — test writes must never happen silently against an unacknowledged
+// environment.
+//
+// Forensic finding: this suite and the deployed production application point
+// at the SAME Supabase project (maavrlqkdrisjwzhjdgg). Today that is harmless
+// — a live audit found 7,592 cases of which 7,592 are test-tagged and ZERO are
+// real business records, so nothing operational has ever been mixed. The risk
+// is entirely forward-looking: the day real cases exist, the next CI run
+// writes test rows beside them and every KPI becomes a blend of the two.
+//
+// A dedicated test project is the proper fix (brief F-05 preference 1) but
+// that is a spend decision for the Boss, not something to do unilaterally.
+// What IS available now is preference 5, explicit environment tagging: this
+// suite refuses to run unless the operator has consciously said that writing
+// test data to the configured project is acceptable. CI sets it; a developer
+// who later points this at a real production project gets a hard failure
+// instead of silent contamination.
+// ---------------------------------------------------------------------------
+if (process.env.MAINTENANCE_TEST_WRITES_OK !== "1") {
+  throw new Error(
+    [
+      "Refusing to run: this suite writes real rows to the Supabase project at",
+      `  ${SUPABASE_URL}`,
+      "and no acknowledgement was given.",
+      "",
+      "Set MAINTENANCE_TEST_WRITES_OK=1 to confirm that project is safe to write",
+      "test data into. See F-05 in FORENSIC_REMEDIATION_RECON.md.",
+    ].join("\n")
+  );
+}
+
+
 // Seeded demo accounts (see STATUS.md / RISK_REGISTER.md RISK-10 for how
 // they were created and fixed). This suite deliberately runs against the
 // same live Supabase project the app itself uses — there is no separate
@@ -9,6 +42,11 @@ export const CREDS = {
   executive: { email: "exec1@monarch.test", password: "Loop1TestPass!23" },
   manager: { email: "mgr1@monarch.test", password: "Loop1TestPass!23" },
   technician: { email: "tech1@monarch.test", password: "Loop1TestPass!23" },
+  // F-01: a QC decision identity. Deliberately NOT a maintenance.staff row and
+  // deliberately not the technician identity — the whole point of the fix is
+  // that QC authority is held by someone who is not Maintenance. It is granted
+  // through maintenance.qc_authority, never by any role.
+  qc: { email: "qc1@monarch.test", password: "Loop1TestPass!23" },
 } as const;
 
 export type Role = keyof typeof CREDS;

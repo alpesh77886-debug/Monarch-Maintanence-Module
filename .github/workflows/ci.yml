@@ -29,7 +29,13 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+      # F-05: explicit acknowledgement that writing test rows to the
+      # configured Supabase project is intended here. Without it the suites
+      # refuse to run, so a future production project cannot be polluted by a
+      # forgotten env var. See FORENSIC_REMEDIATION_RECON.md F-05.
       - run: npm test
+        env:
+          MAINTENANCE_TEST_WRITES_OK: "1"
 
   # Browser E2E (RISK-05). Separate job because it needs a browser install
   # and builds/starts the app itself; runs only once lint/build/unit are
@@ -46,6 +52,8 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+        env:
+          MAINTENANCE_TEST_WRITES_OK: "1"
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

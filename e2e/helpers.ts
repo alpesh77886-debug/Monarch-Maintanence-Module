@@ -1,5 +1,38 @@
 import { expect, type Page } from "@playwright/test";
 
+// ---------------------------------------------------------------------------
+// F-05 — test writes must never happen silently against an unacknowledged
+// environment.
+//
+// Forensic finding: this suite and the deployed production application point
+// at the SAME Supabase project (maavrlqkdrisjwzhjdgg). Today that is harmless
+// — a live audit found 7,592 cases of which 7,592 are test-tagged and ZERO are
+// real business records, so nothing operational has ever been mixed. The risk
+// is entirely forward-looking: the day real cases exist, the next CI run
+// writes test rows beside them and every KPI becomes a blend of the two.
+//
+// A dedicated test project is the proper fix (brief F-05 preference 1) but
+// that is a spend decision for the Boss, not something to do unilaterally.
+// What IS available now is preference 5, explicit environment tagging: this
+// suite refuses to run unless the operator has consciously said that writing
+// test data to the configured project is acceptable. CI sets it; a developer
+// who later points this at a real production project gets a hard failure
+// instead of silent contamination.
+// ---------------------------------------------------------------------------
+if (process.env.MAINTENANCE_TEST_WRITES_OK !== "1") {
+  throw new Error(
+    [
+      "Refusing to run: this suite writes real rows to the Supabase project at",
+      "  (see src/lib/supabase/config.ts)",
+      "and no acknowledgement was given.",
+      "",
+      "Set MAINTENANCE_TEST_WRITES_OK=1 to confirm that project is safe to write",
+      "test data into. See F-05 in FORENSIC_REMEDIATION_RECON.md.",
+    ].join("\n")
+  );
+}
+
+
 // Same seeded demo accounts the Vitest suite uses (see STATUS.md). The
 // technician account deliberately has NO maintenance.staff row — it is how
 // the non-staff paths get exercised.

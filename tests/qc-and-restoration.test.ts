@@ -18,6 +18,8 @@ async function driveToInRepair(exec: Awaited<ReturnType<typeof signInAs>>, sympt
 describe("Scenario B — QC required / rejected then cleared (§38)", () => {
   it("goes TECHNICALLY_RESTORED -> CLEARANCE_PENDING -> QC_REJECTED -> ... -> MAINTENANCE_RELEASED", async () => {
     const exec = await signInAs("executive");
+    // F-01: Maintenance sends to QC; only the granted QC identity decides.
+    const qc = await signInAs("qc");
     const caseId = await driveToInRepair(exec, testSymptom("scenario B"));
 
     await exec.client.rpc("set_qc_required", {
@@ -37,7 +39,7 @@ describe("Scenario B — QC required / rejected then cleared (§38)", () => {
     expect(sendResult.error).toBeNull();
     const firstClearanceId = sendResult.data.clearance_id as string;
 
-    let decision = await exec.client.rpc("qc_decision", {
+    let decision = await qc.client.rpc("qc_decision", {
       p_clearance_id: firstClearanceId,
       p_decision: "REJECTED",
       p_reason: "autotest: still faulty",
@@ -67,7 +69,7 @@ describe("Scenario B — QC required / rejected then cleared (§38)", () => {
     sendResult = await exec.client.rpc("send_to_qc", { p_case_id: caseId });
     expect(sendResult.error).toBeNull();
 
-    decision = await exec.client.rpc("qc_decision", {
+    decision = await qc.client.rpc("qc_decision", {
       p_clearance_id: sendResult.data.clearance_id,
       p_decision: "CLEARED",
     });
