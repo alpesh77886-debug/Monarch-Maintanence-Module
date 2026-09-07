@@ -1780,3 +1780,88 @@ policies are unchanged. Suite is now **98 tests across 16 files**.
 `tsc`, `lint`, `build` clean. Live-verified against Supabase project
 `maavrlqkdrisjwzhjdgg` before shipping (table above). The sandbox cannot
 reach Supabase for `npm test`; real signal is CI as always.
+
+## Loop 23 — 2026-09-07
+
+Third loop of the Loops 21-25 batch. This time the sweep looked for
+**RPCs with zero callers anywhere in `src/`**, not just dead columns —
+`grep -rl "\"<fn>\"" src/` for every `create or replace function
+maintenance.<fn>` across all migrations. Eleven came back unused; nine were
+false positives by design: `is_staff`/`is_manager`/`current_staff_role`
+(SQL-only policy helpers, never client-facing), `next_case_number`/
+`mark_asset_known` (internal trigger/sequence helpers), and
+`run_escalation_scan`/`run_pm_scan`/`run_recurrence_scan` (cron-only,
+`revoke execute ... from ... authenticated` on purpose, asserted by
+existing tests). `take_ownership` is also a false positive — it's called
+internally by `acknowledge_case` and the emergency-claim path, both of
+which are wired to UI; checked it specifically against §5.6 ("cases may be
+transferred between Executives") since it sounded relevant, and found
+`handover_case`/`handover_all_open_cases` (Loop 12) already fully satisfy
+§5.6 — no gap there.
+
+### The two real ones: §18 configuration was fully built and fully untested-by-UI
+
+`create_recurrence_rule` and `set_recurrence_rule_active` (Loop 15) were
+completely correct and completely unreachable from this app. The only way
+anyone had ever called them — including every "verified live" table in the
+Loop 15/20/21 CHANGELOG entries above — was direct SQL against the live
+database, by me, for testing, followed immediately by deactivating the
+test rule again. That means even once the Boss supplies PENDING-04
+evidence, a Manager would have had no tool to act on it inside the app
+itself.
+
+No migration — both RPCs and their guards (Manager-only, mandatory
+`approval_note`, `INVALID_THRESHOLD`, `INVALID_WINDOW`, `REASON_REQUIRED`,
+`RULE_NOT_FOUND`) already existed and were already correct. This loop is
+UI plumbing plus, in one place, closing a real automated-test gap that
+predates it.
+
+**This does not resolve PENDING-04.** Nothing in the new form defaults or
+suggests a threshold/window value — both inputs start empty, and
+`approval_note` is required exactly so a Manager who does use this tool
+still has to write down the Boss-approved basis for the numbers they
+typed in. The page's own copy says as much.
+
+### UI
+
+New `/recurrence-rules` page (added to nav as "Recurrence"), staff-visible
+to read (matches `recurrence_rules_select`'s existing `is_staff()` RLS),
+Manager-only to act on (matches both RPCs' `is_manager()` guard —
+`CreateRecurrenceRuleForm` is only rendered for a Manager at all, not
+merely disabled, since an Executive has zero ability to call
+`create_recurrence_rule`). `RecurrenceRuleCard` lists every rule
+(active and inactive, so a Manager can see history) with a
+Manager-only activate/deactivate toggle that always demands a reason,
+matching the audited-not-deleted discipline this project has used for
+every prior test rule.
+
+### Live verification (staff JWT, role switch at the top level)
+
+| Step | Result |
+|---|---|
+| Manager creates a rule via `create_recurrence_rule` | succeeds |
+| Executive calls `set_recurrence_rule_active` on it | `FORBIDDEN` |
+| Manager deactivates it | succeeds |
+| `recurrence_rules` where `is_active` afterward | 0 (PENDING-04 invariant intact) |
+
+### After Loop 16's server/client boundary lesson
+
+Re-scanned every `"use client"` file in the app (34 files now, two new:
+`create-recurrence-rule-form.tsx`, `recurrence-rule-card.tsx`). Clean.
+
+### Tests
+
+`set_recurrence_rule_active` had **zero automated coverage** before this
+loop — only the ad-hoc live verification runs referenced above, never
+written down as a regression test. Added 3 `it()`s to
+`recurrence-capa.test.ts`: Manager-only, `REASON_REQUIRED` +
+`RULE_NOT_FOUND`, and a real toggle observed via a follow-up `select`.
+Every test rule created is deactivated again within the same test.
+`create_recurrence_rule`'s own guards were already covered and were not
+duplicated. Suite is now **101 tests across 16 files**.
+
+### Verified
+
+`tsc`, `lint`, `build` clean (new `/recurrence-rules` route compiles).
+Live-verified against Supabase project `maavrlqkdrisjwzhjdgg` before
+shipping (table above).

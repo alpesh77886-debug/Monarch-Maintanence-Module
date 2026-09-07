@@ -92,6 +92,96 @@ describe("create_recurrence_rule (§18 configuration)", () => {
   });
 });
 
+// Loop 23: set_recurrence_rule_active had zero automated coverage before
+// this — only ad-hoc live verification in Loops 15/20/21's own runs, never
+// written as a regression test. A rule created here is deactivated again in
+// the same test (never left active), matching the standing PENDING-04
+// discipline that the "0 active rules" test above must never be broken by
+// a leftover from another test.
+describe("set_recurrence_rule_active (§18 configuration)", () => {
+  async function createTestRule(mgr: Awaited<ReturnType<typeof signInAs>>) {
+    const { data } = await mgr.client.rpc("create_recurrence_rule", {
+      p_tier_name: testSymptom("toggle test tier"),
+      p_match_on: "LINE",
+      p_threshold_count: 5,
+      p_window_days: 7,
+      p_approval_note: "[AUTOTEST] Loop 23 toggle coverage — not an approved plant threshold",
+    });
+    return (data as { recurrence_rule_id: string }).recurrence_rule_id;
+  }
+
+  it("is Manager-only", async () => {
+    const mgr = await signInAs("manager");
+    const ruleId = await createTestRule(mgr);
+
+    const exec = await signInAs("executive");
+    const { error } = await exec.client.rpc("set_recurrence_rule_active", {
+      p_rule_id: ruleId,
+      p_is_active: false,
+      p_reason: "exec should not be able to do this",
+    });
+    expect(error?.message).toMatch(/FORBIDDEN/);
+
+    // Clean up via the Manager regardless of the guard result above.
+    await mgr.client.rpc("set_recurrence_rule_active", {
+      p_rule_id: ruleId,
+      p_is_active: false,
+      p_reason: "[AUTOTEST] cleanup",
+    });
+  });
+
+  it("requires a reason and rejects an unknown rule id", async () => {
+    const mgr = await signInAs("manager");
+    const ruleId = await createTestRule(mgr);
+
+    let { error } = await mgr.client.rpc("set_recurrence_rule_active", {
+      p_rule_id: ruleId,
+      p_is_active: false,
+      p_reason: "   ",
+    });
+    expect(error?.message).toMatch(/REASON_REQUIRED/);
+
+    ({ error } = await mgr.client.rpc("set_recurrence_rule_active", {
+      p_rule_id: "00000000-0000-0000-0000-000000000000",
+      p_is_active: false,
+      p_reason: "[AUTOTEST]",
+    }));
+    expect(error?.message).toMatch(/RULE_NOT_FOUND/);
+
+    await mgr.client.rpc("set_recurrence_rule_active", {
+      p_rule_id: ruleId,
+      p_is_active: false,
+      p_reason: "[AUTOTEST] cleanup",
+    });
+  });
+
+  it("toggles is_active and the change is visible immediately", async () => {
+    const mgr = await signInAs("manager");
+    const ruleId = await createTestRule(mgr);
+
+    const { data: before } = await mgr.client
+      .from("recurrence_rules")
+      .select("is_active")
+      .eq("id", ruleId)
+      .single();
+    expect(before!.is_active).toBe(true);
+
+    const { error } = await mgr.client.rpc("set_recurrence_rule_active", {
+      p_rule_id: ruleId,
+      p_is_active: false,
+      p_reason: "[AUTOTEST] Loop 23 toggle coverage — deactivating immediately",
+    });
+    expect(error).toBeNull();
+
+    const { data: after } = await mgr.client
+      .from("recurrence_rules")
+      .select("is_active")
+      .eq("id", ruleId)
+      .single();
+    expect(after!.is_active).toBe(false);
+  });
+});
+
 describe("§19 — CAPA ownership and effectiveness verification", () => {
   async function seedCase(label: string) {
     const exec = await signInAs("executive");

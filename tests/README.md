@@ -185,6 +185,16 @@ kept the PM instance-lifecycle RPCs out of `pm.test.ts`. The whole
 scan → flag → confirm → root cause → CAPA → verify chain was verified live
 instead; see CHANGELOG.md Loop 15 for the run and its results.
 
+Loop 23 adds 3 more `it()`s to this same file for
+`set_recurrence_rule_active`, which had **zero** automated coverage before
+this loop despite existing since Loop 15 — every prior "verified live"
+table in this suite's own CHANGELOG entries used direct SQL, not this RPC,
+to clean up test rules. Covers Manager-only, `REASON_REQUIRED` +
+`RULE_NOT_FOUND`, and a real toggle confirmed via a follow-up `select`.
+Every rule created in these tests is deactivated again within the same
+test — never left active, protecting the PENDING-04 guard test above from
+a leftover.
+
 Loop 16 (`priority-and-ptw.test.ts`) adds: §5.4 `change_priority` — staff-only,
 reason-required, and the Manager-override lock chain (an Executive changes
 freely until a Manager sets it, after which the Executive is refused and only

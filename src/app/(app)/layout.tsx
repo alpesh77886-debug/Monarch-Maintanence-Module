@@ -50,6 +50,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <Link href="/pm" className="text-sm font-medium text-slate-600">
                   PM
                 </Link>
+                <Link href="/recurrence-rules" className="text-sm font-medium text-slate-600">
+                  Recurrence
+                </Link>
                 <Link href="/kpi" className="text-sm font-medium text-slate-600">
                   KPIs
                 </Link>
