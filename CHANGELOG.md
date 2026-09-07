@@ -3484,3 +3484,131 @@ No migration, no RPC change.
 
 **Tests:** 3 new. `tsc`, `lint`, `build` clean. Full `"use client"` boundary
 re-scan across 36 client files — clean.
+
+## Loop 40 — 2026-09-07 — batch close (Loops 36–40)
+
+**Summary:** Batch-closing loop. No engineering change — wrote
+`APPROVAL_REPORT_LOOP_36_40.md`, logged Gate 8 as AWAITING BOSS, and stopped.
+
+**Batch outcome:** three genuine findings across five loops — RISK-25 (open,
+needs Boss evidence), RISK-26 (fixed), RISK-27 (fixed). One migration (0035).
+
+**Stated plainly in the report rather than buried:** Loop 36 found nothing new,
+Loop 38's first lead was a false alarm that turned out to be arithmetic, and
+two of Loop 39's three observations were wrong and caught before they became
+findings. That is a lower yield than Loops 26–30 (5 defects in 5 loops). The
+audit surface is not inexhaustible, and saying so is more useful than
+manufacturing findings to fill a batch.
+
+**Four items now sit with the Boss** — none is unfinished engineering, each
+needs evidence or a credential: the QC authority list is empty by design;
+production and CI share one Supabase project; leaked-password protection is
+off; and RISK-25 needs a threshold the pack never states.
+
+**Gate:** GATE 8 AWAITING BOSS. Autonomous loop work is paused per §19.9/§19.13.
+Loop 41 will not start without explicit continuation language.
+
+## Boss-directed: RISK-25 closed + safe synthetic-data cleanup — 2026-09-07
+
+Full evidence in `CLEANUP_AND_RISK25_REPORT.md` (structured per the brief's
+§30). Summary below.
+
+### RISK-25 — closed with Boss-supplied evidence
+
+Loop 37 found that an INTERNAL wait could never escalate and deliberately did
+NOT fix it, because closing it required a threshold the pack never stated. The
+Boss has now supplied it: three permitted INTERNAL reasons
+(reporting-manager approval pending / Purchase Order release pending / Other
+with mandatory detail), and INTERNAL waits join the **existing** 24h
+escalation measured from `entered_at`.
+
+Enforced in three layers, and the third is the one that matters: a **direct
+table insert** of a fourth reason is refused by a CHECK constraint, so this is
+not UI-only and not even RPC-only.
+
+**A defect this work introduced and caught before shipping:** adding
+`p_internal_reason` changed `enter_waiting`'s arity, so `create or replace`
+did not replace the old function — it created a **second overload with no
+enforcement** and made 3-argument calls ambiguous. Found by the live probe, not
+CI; dropped in the same migration. It failed closed (the CHECK constraint would
+still have refused the row), but a second door that is merely locked is still a
+second door.
+
+Live proof on a wait backdated 25 hours: 0 → 2 notifications, a repeat scan
+gave 2 → 2 (idempotent), and **the wait stayed unresolved** — escalation
+notifies, it never grants the approval or releases the PO.
+
+`escalation-coverage.test.ts`'s RISK-25 block was rewritten from pinning the
+defect to pinning the resolution. That pin existed precisely to force a
+deliberate change when evidence arrived, and it did its job.
+
+### Synthetic test-data cleanup — 8,920 cases removed, safely
+
+**Forensic inspection came first**, and it changed the design: there are **0
+DELETE policies** in the entire schema, all **21** FKs to `cases` are
+`NO ACTION` (nothing cascades), `audit_log` has **no FK** to `cases`, and
+`recurrence_flags.related_case_ids` is an array holding *shared* references.
+
+Classification was prefix-anchored (`like '[AUTOTEST%'`, not `'%[AUTOTEST%'`)
+because the loose form would match a real symptom that merely mentioned the
+word. Before cleanup: 9,214 cases, **9,214 synthetic, 0 not provably
+synthetic**.
+
+The cleanup function refuses, all-or-nothing: a non-synthetic case, a case
+owned by a `pm_instances` row, a case that is the primary of a duplicate
+outside the batch, and a case referenced by a surviving recurrence flag. **Each
+refusal was proven to fire**, including the important one — a temporary
+fixture symptomed `REAL BUSINESS CASE` was created, **refused**, and removed
+again in the same transaction so no fake "real" record was left behind.
+
+A single-case trial ran before any bulk work: exactly 1 case and its 1 event
+removed, staff untouched.
+
+**Result: 8,920 deleted. 321 cases remain — 114 open, 207 non-open left alone
+per §16. Zero orphans across every dependent table.**
+
+**Why 114 open and not 10, stated plainly:** 10 retained by choice (one per
+distinct open lifecycle state, richest first), 1 blocked by a `pm_instances`
+reference, 103 blocked because a DUPLICATE case points at them — and deleting
+those would mean deleting resolved cases, which §16 forbids. **Zero
+unexplained.** The brief's own rule that safety outranks the number 10 is why
+the number is 114.
+
+### Stopping the refill, not just the symptom
+
+A one-off cleanup would have been undone within a day. A vitest `globalSetup`
+teardown now removes only the synthetic cases created during that run's window,
+once per suite — no existing test changed, no coverage weakened.
+
+`cleanup_synthetic_cases` keeps EXECUTE revoked from every client role. The one
+client-reachable entry point is staff-only, demands an explicit start timestamp
+(it can never mean "clean everything"), refuses windows wider than 24 hours, and
+delegates every deletion to the guarded function — so even a malicious staff
+account could only remove `[AUTOTEST` fixtures, and in a production database it
+is inert.
+
+Honest limitation: vitest's teardown is not told whether the run passed, so
+failed-run retention is **opt-in** (`MAINTENANCE_KEEP_TEST_DATA=1`), not
+automatic.
+
+### What was NOT done, and why
+
+The brief's authority #2 is the **Sarvam Maintenance Screen Architecture**.
+**That document was not supplied and is not in the repo.** §4/§5/§27 ask for UX
+correction "where the implementation does not follow Sarvam's approved
+interaction architecture" — a judgement impossible to make against a document I
+do not have. Inventing a bottom-sheet architecture and calling it
+Sarvam-compliant would be exactly the fake green §28 forbids. Reported as
+**NOT TOUCHED — blocked on a missing input**, not as done.
+
+### QC identities — answered, no code needed
+
+The Boss's answer: the QC login will come from the Quality module when the two
+are integrated. Noted from the attachment: that module is currently a
+standalone localStorage prototype (roles `exec`/`mgr`/`head`,
+`canApprove = mgr || head`) and is **not on shared Supabase auth yet**, so
+integration needs that first. `maintenance.qc_authority` staying empty is now a
+recorded decision rather than an open question.
+
+**Tests:** 17 new (10 RISK-25, 7 cleanup), 4 files updated. `tsc`, `lint`,
+`build` clean; `"use client"` boundary re-scan across 36 files clean.

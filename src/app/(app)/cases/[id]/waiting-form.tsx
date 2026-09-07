@@ -5,10 +5,39 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui";
 
+type InternalReason =
+  | "REPORTING_MANAGER_APPROVAL_PENDING"
+  | "PURCHASE_ORDER_RELEASE_PENDING"
+  | "OTHER";
+
+const INTERNAL_REASONS: { value: InternalReason; label: string; hint: string }[] = [
+  {
+    value: "REPORTING_MANAGER_APPROVAL_PENDING",
+    label: "Reporting-manager approval pending",
+    hint: "The Maintenance Manager is waiting on the authority they report to. Purchase cannot proceed with the PO until it arrives.",
+  },
+  {
+    value: "PURCHASE_ORDER_RELEASE_PENDING",
+    label: "Purchase Order release pending",
+    hint: "Approval has arrived, but Purchase has not yet released the PO.",
+  },
+  {
+    value: "OTHER",
+    label: "Other",
+    hint: "Any other legitimate internal dependency. Describe it properly below — a placeholder is rejected.",
+  },
+];
+
 export default function WaitingForm({ caseId }: { caseId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reasonType, setReasonType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
+  // RISK-25: exactly three INTERNAL reasons, no fourth category. The server
+  // enforces the same list and the table has a CHECK constraint — this select
+  // decides what is OFFERED, never what is ALLOWED.
+  const [internalReason, setInternalReason] = useState<InternalReason>(
+    "REPORTING_MANAGER_APPROVAL_PENDING"
+  );
   const [reasonText, setReasonText] = useState("");
   const [dependencyRef, setDependencyRef] = useState("");
   const [expectedInfo, setExpectedInfo] = useState("");
@@ -27,6 +56,7 @@ export default function WaitingForm({ caseId }: { caseId: string }) {
       p_reason_text: reasonText,
       p_dependency_ref: dependencyRef || null,
       p_expected_resolution_info: expectedInfo || null,
+      p_internal_reason: reasonType === "INTERNAL" ? internalReason : null,
     });
 
     setSubmitting(false);
@@ -68,6 +98,32 @@ export default function WaitingForm({ caseId }: { caseId: string }) {
           <option value="INTERNAL">INTERNAL (within Maintenance)</option>
         </select>
       </label>
+
+      {reasonType === "INTERNAL" && (
+        <label className="text-sm text-amber-900">
+          Internal dependency (required)
+          <select
+            value={internalReason}
+            onChange={(e) => setInternalReason(e.target.value as InternalReason)}
+            className="mt-1 block w-full rounded-md border border-amber-300 px-3 py-2 text-base"
+          >
+            {INTERNAL_REASONS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-xs text-amber-800">
+            {INTERNAL_REASONS.find((r) => r.value === internalReason)?.hint}
+          </span>
+          <span className="mt-1 block text-xs text-amber-700">
+            Maintenance records this dependency only. It never creates or
+            releases a Purchase Order, and never marks an approval as received —
+            that stays with Purchase and with the approving authority.
+          </span>
+        </label>
+      )}
+
       <label className="text-sm text-amber-900">
         Reason (required)
         <textarea

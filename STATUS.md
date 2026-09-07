@@ -1,41 +1,42 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 39 complete (batch 36-40; Loop 40 closes it). Loop 36
-  red-team suite (17 attacks, all refused). Loop 37 found RISK-25 (INTERNAL
-  waits can never escalate — evidence-controlled, NOT fixed). Loop 38 found
-  and FIXED RISK-26 (same notification delivered twice when the case owner
-  was also a Manager; proven by microsecond-identical timestamps).
-  Loop 39 cross-referenced all 60 schema functions against actual callers
-  and found RISK-27: take_ownership was built, correct and tested but NO
-  button ever called it — while §22.1 shift-end handover deliberately
-  creates unowned cases and the dashboard lists them as needing an owner.
-  4 cases were live-verified as unclaimable through the UI. Fixed by wiring
-  the existing RPC; no migration, no RPC change.
-  PRODUCTION READINESS VERDICT: **NOT READY** — three Boss-side blockers
-  plus RISK-25 as a fourth open evidence question.
-  Live-data fact: 8,254+ cases, ZERO of them real business records.
-Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
-  loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
-  until the Boss gives explicit continuation language for the next audit
-  batch. The UI-redesign and performance tasks above are separate,
-  explicit Boss instructions, not a continuation of the audit batches —
-  the "Loop 36/37/38" numbering there is the Boss's own three-step
-  framing for that one task, not a resumption of the gated cadence.
-  See APPROVAL_GATE.md.
+Current loop: Loops 36-40 complete (Gate 8 approved). A Boss-directed
+  surgical task then closed RISK-25 and cleaned the synthetic test data —
+  see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
+  INTERNAL waiting reasons (reporting-manager approval pending / PO release
+  pending / Other with mandatory detail), enforced at UI + RPC + a DB CHECK
+  constraint, and INTERNAL waits now join the EXISTING 24h escalation
+  measured from entered_at. Escalation notifies but never resolves.
+  CLEANUP: 8,920 synthetic cases removed safely; 321 remain (114 open, 207
+  non-open deliberately untouched). Zero orphans. 114 open rather than 10
+  because 103 are blocked by a DUPLICATE case pointing at them and deleting
+  resolved cases is forbidden — safety outranks the number. Test runs now
+  clean up their own data, so the database no longer refills.
+  Boss-side items: QC identities ANSWERED (they will come from the Quality
+  module at integration; qc_authority staying empty is now a decision, not
+  a gap). Leaked-password protection deferred by the Boss to last. Two new
+  questions: whether to also remove the 103 duplicate-primary cases, and
+  the Sarvam Screen Architecture document needed to action the UX sections.
+Current gate: **GATE 8 (Loops 36-40) AWAITING BOSS.** Autonomous loop work
+  is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13 until the Boss gives
+  explicit continuation language for Loop 41+. See
+  APPROVAL_REPORT_LOOP_36_40.md and APPROVAL_GATE.md.
+
+Four items need the Boss and are NOT loop work — none has been guessed at:
+  1. Name the real QC identities (maintenance.qc_authority is empty by
+     design, so QC-required cases stop at CLEARANCE_PENDING).
+  2. Separate test and production databases, or accept the shared project.
+  3. Enable leaked-password protection (Supabase dashboard → Auth).
+  4. RISK-25 — should an INTERNAL wait escalate, and from what instant?
 
 Open defects: none known unresolved. RISK-08/09 (Loop 2), RISK-10/11/12
   (post-Loop-5 bugfix round triggered by a Boss-reported login failure),
   RISK-13 (Loop 8 — `is_manager()` NULL-propagation authorization bypass),
   RISK-14 (Loop 9 — a rewrite of `transition_case` silently dropped the
-  §13 QC gate; caught by CI, not by manual review), RISK-15 (Loop 14 — the
-  first view in this schema shipped without `security_invoker` and read
-  past RLS; measured live, fixed, regression-tested), and RISK-16 (Loop 14
-  — the test suite exhausted Supabase's auth rate limit, producing red CI
-  that was infrastructure, not product), RISK-17 (Loop 25 —
-  `clearances_insert` allowed a direct client insert bypassing
-  `send_to_qc`'s TECHNICALLY_RESTORED guard entirely; not live-exploitable
-  as a lifecycle bypass since `transition_case`'s own graph check still
-  protects the actual status, but a real server-side enforcement gap on a
+Current gate: **GATE 8 (Loops 36-40) AWAITING BOSS.** Autonomous loop work
+  is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13 until the Boss gives
+  explicit continuation language for Loop 41+. See
+  APPROVAL_REPORT_LOOP_36_40.md and APPROVAL_GATE.md.
   locked boundary, same shape as the Loop 8 spares fix), and RISK-18
   (Loop 26 — `case_assignments_insert`'s `emergency_direct_start` path
   never checked the target case was an actual confirmed emergency; a

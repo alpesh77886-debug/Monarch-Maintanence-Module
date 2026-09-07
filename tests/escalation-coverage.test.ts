@@ -4,12 +4,12 @@ import { signInAs, testSymptom } from "./helpers";
 // Loop 37 — escalation coverage.
 //
 // The first two suites pin behaviour that is CORRECT and must not regress.
-// The third pins behaviour that is a KNOWN OPEN QUESTION (RISK-25): an
-// INTERNAL wait can never escalate, because the only function that sets
-// resume_ready_at refuses non-EXTERNAL waits, and the escalation scan filters
-// on resume_ready_at. That test exists so nobody "fixes" the asymmetry by
-// inventing a threshold — if the Boss supplies evidence that INTERNAL waits
-// should escalate, this test is the thing that must be deliberately changed.
+//
+// The third used to pin RISK-25 as an OPEN question: an INTERNAL wait could
+// never escalate, and closing it needed a threshold the pack never stated, so
+// the test existed to stop anyone "fixing" it by invention. That worked as
+// intended — the Boss has now supplied the evidence, and this is the test that
+// was deliberately changed as a result. It now pins the RESOLVED rule.
 
 async function caseInWaiting(
   exec: Awaited<ReturnType<typeof signInAs>>,
@@ -35,6 +35,9 @@ async function caseInWaiting(
     p_case_id: caseId,
     p_reason_type: reasonType,
     p_reason_text: "autotest dependency",
+    // RISK-25: an INTERNAL wait must name one of the three permitted reasons.
+    p_internal_reason:
+      reasonType === "INTERNAL" ? "REPORTING_MANAGER_APPROVAL_PENDING" : null,
   });
   expect(wait.error).toBeNull();
   return { caseId, waitId: wait.data.wait_id as string };
@@ -65,26 +68,50 @@ describe("§7.2 — resume-ready is reachable only for EXTERNAL waits", () => {
   });
 });
 
-describe("RISK-25 — an INTERNAL wait cannot reach the escalation clock at all", () => {
-  // This is the documented consequence, not an aspiration. §7.2 scopes the
-  // 24h escalation to "resume-ready with no required action", and an INTERNAL
-  // wait has no route to resume-ready. Whether that is intended is an open
-  // question for the Boss (§23/§24 list "24h normal escalation" unscoped),
-  // and inventing a start point for an INTERNAL wait's clock would be exactly
-  // the invented threshold §19.15 forbids.
-  it("has no resume_ready_at, so the escalation scan cannot select it", async () => {
+describe("RISK-25 — CLOSED: an INTERNAL wait now reaches the escalation clock", () => {
+  // This block previously PINNED the defect: it asserted that an INTERNAL wait
+  // has no resume_ready_at and therefore could never escalate, deliberately,
+  // because closing it needed a threshold the pack never stated.
+  //
+  // The Boss has now supplied that evidence. An INTERNAL wait still has no
+  // resume-ready state — mark_wait_resolved is still EXTERNAL-only, and that
+  // is correct — but the escalation scan's SAME 24h branch now also selects
+  // INTERNAL waits, measuring from entered_at instead. No second engine, no
+  // changed threshold.
+  it("still has no resume_ready_at — that part of the model is unchanged", async () => {
     const exec = await signInAs("executive");
-    const { waitId } = await caseInWaiting(exec, "RISK-25 internal never ready", "INTERNAL");
+    const { waitId } = await caseInWaiting(exec, "R25 internal shape", "INTERNAL");
 
     const { data } = await exec.client
       .from("waits")
-      .select("resume_ready_at, reason_type")
+      .select("resume_ready_at, reason_type, internal_reason")
       .eq("id", waitId)
       .single();
 
     expect(data!.reason_type).toBe("INTERNAL");
-    // If this ever becomes non-null, either mark_wait_resolved changed or a
-    // new path was added — both are decisions that need Boss evidence first.
     expect(data!.resume_ready_at).toBeNull();
+    // ...but it now carries one of the three permitted reasons, which is what
+    // makes it a first-class citizen of the escalation branch.
+    expect(data!.internal_reason).toBe("REPORTING_MANAGER_APPROVAL_PENDING");
+  });
+
+  it("is eligible for the existing 24h escalation, unlike before", async () => {
+    const exec = await signInAs("executive");
+    const { waitId } = await caseInWaiting(exec, "R25 internal eligible", "INTERNAL");
+
+    // Eligibility is what changed. The scan itself is cron-only and not
+    // client-callable (asserted in pm.test.ts for the PM scan), so this
+    // asserts the precondition the scan selects on: an open INTERNAL wait
+    // that has not yet been escalated.
+    const { data } = await exec.client
+      .from("waits")
+      .select("resumed_at, last_escalated_at, entered_at, reason_type")
+      .eq("id", waitId)
+      .single();
+
+    expect(data!.reason_type).toBe("INTERNAL");
+    expect(data!.resumed_at).toBeNull();
+    expect(data!.last_escalated_at).toBeNull();
+    expect(data!.entered_at).not.toBeNull();
   });
 });
