@@ -208,6 +208,12 @@ reached `MAINTENANCE_RELEASED` (walked through the real lifecycle to get
 there), §13.2 recording that neither fabricates a restart nor introduces a
 closure blocker, and direct-insert denial on both new tables.
 
+Loop 35 adds 2 more `it()`s to this same file for `raise_safety_stop`'s
+§15-mandatory notification, previously zero coverage of any notification
+behavior on this RPC: the active Maintenance Manager receives exactly one
+`SAFETY_STOP_RAISED` notification on a legitimate raise (referencing the
+real case), and a correctly-refused non-staff attempt sends none.
+
 ## Not yet covered
 
 The full `IMPLEMENTATION_PACK.md` §37 matrix is larger than this first pass
