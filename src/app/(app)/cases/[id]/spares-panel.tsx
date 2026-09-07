@@ -18,6 +18,7 @@ export default function SparesPanel({
   canRaise,
   canRecordUsage,
   isManager,
+  isStaff,
 }: {
   caseId: string;
   spareRequests: SpareRequest[];
@@ -25,6 +26,7 @@ export default function SparesPanel({
   canRaise: boolean;
   canRecordUsage: boolean;
   isManager: boolean;
+  isStaff: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,51 @@ export default function SparesPanel({
   const [usageOutcome, setUsageOutcome] = useState("");
 
   const [approvalProofByRequest, setApprovalProofByRequest] = useState<Record<string, string>>({});
+
+  // §16.2: "V1 may record ... explicit Stores/reference identifiers." Kept
+  // as free text on both sides — the column itself has no check constraint,
+  // deliberately, since the real status vocabulary is Stores' own once
+  // Phase-3 integration exists.
+  const [storesStatusDraft, setStoresStatusDraft] = useState<Record<string, string>>({});
+  const [storesRefDraft, setStoresRefDraft] = useState<Record<string, string>>({});
+
+  async function updateRequestStoresRef(requestId: string) {
+    const status = (storesStatusDraft[requestId] ?? "").trim();
+    if (!status) {
+      setError("A Stores reference status is required.");
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("set_spare_request_stores_reference", {
+      p_spare_request_id: requestId,
+      p_stores_reference_status: status,
+      p_stores_reference_id: storesRefDraft[requestId] || null,
+    });
+    setSubmitting(false);
+    if (error) return setError(error.message);
+    router.refresh();
+  }
+
+  async function updateUsageStoresRef(usageId: string) {
+    const status = (storesStatusDraft[usageId] ?? "").trim();
+    if (!status) {
+      setError("A Stores reference status is required.");
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("set_spare_usage_stores_reference", {
+      p_spare_usage_id: usageId,
+      p_stores_reference_status: status,
+      p_stores_reference_id: storesRefDraft[usageId] || null,
+    });
+    setSubmitting(false);
+    if (error) return setError(error.message);
+    router.refresh();
+  }
 
   async function raiseRequest() {
     setError(null);
@@ -155,6 +202,35 @@ export default function SparesPanel({
                 </button>
               </div>
             )}
+            <p className="mt-1 text-xs text-slate-500">
+              Stores: <span className="font-medium">{r.stores_reference_status}</span>
+              {r.stores_reference_id ? ` (${r.stores_reference_id})` : ""}
+            </p>
+            {isStaff && (
+              <div className="mt-1 flex gap-2">
+                <input
+                  value={storesStatusDraft[r.id] ?? ""}
+                  onChange={(e) =>
+                    setStoresStatusDraft((prev) => ({ ...prev, [r.id]: e.target.value }))
+                  }
+                  placeholder="Stores status"
+                  className="w-32 rounded-md border border-slate-300 p-1 text-xs"
+                />
+                <input
+                  value={storesRefDraft[r.id] ?? ""}
+                  onChange={(e) => setStoresRefDraft((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                  placeholder="Stores reference (optional)"
+                  className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
+                />
+                <button
+                  onClick={() => updateRequestStoresRef(r.id)}
+                  disabled={submitting}
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
+                >
+                  Update
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -210,6 +286,35 @@ export default function SparesPanel({
               {u.outcome ? ` — ${u.outcome}` : ""}
             </p>
             <p className="text-xs text-slate-400">{new Date(u.used_at).toLocaleString()}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Stores: <span className="font-medium">{u.stores_reference_status}</span>
+              {u.stores_reference_id ? ` (${u.stores_reference_id})` : ""}
+            </p>
+            {isStaff && (
+              <div className="mt-1 flex gap-2">
+                <input
+                  value={storesStatusDraft[u.id] ?? ""}
+                  onChange={(e) =>
+                    setStoresStatusDraft((prev) => ({ ...prev, [u.id]: e.target.value }))
+                  }
+                  placeholder="Stores status"
+                  className="w-32 rounded-md border border-slate-300 p-1 text-xs"
+                />
+                <input
+                  value={storesRefDraft[u.id] ?? ""}
+                  onChange={(e) => setStoresRefDraft((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                  placeholder="Stores reference (optional)"
+                  className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
+                />
+                <button
+                  onClick={() => updateUsageStoresRef(u.id)}
+                  disabled={submitting}
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
+                >
+                  Update
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

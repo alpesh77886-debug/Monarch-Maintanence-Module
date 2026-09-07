@@ -59,6 +59,13 @@ also a permanent regression test for RISK-13 (`is_manager()` NULL
 propagation) — it specifically exercises the non-staff-caller path that
 the bug affected.
 
+Loop 24 adds 5 more `it()`s to this same file for
+`set_spare_request_stores_reference`/`set_spare_usage_stores_reference`
+(§16.2), which had no callers anywhere before this loop despite both
+columns defaulting correctly since Loop 1: the default-on-creation value,
+staff-only + `STATUS_REQUIRED` on each RPC, a successful update on each
+table, and the not-found guard on both.
+
 ## Known tradeoffs (deliberate, not oversights)
 
 - **No separate test/staging Supabase project.** Tests run against the same

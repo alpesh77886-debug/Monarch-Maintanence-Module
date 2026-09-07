@@ -1865,3 +1865,66 @@ duplicated. Suite is now **101 tests across 16 files**.
 `tsc`, `lint`, `build` clean (new `/recurrence-rules` route compiles).
 Live-verified against Supabase project `maavrlqkdrisjwzhjdgg` before
 shipping (table above).
+
+## Loop 24 — 2026-09-07
+
+Fourth loop of the Loops 21-25 batch. §16.2's own text names the exact
+capability this loop closes: "V1 may record: ... explicit Stores/reference
+identifiers ... When Stores truth is unavailable, use an explicit status
+such as `STORES_REFERENCE_PENDING`."
+
+### §16.2 explicit Stores reference identifiers
+
+`spare_requests.stores_reference_status` and `spare_usage.
+stores_reference_status` have existed since Loop 1 (`not null default
+'STORES_REFERENCE_PENDING'`) alongside a nullable `stores_reference_id` on
+both — exactly the seam §16.2 describes. No RPC had ever written to
+either: every request/usage row created since Loop 8 sits at the default
+forever, because nothing could change it. "V1 may record ... explicit
+Stores/reference identifiers" described a capability that did not exist.
+
+Migration `0023_maintenance_spare_stores_reference.sql`: two new RPCs,
+`set_spare_request_stores_reference` and `set_spare_usage_stores_reference`
+(staff-only, mandatory status, optional reference id and reason). Neither
+column carries a `check` constraint, unlike almost every other status
+column in this schema (`recurrence_flags.status`, `capa_links.status`) —
+read as a deliberate signal, not an oversight, that the real status
+vocabulary is Stores' own to define once Phase-3 integration exists. So
+these RPCs accept whatever status text a Maintenance staff member is told
+by Stores rather than constraining it to a set this migration would have
+had to invent.
+
+### Live verification (staff JWT, role switch at the top level)
+
+| Step | Result |
+|---|---|
+| New spare request, before any update | `STORES_REFERENCE_PENDING` / `null` |
+| A signed-out-of-staff caller (`sub` = random uuid) calls the RPC | `FORBIDDEN` |
+| Staff sets status + reference id | row updated exactly as sent (`STORES_ISSUED` / `PO-1234`) |
+| Empty status string | `STATUS_REQUIRED` |
+| Unknown request/usage id | `SPARE_REQUEST_NOT_FOUND` / `SPARE_USAGE_NOT_FOUND` |
+
+### UI
+
+`spares-panel.tsx`: every spare request and usage row now shows its
+current Stores status and reference id, and a staff-only inline
+status + reference-id + Update control (new `isStaff` prop, wired from the
+page's existing `isStaffRow` check — deliberately not gated on
+`isManager`, since this is plain data entry like `asset_ref`/`outcome`,
+not a §3.3 financial-authority decision).
+
+### After Loop 16's server/client boundary lesson
+
+Re-scanned every `"use client"` file in the app. Clean.
+
+### Tests
+
+`tests/spares.test.ts`: 5 new `it()`s — the default-on-creation value, both
+RPCs' staff-only + `STATUS_REQUIRED` guards, a successful update on each
+table, and the not-found guard on both. Suite is now **106 tests across
+16 files**.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before shipping (table above).
