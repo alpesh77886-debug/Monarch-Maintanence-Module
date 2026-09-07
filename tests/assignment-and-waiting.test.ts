@@ -186,6 +186,7 @@ describe("WAITING dependency overlay (§7)", () => {
       p_case_id: caseId,
       p_reason_type: "INTERNAL",
       p_reason_text: "autotest: should fail, already waiting",
+      p_internal_reason: "REPORTING_MANAGER_APPROVAL_PENDING",
     });
     expect(secondEnter.error).not.toBeNull();
     expect(secondEnter.error!.message).toContain("ALREADY_WAITING");
@@ -226,6 +227,7 @@ describe("WAITING dependency overlay (§7)", () => {
       p_case_id: caseId,
       p_reason_type: "INTERNAL",
       p_reason_text: "autotest: waiting for manager approval",
+      p_internal_reason: "REPORTING_MANAGER_APPROVAL_PENDING",
     });
     expect(enter.error).toBeNull();
 

@@ -1,21 +1,22 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: **Loops 36-40 COMPLETE.** Loop 36 made the forensic brief's
-  red-team matrix permanent (17 attacks, all already refused — no finding).
-  Loop 37 found RISK-25 (an INTERNAL wait can NEVER escalate, structurally)
-  — deliberately NOT fixed, the pack conflicts with itself and closing it
-  needs a threshold the pack never states. Loop 38 found and FIXED RISK-26
-  (the same notification delivered twice when the case owner was also a
-  Manager; proven by microsecond-identical timestamps, so not a race) — and
-  separately cleared a PM false alarm that looked like a defect but was
-  arithmetic. Loop 39 found and FIXED RISK-27 (take_ownership was built,
-  correct, race-safe and tested but NO button called it, while §22.1
-  deliberately creates unowned cases) — and produced two self-corrections
-  that would otherwise have been false findings.
-  PRODUCTION READINESS VERDICT: **NOT READY** — four Boss-side items open
-  (QC authority list empty; shared prod/CI database; leaked-password
-  protection off; RISK-25). None is unfinished engineering.
-  Live-data fact: 8,254+ cases, ZERO of them real business records.
+Current loop: Loops 36-40 complete (Gate 8 approved). A Boss-directed
+  surgical task then closed RISK-25 and cleaned the synthetic test data —
+  see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
+  INTERNAL waiting reasons (reporting-manager approval pending / PO release
+  pending / Other with mandatory detail), enforced at UI + RPC + a DB CHECK
+  constraint, and INTERNAL waits now join the EXISTING 24h escalation
+  measured from entered_at. Escalation notifies but never resolves.
+  CLEANUP: 8,920 synthetic cases removed safely; 321 remain (114 open, 207
+  non-open deliberately untouched). Zero orphans. 114 open rather than 10
+  because 103 are blocked by a DUPLICATE case pointing at them and deleting
+  resolved cases is forbidden — safety outranks the number. Test runs now
+  clean up their own data, so the database no longer refills.
+  Boss-side items: QC identities ANSWERED (they will come from the Quality
+  module at integration; qc_authority staying empty is now a decision, not
+  a gap). Leaked-password protection deferred by the Boss to last. Two new
+  questions: whether to also remove the 103 duplicate-primary cases, and
+  the Sarvam Screen Architecture document needed to action the UX sections.
 Current gate: **GATE 8 (Loops 36-40) AWAITING BOSS.** Autonomous loop work
   is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13 until the Boss gives
   explicit continuation language for Loop 41+. See
