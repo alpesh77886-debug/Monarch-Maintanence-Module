@@ -262,13 +262,16 @@ export default async function CaseDetailPage({
         </Link>
         <Card className="mt-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-slate-500">{caseRow.case_number}</span>
+            <p className="font-mono text-xs text-slate-500">{caseRow.case_number}</p>
             <Badge tone="info">{caseRow.status}</Badge>
             {caseRow.priority && <Badge tone="neutral">Priority: {caseRow.priority}</Badge>}
             {caseRow.major_complex_flag && <Badge tone="danger">MAJOR/COMPLEX</Badge>}
           </div>
           <h1 className="mt-2 text-lg font-semibold text-slate-900">{caseRow.symptom}</h1>
-          <p className="mt-1 text-sm text-slate-600">{caseRow.case_type}</p>
+          <p className="mt-1 text-sm text-slate-600">
+            {caseRow.case_type} · Status: <span className="font-medium">{caseRow.status}</span>
+            {caseRow.priority ? ` · Priority: ${caseRow.priority}` : ""}
+          </p>
           {caseRow.duplicate_of_case_id && (
             <p className="mt-2 text-sm text-slate-600">
               Duplicate of{" "}
