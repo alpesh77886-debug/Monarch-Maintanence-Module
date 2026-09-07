@@ -2593,3 +2593,75 @@ No UI or RPC changed this loop. No `"use client"` re-scan needed.
 No code change — three pack sections read closely against live schema
 state (`status_transitions`, `information_schema.triggers`) and existing
 source/test files, not migrations.
+
+## Loop 34 — 2026-09-07
+
+Continued the pack cross-reference from Loop 33, reading §8 (Observation
++ Action Continuity Journal) — a section explicitly marked "mandatory V1
+feature" — closely against its implementation. Unlike Loops 31-33, this
+one found a real, concrete gap: not a security bug, a materially
+incomplete UI.
+
+### `observation-form.tsx` only exposed 4 of the 9 fields §8 requires per entry
+
+§8's canonical structure is `OBSERVATION → ACTION → RESULT → CURRENT
+CONDITION → PENDING ACTION → BLOCKER → NEXT STEP`, and its "each entry
+records" list adds two more: an intervention/step reference and an
+evidence/reference where applicable. `maintenance.observations` has
+carried all 9 corresponding columns since Loop 1
+(`intervention_id`, `observation`, `action`, `result`,
+`current_condition`, `pending_action`, `blocker`, `next_step`,
+`evidence_ref`) — but `observation-form.tsx` only ever had inputs for 4
+of them (`observation`, `action`, `current_condition`, `next_step`).
+`result`, `pending_action`, `blocker`, `intervention_id`, and
+`evidence_ref` were silently unreachable through the app since the
+feature was first built — every journal entry ever created through this
+app has those five columns permanently `NULL`, even though the display
+side (`page.tsx`'s "Observation + Action Continuity Journal" section)
+was already correctly rendering `result`/`pending_action`/`blocker` (just
+never had anything to show).
+
+This was never an RLS problem — `observations_insert`'s `with check
+(is_staff() and actor_user_id = auth.uid())` never restricted which
+columns could be set, confirmed live before writing any code. It was
+purely a UI completeness gap on a pack section explicitly marked
+mandatory, not a PENDING/authority question — nothing here needed
+inventing, every field name and meaning was already locked by the
+existing schema and pack text.
+
+**Fix:**
+- `observation-form.tsx`: added `Result`, `Pending action`, `Blocker`,
+  and `Evidence reference` inputs, plus an optional "Related
+  intervention" dropdown (only rendered when the case has interventions)
+  populated from data `page.tsx` already fetches.
+- `CaseObservation` type (`database.types.ts`): added the two fields
+  (`intervention_id`, `evidence_ref`) it was missing, matching the table
+  since Loop 1.
+- `page.tsx`'s journal display: now also shows the linked intervention's
+  `action_taken` (via a lookup against the case's own interventions) and
+  the evidence reference, when present.
+
+Live-verified the full 9-field insert against the real schema before
+writing the test — confirmed the exact same payload the form now sends
+round-trips correctly, including a real `intervention_id` from
+`record_intervention`.
+
+### Tests
+
+1 new `it()` in `tests/observations-clearances-audit.test.ts`: inserts
+all 9 canonical fields (including a real intervention link) and asserts
+every one round-trips, closing the gap the existing 4 observations tests
+(RLS-focused, Loop 25) never exercised. Suite is now **127 tests across
+17 files**.
+
+### After Loop 16's server/client boundary lesson
+
+`observation-form.tsx` (a `"use client"` file) changed this loop —
+re-scanned every `"use client"` file for stray named exports, clean
+(only `export default`).
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` (the full 9-field insert, matching what the form
+and the new test both send) before writing any UI or test code.

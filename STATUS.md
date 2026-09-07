@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 33 complete — batch Loops 31-35 in progress
+Current loop: Loop 34 complete — batch Loops 31-35 in progress
 Current gate: **GATE 6 CLOSED.** The Boss approved continuation for Loops
   31-35 ("approved loops 31 to 35") after reviewing
   APPROVAL_REPORT_LOOP_26_30.md. The next hard gate is after Loop 35
@@ -79,8 +79,9 @@ Test status: Vitest integration suite wired into CI (`npm test` in
   attribution lockdown, RISK-20), +1 Loop 29 (`record_spare_usage`
   requires a linked request, RISK-21; 2 pre-existing tests also updated,
   see CHANGELOG), +2 Loop 30 (`record_intervention` requires an active
-  assignment, RISK-22) —
-  **126 tests across 17 files** (counted from `it()` blocks), all confirmed
+  assignment, RISK-22), +1 Loop 34 (§8 observation journal, all 9
+  canonical fields including intervention linkage) —
+  **127 tests across 17 files** (counted from `it()` blocks), all confirmed
   passing in real GitHub Actions CI (including catching and driving the
   RISK-14 fix).
   (Correction: the Loop 10 gate report said "44 tests across 7 files"; the
@@ -388,6 +389,23 @@ Batch summary (Loops 31-35, current batch — see CHANGELOG.md for full detail):
     receiver on handover) is an already-disclosed, deliberate
     manual-verification-only gap from Loop 12, not a new finding. No
     code change this loop.
+  - Loop 34: continued the pack cross-reference into §8 (Observation +
+    Action Continuity Journal, "mandatory V1 feature") and found a real
+    gap: `observation-form.tsx` only ever exposed 4 of the 9 fields §8's
+    canonical structure requires per entry (`observation`, `action`,
+    `current_condition`, `next_step`) — `result`, `pending_action`,
+    `blocker`, `intervention_id`, and `evidence_ref` have existed as
+    columns since Loop 1 but were silently unreachable through the app;
+    every journal entry ever created via the UI has those five columns
+    permanently NULL. Not an RLS gap (confirmed live: `observations_insert`
+    never restricted which columns could be set) — a pure UI completeness
+    fix on a section explicitly marked mandatory, nothing invented. Fixed:
+    the form now has all 9 fields (`result`/`pending_action`/`blocker`/
+    `evidence_ref` inputs, plus an optional intervention-linkage
+    dropdown); `page.tsx`'s journal display now also shows the linked
+    intervention and evidence reference; `CaseObservation` type completed
+    to match the table. Live-verified the full 9-field insert against the
+    real schema before writing any code.
 
 Recurrence status (important): §18 detection is BUILT BUT INERT. It will
   produce nothing at all until the Boss supplies PENDING-04 (threshold +

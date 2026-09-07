@@ -315,7 +315,7 @@ export default async function CaseDetailPage({
       {canAcknowledge && <AcknowledgeForm caseId={caseRow.id} />}
 
       {isStaffRow && caseRow.current_owner_user_id && (
-        <ObservationForm caseId={caseRow.id} />
+        <ObservationForm caseId={caseRow.id} interventions={interventions ?? []} />
       )}
 
       {activeWait ? (
@@ -531,24 +531,35 @@ export default async function CaseDetailPage({
           Observation + Action Continuity Journal
         </h2>
         <ol className="mt-2 flex flex-col gap-2">
-          {observations?.map((o) => (
-            <li key={o.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-              <p className="text-xs text-slate-400">
-                {new Date(o.created_at).toLocaleString()}
-              </p>
-              {o.observation && <p><span className="font-medium">Observation:</span> {o.observation}</p>}
-              {o.action && <p><span className="font-medium">Action:</span> {o.action}</p>}
-              {o.result && <p><span className="font-medium">Result:</span> {o.result}</p>}
-              {o.current_condition && (
-                <p><span className="font-medium">Current condition:</span> {o.current_condition}</p>
-              )}
-              {o.pending_action && (
-                <p><span className="font-medium">Pending:</span> {o.pending_action}</p>
-              )}
-              {o.blocker && <p><span className="font-medium">Blocker:</span> {o.blocker}</p>}
-              {o.next_step && <p><span className="font-medium">Next step:</span> {o.next_step}</p>}
-            </li>
-          ))}
+          {observations?.map((o) => {
+            const linkedIntervention = interventions?.find((i) => i.id === o.intervention_id);
+            return (
+              <li key={o.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                <p className="text-xs text-slate-400">
+                  {new Date(o.created_at).toLocaleString()}
+                </p>
+                {linkedIntervention && (
+                  <p className="text-xs text-slate-500">
+                    <span className="font-medium">Intervention:</span> {linkedIntervention.action_taken}
+                  </p>
+                )}
+                {o.observation && <p><span className="font-medium">Observation:</span> {o.observation}</p>}
+                {o.action && <p><span className="font-medium">Action:</span> {o.action}</p>}
+                {o.result && <p><span className="font-medium">Result:</span> {o.result}</p>}
+                {o.current_condition && (
+                  <p><span className="font-medium">Current condition:</span> {o.current_condition}</p>
+                )}
+                {o.pending_action && (
+                  <p><span className="font-medium">Pending:</span> {o.pending_action}</p>
+                )}
+                {o.blocker && <p><span className="font-medium">Blocker:</span> {o.blocker}</p>}
+                {o.next_step && <p><span className="font-medium">Next step:</span> {o.next_step}</p>}
+                {o.evidence_ref && (
+                  <p><span className="font-medium">Evidence:</span> {o.evidence_ref}</p>
+                )}
+              </li>
+            );
+          })}
           {observations?.length === 0 && (
             <p className="text-sm text-slate-500">No journal entries yet.</p>
           )}
