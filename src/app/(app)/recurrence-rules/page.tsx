@@ -34,12 +34,12 @@ export default async function RecurrenceRulesPage() {
 
   const isManager = isStaffRow.role === "MAINTENANCE_MANAGER";
 
-  const { data: rules } = await supabase
-    .from("recurrence_rules")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: staff } = await supabase.from("staff").select("id, full_name");
+  // Loop 37 (performance): the rules and the staff-name lookup are
+  // independent — issued together rather than one after the other.
+  const [{ data: rules }, { data: staff }] = await Promise.all([
+    supabase.from("recurrence_rules").select("*").order("created_at", { ascending: false }),
+    supabase.from("staff").select("id, full_name"),
+  ]);
   const nameById = new Map((staff ?? []).map((s) => [s.id, s.full_name as string]));
 
   return (

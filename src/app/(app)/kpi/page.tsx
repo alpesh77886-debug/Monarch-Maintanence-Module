@@ -70,45 +70,36 @@ export default async function KpiPage() {
     );
   }
 
-  const { data: caseRows } = await supabase
-    .from("cases")
-    .select(
-      "id, status, created_at, acknowledged_at, technically_restored_at, maintenance_released_at, closed_at, emergency_confirmed, production_started_without_release, production_not_restarted, current_owner_user_id"
-    );
-
-  const { data: waitRows } = await supabase
-    .from("waits")
-    .select("case_id, entered_at, resumed_at, last_escalated_at");
-
-  const { data: impactRows } = await supabase
-    .from("case_current_impact")
-    .select("case_id, downtime_minutes, output_loss_kg");
-
-  const { data: pmRows } = await supabase.from("pm_instances").select("id, status");
-
-  const { data: recurrenceRows } = await supabase
-    .from("recurrence_flags")
-    .select("id, status");
-
-  const { data: capaRows } = await supabase.from("capa_links").select("id, status, source");
-
-  const { data: activeRuleRows } = await supabase
-    .from("recurrence_rules")
-    .select("id")
-    .eq("is_active", true);
-
-  const { data: reopenEvents } = await supabase
-    .from("case_events")
-    .select("case_id")
-    .eq("event_type", "REOPENED");
-
-  const { data: spareRows } = await supabase
-    .from("spare_requests")
-    .select("id, estimated_amount, requires_manager_approval, approved_at");
-
-  const { data: restorationRows } = await supabase
-    .from("restorations")
-    .select("case_id, restoration_type, follow_up_required");
+  // Loop 37 (performance): ten independent aggregate reads. They used to run
+  // one `await` at a time — ten sequential round trips before this page could
+  // render a single number. Issued together now; no query changed.
+  const [
+    { data: caseRows },
+    { data: waitRows },
+    { data: impactRows },
+    { data: pmRows },
+    { data: recurrenceRows },
+    { data: capaRows },
+    { data: activeRuleRows },
+    { data: reopenEvents },
+    { data: spareRows },
+    { data: restorationRows },
+  ] = await Promise.all([
+    supabase
+      .from("cases")
+      .select(
+        "id, status, created_at, acknowledged_at, technically_restored_at, maintenance_released_at, closed_at, emergency_confirmed, production_started_without_release, production_not_restarted, current_owner_user_id"
+      ),
+    supabase.from("waits").select("case_id, entered_at, resumed_at, last_escalated_at"),
+    supabase.from("case_current_impact").select("case_id, downtime_minutes, output_loss_kg"),
+    supabase.from("pm_instances").select("id, status"),
+    supabase.from("recurrence_flags").select("id, status"),
+    supabase.from("capa_links").select("id, status, source"),
+    supabase.from("recurrence_rules").select("id").eq("is_active", true),
+    supabase.from("case_events").select("case_id").eq("event_type", "REOPENED"),
+    supabase.from("spare_requests").select("id, estimated_amount, requires_manager_approval, approved_at"),
+    supabase.from("restorations").select("case_id, restoration_type, follow_up_required"),
+  ]);
 
   const cases = (caseRows ?? []) as Pick<
     MaintenanceCase,

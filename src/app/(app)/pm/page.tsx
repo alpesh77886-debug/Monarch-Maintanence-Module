@@ -29,16 +29,16 @@ export default async function PmPage() {
 
   const isManager = isStaffRow.role === "MAINTENANCE_MANAGER";
 
-  const { data: plans } = await supabase
-    .from("pm_plans")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: instances } = await supabase
-    .from("pm_instances")
-    .select("*")
-    .neq("status", "RESCHEDULED")
-    .order("due_at", { ascending: true });
+  // Loop 37 (performance): plans and instances are independent — issued
+  // together rather than one after the other. Queries unchanged.
+  const [{ data: plans }, { data: instances }] = await Promise.all([
+    supabase.from("pm_plans").select("*").order("created_at", { ascending: false }),
+    supabase
+      .from("pm_instances")
+      .select("*")
+      .neq("status", "RESCHEDULED")
+      .order("due_at", { ascending: true }),
+  ]);
 
   const planTitleById = new Map((plans ?? []).map((p) => [p.id, p.title]));
 

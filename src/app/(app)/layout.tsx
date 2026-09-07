@@ -17,21 +17,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let isAvailable = false;
   let notifications: AppNotification[] = [];
   if (user) {
-    const { data: staff } = await supabase
-      .from("staff")
-      .select("full_name, role, is_available")
-      .eq("id", user.id)
-      .maybeSingle();
+    // Loop 37 (performance): this layout wraps EVERY page, so its round trips
+    // are paid on every single navigation. The staff row and the unread
+    // notifications are independent of each other — issued together rather
+    // than one after the other. Neither query itself changed.
+    const [{ data: staff }, { data: unread }] = await Promise.all([
+      supabase.from("staff").select("full_name, role, is_available").eq("id", user.id).maybeSingle(),
+      supabase
+        .from("notifications")
+        .select("*")
+        .is("read_at", null)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
     staffName = staff ? `${staff.full_name} (${staff.role})` : user.email ?? null;
     isStaff = !!staff;
     isAvailable = !!staff?.is_available;
-
-    const { data: unread } = await supabase
-      .from("notifications")
-      .select("*")
-      .is("read_at", null)
-      .order("created_at", { ascending: false })
-      .limit(20);
     notifications = unread ?? [];
   }
 

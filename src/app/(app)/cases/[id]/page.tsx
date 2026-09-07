@@ -47,45 +47,108 @@ export default async function CaseDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: caseRow } = await supabase.from("cases").select("*").eq("id", id).single();
+  // Loop 37 (performance). This page needs ~22 independent reads. Each one
+  // used to be its own `await`, so they ran strictly one after another —
+  // ~22 sequential round trips to Supabase for a single page view, every one
+  // of them paying full network latency. None of them depend on each other,
+  // so they are issued together here and awaited once: ~22 sequential trips
+  // become one parallel wave. Only the two genuinely dependent reads run
+  // afterwards (the staff row needs `user.id`; the duplicate's case number
+  // needs `caseRow`). No query, filter, or ordering changed — this is purely
+  // *when* they are issued, so RLS and every derived flag below behave
+  // exactly as before.
+  const [
+    {
+      data: { user },
+    },
+    { data: caseRow },
+    { data: events },
+    { data: observations },
+    { data: assignments },
+    { data: interventions },
+    { data: activeWait },
+    { data: pendingRestoration },
+    { data: restorationHistory },
+    { data: pendingClearance },
+    { data: spareRequests },
+    { data: spareUsage },
+    // §22.2 handover quality: a receiver must be able to see owner history and
+    // escalation state, not just the current status — so both are surfaced on
+    // the case itself rather than living only in the audit log.
+    { data: ownershipHistory },
+    { data: staffList },
+    // §13 production restart boundary.
+    { data: activeStop },
+    { data: boundaryEvents },
+    // §25.1 group 3 production impact. Every record is fetched, not just the
+    // current one, because a correction supersedes rather than replaces (§27) —
+    // the superseded figures stay visible.
+    { data: impactRecords },
+    // §18/§19. Flags are read for this case only; the scan links the related
+    // cases inside the flag itself.
+    { data: recurrenceFlags },
+    { data: capaRows },
+    // §9 item 6 / §9.1 — validated root cause. Every record fetched (not just
+    // current) since a correction supersedes rather than replaces (§27).
+    { data: rootCauseRecords },
+    // §5.1 / §26 evidence. Any authenticated user may add it (not staff-only —
+    // matches the reporter's own ability to report the case), so this fetch is
+    // not gated behind isStaffRow like the others.
+    { data: evidenceRecords },
+    // §5.1 asset linkage. Staff-only, direct insert — the RLS/trigger do the
+    // work; this is just a read for display.
+    { data: caseAssets },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from("cases").select("*").eq("id", id).single(),
+    supabase.from("case_events").select("*").eq("case_id", id).order("occurred_at", { ascending: true }),
+    supabase.from("observations").select("*").eq("case_id", id).order("created_at", { ascending: true }),
+    supabase.from("case_assignments").select("*").eq("case_id", id).order("assigned_at", { ascending: true }),
+    supabase.from("interventions").select("*").eq("case_id", id).order("started_at", { ascending: true }),
+    supabase.from("waits").select("*").eq("case_id", id).is("resumed_at", null).maybeSingle(),
+    supabase
+      .from("restorations")
+      .select("*")
+      .eq("case_id", id)
+      .eq("restoration_type", "TECHNICAL")
+      .is("verification_result", null)
+      .maybeSingle(),
+    supabase.from("restorations").select("*").eq("case_id", id).order("recorded_at", { ascending: true }),
+    supabase.from("clearances").select("*").eq("case_id", id).eq("decision", "PENDING").maybeSingle(),
+    supabase.from("spare_requests").select("*").eq("case_id", id).order("requested_at", { ascending: true }),
+    supabase.from("spare_usage").select("*").eq("case_id", id).order("used_at", { ascending: true }),
+    supabase.from("case_ownership").select("*").eq("case_id", id).order("started_at", { ascending: true }),
+    supabase.from("staff").select("id, full_name, role, is_active, is_available").eq("is_active", true),
+    supabase.from("safety_stops").select("*").eq("case_id", id).is("lifted_at", null).maybeSingle(),
+    supabase
+      .from("production_boundary_events")
+      .select("*")
+      .eq("case_id", id)
+      .order("recorded_at", { ascending: true }),
+    supabase.from("case_impact_records").select("*").eq("case_id", id).order("recorded_at", { ascending: false }),
+    supabase.from("recurrence_flags").select("*").eq("case_id", id).order("flagged_at", { ascending: false }),
+    supabase.from("capa_links").select("*").eq("case_id", id).order("created_at", { ascending: true }),
+    supabase.from("case_root_causes").select("*").eq("case_id", id).order("recorded_at", { ascending: false }),
+    supabase.from("evidence").select("*").eq("case_id", id).order("created_at", { ascending: false }),
+    supabase.from("case_assets").select("*").eq("case_id", id).order("linked_at", { ascending: true }),
+  ]);
 
   if (!caseRow) {
     notFound();
   }
 
-  const { data: isStaffRow } = await supabase
-    .from("staff")
-    .select("id, role")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
+  // The only two reads that genuinely depend on results above — also issued
+  // together rather than one after the other.
+  const [{ data: isStaffRow }, { data: primaryCase }] = await Promise.all([
+    supabase.from("staff").select("id, role").eq("id", user?.id ?? "").maybeSingle(),
+    caseRow.duplicate_of_case_id
+      ? supabase.from("cases").select("case_number").eq("id", caseRow.duplicate_of_case_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
-  const { data: events } = await supabase
-    .from("case_events")
-    .select("*")
-    .eq("case_id", id)
-    .order("occurred_at", { ascending: true });
+  const duplicatePrimaryCaseNumber: string | null = primaryCase?.case_number ?? null;
 
-  const { data: observations } = await supabase
-    .from("observations")
-    .select("*")
-    .eq("case_id", id)
-    .order("created_at", { ascending: true });
-
-  const { data: assignments } = await supabase
-    .from("case_assignments")
-    .select("*")
-    .eq("case_id", id)
-    .order("assigned_at", { ascending: true });
-
-  const { data: interventions } = await supabase
-    .from("interventions")
-    .select("*")
-    .eq("case_id", id)
-    .order("started_at", { ascending: true });
+  const staffById = new Map((staffList ?? []).map((s) => [s.id, s as StaffMember]));
 
   const canAcknowledge =
     !!isStaffRow && ["REPORTED", "NEEDS_INFORMATION"].includes(caseRow.status);
@@ -101,46 +164,6 @@ export default async function CaseDetailPage({
   const canRaiseSpareRequest = !!user;
   const canRecordSpareUsage = !!isStaffRow || isAssignedTechnician;
   const isManager = isStaffRow?.role === "MAINTENANCE_MANAGER";
-
-  const { data: activeWait } = await supabase
-    .from("waits")
-    .select("*")
-    .eq("case_id", id)
-    .is("resumed_at", null)
-    .maybeSingle();
-
-  const { data: pendingRestoration } = await supabase
-    .from("restorations")
-    .select("*")
-    .eq("case_id", id)
-    .eq("restoration_type", "TECHNICAL")
-    .is("verification_result", null)
-    .maybeSingle();
-
-  const { data: restorationHistory } = await supabase
-    .from("restorations")
-    .select("*")
-    .eq("case_id", id)
-    .order("recorded_at", { ascending: true });
-
-  const { data: pendingClearance } = await supabase
-    .from("clearances")
-    .select("*")
-    .eq("case_id", id)
-    .eq("decision", "PENDING")
-    .maybeSingle();
-
-  const { data: spareRequests } = await supabase
-    .from("spare_requests")
-    .select("*")
-    .eq("case_id", id)
-    .order("requested_at", { ascending: true });
-
-  const { data: spareUsage } = await supabase
-    .from("spare_usage")
-    .select("*")
-    .eq("case_id", id)
-    .order("used_at", { ascending: true });
 
   // TEMPORARILY_RESTORED has no direct edge to TECHNICALLY_RESTORED in the
   // locked lifecycle graph (only IN_REPAIR does) — see FollowUpButton.
@@ -165,94 +188,6 @@ export default async function CaseDetailPage({
     !!isStaffRow && ["REPORTED", "ACKNOWLEDGED", "ASSESSED"].includes(caseRow.status);
   const canCloseFalseComplaint =
     !!user && user.id === caseRow.reporter_user_id && caseRow.status === "REPORTED";
-
-  // §22.2 handover quality: a receiver must be able to see owner history and
-  // escalation state, not just the current status — so both are surfaced on
-  // the case itself rather than living only in the audit log.
-  const { data: ownershipHistory } = await supabase
-    .from("case_ownership")
-    .select("*")
-    .eq("case_id", id)
-    .order("started_at", { ascending: true });
-
-  const { data: staffList } = await supabase
-    .from("staff")
-    .select("id, full_name, role, is_active, is_available")
-    .eq("is_active", true);
-
-  const staffById = new Map((staffList ?? []).map((s) => [s.id, s as StaffMember]));
-
-  // §13 production restart boundary.
-  const { data: activeStop } = await supabase
-    .from("safety_stops")
-    .select("*")
-    .eq("case_id", id)
-    .is("lifted_at", null)
-    .maybeSingle();
-
-  const { data: boundaryEvents } = await supabase
-    .from("production_boundary_events")
-    .select("*")
-    .eq("case_id", id)
-    .order("recorded_at", { ascending: true });
-
-  // §25.1 group 3 production impact. Every record is fetched, not just the
-  // current one, because a correction supersedes rather than replaces (§27) —
-  // the superseded figures stay visible.
-  const { data: impactRecords } = await supabase
-    .from("case_impact_records")
-    .select("*")
-    .eq("case_id", id)
-    .order("recorded_at", { ascending: false });
-
-  // §18/§19. Flags are read for this case only; the scan links the related
-  // cases inside the flag itself.
-  const { data: recurrenceFlags } = await supabase
-    .from("recurrence_flags")
-    .select("*")
-    .eq("case_id", id)
-    .order("flagged_at", { ascending: false });
-
-  const { data: capaRows } = await supabase
-    .from("capa_links")
-    .select("*")
-    .eq("case_id", id)
-    .order("created_at", { ascending: true });
-
-  // §9 item 6 / §9.1 — validated root cause. Every record fetched (not just
-  // current) since a correction supersedes rather than replaces (§27).
-  const { data: rootCauseRecords } = await supabase
-    .from("case_root_causes")
-    .select("*")
-    .eq("case_id", id)
-    .order("recorded_at", { ascending: false });
-
-  // §5.1 / §26 evidence. Any authenticated user may add it (not staff-only —
-  // matches the reporter's own ability to report the case), so this fetch is
-  // not gated behind isStaffRow like the others.
-  const { data: evidenceRecords } = await supabase
-    .from("evidence")
-    .select("*")
-    .eq("case_id", id)
-    .order("created_at", { ascending: false });
-
-  // §5.1 asset linkage. Staff-only, direct insert — the RLS/trigger do the
-  // work; this is just a read for display.
-  const { data: caseAssets } = await supabase
-    .from("case_assets")
-    .select("*")
-    .eq("case_id", id)
-    .order("linked_at", { ascending: true });
-
-  let duplicatePrimaryCaseNumber: string | null = null;
-  if (caseRow.duplicate_of_case_id) {
-    const { data: primaryCase } = await supabase
-      .from("cases")
-      .select("case_number")
-      .eq("id", caseRow.duplicate_of_case_id)
-      .maybeSingle();
-    duplicatePrimaryCaseNumber = primaryCase?.case_number ?? null;
-  }
 
   return (
     <div className="flex flex-col gap-6">
