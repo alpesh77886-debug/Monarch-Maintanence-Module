@@ -8,8 +8,15 @@ Current loop: Loops 31-35 batch complete, gate report merged. Two
   performance fix (CHANGELOG.md "Performance — app load/navigation
   latency — 2026-09-07"). The performance work is structured as Loop 36
   diagnose / Loop 37 fix / Loop 38 verify, per the Boss's own "3 loop me
-  check karo, test and solve" instruction; 36 and 37 are done, 38 is the
-  deployed-region + timing verification.
+  check karo, test and solve" instruction. All three are done and merged
+  (PR #34). Measured result: the deployed function region really did
+  become sin1 (read back from the deployment, not assumed), and the CI
+  e2e suite went 125-156s (three-run baseline) -> 66s, a ~2x speedup
+  well outside the observed noise. Honest limit on that number: CI runs
+  the app on a US GitHub runner, so it measures the query-parallelisation
+  only -- the region co-location's live benefit is deployed and
+  confirmed but not timed, because neither the sandbox nor the CI
+  harness can reach the live app to time it.
 Current gate: **GATE 7 (Loops 31-35) AWAITING BOSS.** Autonomous
   loop-batch engineering is paused per IMPLEMENTATION_PACK.md §19.9/§19.13
   until the Boss gives explicit continuation language for the next audit
