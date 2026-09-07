@@ -11,8 +11,8 @@ Current loop: Loops 31-35 batch complete, gate report merged. Two
   check karo, test and solve" instruction. All three are done and merged
   (PR #34). Measured result: the deployed function region really did
   become sin1 (read back from the deployment, not assumed), and the CI
-  e2e suite went 125-156s (three-run baseline) -> 66s, a ~2x speedup
-  well outside the observed noise. Honest limit on that number: CI runs
+  e2e suite went 125-156s (three runs before) -> 66-80s (three runs
+  after) -- ranges that do not overlap at all, mean improvement 49%. Honest limit on that number: CI runs
   the app on a US GitHub runner, so it measures the query-parallelisation
   only -- the region co-location's live benefit is deployed and
   confirmed but not timed, because neither the sandbox nor the CI

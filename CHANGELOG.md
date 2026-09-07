@@ -2907,28 +2907,38 @@ over-claimed: **CI builds and runs the app on a US GitHub runner, so
 measures *only* the parallelisation (cause 2), not the region
 co-location (cause 1). Cause 1's benefit shows up only on the live app.
 
-Three prior green runs were used as the baseline rather than one, so the
-result could be checked against real run-to-run spread:
+Three green runs before the fix and three after were used, rather than
+one of each, so the result could be checked against real run-to-run
+spread instead of a single pair:
 
-| CI run | commit | `npm run test:e2e` | `npm test` (vitest, control) |
-|---|---|---|---|
-| #107 | `5356d31` | 147 s | 205 s |
-| #110 | `5a5fd31` | 125 s | 174 s |
-| #111 | `3d6d732` | 156 s | 172 s |
-| **#112** | **`c99bf5c` (this fix)** | **66 s** | 218 s |
+| CI run | commit | | `npm run test:e2e` | `npm test` (vitest, control) |
+|---|---|---|---|---|
+| #107 | `5356d31` | before | 147 s | 205 s |
+| #110 | `5a5fd31` | before | 125 s | 174 s |
+| #111 | `3d6d732` | before | 156 s | 172 s |
+| #112 | `c99bf5c` | **after** | **66 s** | 218 s |
+| #113 | `6b7612a` (main, merged) | **after** | **80 s** | 151 s |
+| #114 | `600f88c` | **after** | **72 s** | 141 s |
 
-E2E baseline spread is 125–156 s (mean ≈ 143 s). 66 s is **47% faster
-than the fastest baseline** and 54% faster than the mean — a ~2× speedup
-that sits well outside the observed noise band.
+E2E before: 125–156 s (mean 142.7). After: 66–80 s (mean 72.7). The two
+ranges **do not overlap at all** — even the slowest post-fix run is 36%
+faster than the fastest pre-fix run. Mean improvement **49%**. Runs #113
+and #114 overlapped in time by 13 seconds, hitting the same shared live
+Supabase project concurrently, and still landed at 80 s and 72 s.
 
-The `npm test` column is a deliberate control: vitest exercises the RPCs
+**Correction to the first reading of this data.** When only run #112
+existed, its vitest control read 218 s — the slowest of the four runs
+then available — and that was written up as "the control got slower while
+e2e halved, which rules out a fast-runner day." With three post-fix runs
+in hand that claim does not hold: the control came in at 218, 151 and
+141 s against a pre-fix 172–205 s, i.e. **noisy and overlapping in both
+directions**, with two of the three post-fix values *below* the entire
+pre-fix range. 218 s was ordinary variance, not a signal. The correct
+statement is the weaker and simpler one: vitest exercises the RPCs
 directly and never renders a page component, so the parallelisation
-cannot affect it. It came in at **218 s — the slowest of all four runs**,
-at the top of its 172–218 s historical range. Reported rather than
-buried: it means this was not a "fast runner day" inflating the e2e
-number. In the *same workflow run*, against the *same* shared live
-Supabase project, the control got slower while e2e halved. That
-strengthens the result rather than weakening it.
+cannot affect it — and measured across three runs it indeed shows no
+consistent movement either way. The e2e result stands on its own
+separation of ranges, not on that control.
 
 **3. Any functional regression?** No. 129 vitest tests and 8 Playwright
 e2e specs all green on `c99bf5c` — the same suites that caught two real
