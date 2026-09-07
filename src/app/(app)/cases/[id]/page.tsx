@@ -264,7 +264,7 @@ export default async function CaseDetailPage({
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-mono text-xs text-slate-500">{caseRow.case_number}</p>
             <Badge tone="info">{caseRow.status}</Badge>
-            {caseRow.priority && <Badge tone="neutral">Priority: {caseRow.priority}</Badge>}
+            {caseRow.priority && <Badge tone="neutral">{caseRow.priority}</Badge>}
             {caseRow.major_complex_flag && <Badge tone="danger">MAJOR/COMPLEX</Badge>}
           </div>
           <h1 className="mt-2 text-lg font-semibold text-slate-900">{caseRow.symptom}</h1>
