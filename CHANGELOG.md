@@ -2515,3 +2515,81 @@ No UI or RPC changed this loop. No `"use client"` re-scan needed.
 
 No code change — this loop was a live read (`pg_policies`) against
 Supabase project `maavrlqkdrisjwzhjdgg`, plus a documentation update.
+
+## Loop 33 — 2026-09-07
+
+Another new angle: with RLS (write and read side) and every `SECURITY
+DEFINER` RPC guard now audited, cross-referenced three pack sections not
+yet closely read against their actual implementation, similar to Loop
+24's method. First checked for the smallest possible gap: trigger
+functions. `information_schema.triggers` shows exactly one trigger in
+the whole schema (`case_assets_mark_known` → `mark_asset_known()`,
+already reviewed in this batch's RPC sweep) — that angle was exhausted
+immediately.
+
+### §24 Automation vs Human Decision — checked, clean
+
+Read the pack's explicit AUTO / HUMAN REQUIRED / RECOMMEND-FLAG-ONLY /
+NEVER AUTOMATE checklist and cross-checked the security-relevant items
+against actual code:
+
+- "auto-handover on confirmed logout when recipient exists" —
+  `sign-out-button.tsx` matches §22.1 exactly (warn, then on confirm
+  call `handover_all_open_cases`); "UNASSIGNED / WAITING_MAINTENANCE"
+  isn't a `case_status` enum value (confirmed via the enum definition)
+  so it's descriptive of the ownership state, not a status the code
+  needs to set — already correctly implemented as
+  `current_owner_user_id = null` with status untouched.
+- "NEVER AUTOMATE: equate temporary restoration with permanent
+  closure" — checked the LOCKED `status_transitions` graph live:
+  `TEMPORARILY_RESTORED` only has edges to `DIAGNOSING`/`IN_REPAIR`, no
+  path to `CLOSED` or any released state.
+- "Recommendations may never become silent state transitions" — the
+  only "recommend"-shaped seam in the schema is `raise_capa`'s
+  `p_source = 'SYSTEM_SUGGESTED'` value; grepped every migration and
+  confirmed `raise_capa` is never called from any scan/cron function —
+  it's client-invoked by staff only, so nothing currently auto-creates
+  a CAPA silently.
+- "invent root cause" / "silently override safety stop" / "infer
+  INTERNAL/EXTERNAL waiting from free text" / "fabricate inventory
+  truth" / "fabricate financial impact" — each RPC's own mandatory,
+  non-inferred parameters (`record_root_cause`'s `p_basis`,
+  `enter_waiting`'s explicit `p_reason_type`, the `STORES_REFERENCE_PENDING`
+  placeholder, `record_production_impact`'s required real measure) were
+  re-read against this list; none violated.
+
+### §28 Idempotency / Concurrency — checked, clean
+
+Every operation the pack lists as requiring concurrency-safe behaviour
+(Take Ownership, Accept Case, State transition, Assignment, Reopen,
+Duplicate marking, Handover, Emergency confirmation) uses `select ... for
+update` or an atomic `update ... where <precondition>` before mutating —
+re-read each RPC's body to confirm. `take_ownership`'s
+`update ... where current_owner_user_id is null` + `row_count` check is
+the correct "first-valid-actor" pattern the pack's §28 names explicitly,
+and it's exactly what it does. Spare request/usage posting and PM/
+escalation scan generation are insert-only or cron-only with no
+prior-state contention, so no race hazard applies to them.
+
+### §37 Test Matrix — spot-checked, clean/already-disclosed
+
+Cross-referenced the pack's required test list against `tests/`.
+"Concurrent accept race" is covered
+(`assignment-and-waiting.test.ts`'s "First-valid-actor ownership race").
+"No available Executive/Manager" (the `handover_all_open_cases` unassign
+path) has zero automated coverage — but this is not a new gap:
+`handover.test.ts`'s own header comment already discloses exactly why
+(the suite shares one live project; the full unassign path was verified
+live via `execute_sql` once, documented in Loop 12's CHANGELOG entry) —
+the same disclosed-gap pattern already used for the emergency escalation
+timers and the PM/recurrence scan functions elsewhere in this project.
+
+### After Loop 16's server/client boundary lesson
+
+No UI or RPC changed this loop. No `"use client"` re-scan needed.
+
+### Verified
+
+No code change — three pack sections read closely against live schema
+state (`status_transitions`, `information_schema.triggers`) and existing
+source/test files, not migrations.
