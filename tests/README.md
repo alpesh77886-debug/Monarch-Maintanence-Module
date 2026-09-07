@@ -249,3 +249,14 @@ elsewhere in this suite: `run_recurrence_scan` is cron-only and unreachable
 by any signed-in client. Verified live instead — see CHANGELOG.md Loop 20
 for the exact run (3 cases sharing one linked asset, one recurrence rule
 with `match_on = 'ASSET_REF'`, exactly one flag produced).
+
+Loop 22 adds one new `it()` to the existing `qc-and-restoration.test.ts`
+(§10 Scenario C file) rather than a new file: `record_restoration` now sets
+`restorations.follow_up_required` true for a `TEMPORARY` restoration and
+leaves it `false` for `TECHNICAL` — the schema seam for §10's "generate ...
+permanent-repair follow-up responsibility", dead since Loop 1 despite the
+rest of §10 (the transition-graph block on a direct
+`TEMPORARILY_RESTORED -> TECHNICALLY_RESTORED` edge, and the `FollowUpButton`
+UI) already being correctly built since Loop 5/RISK-12. No new RLS surface
+to test — `restorations` select/insert policies are unchanged and already
+covered by this file's other tests.

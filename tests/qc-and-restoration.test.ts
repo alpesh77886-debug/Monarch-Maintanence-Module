@@ -174,6 +174,44 @@ describe("Scenario C — temporary restoration + follow-up (§10, §38, RISK-12 
   });
 });
 
+describe("§10 — follow_up_required is generated only for TEMPORARY (Loop 22)", () => {
+  it("sets follow_up_required true on a TEMPORARY restoration, false on a TECHNICAL one", async () => {
+    const exec = await signInAs("executive");
+    const caseId = await driveToInRepair(exec, testSymptom("follow-up flag"));
+
+    const { data: temp, error: tempErr } = await exec.client.rpc("record_restoration", {
+      p_case_id: caseId,
+      p_restoration_type: "TEMPORARY",
+      p_details: "autotest: stop-gap fix",
+    });
+    expect(tempErr).toBeNull();
+
+    const { data: tempRow } = await exec.client
+      .from("restorations")
+      .select("follow_up_required")
+      .eq("id", (temp as { restoration_id: string }).restoration_id)
+      .single();
+    expect(tempRow!.follow_up_required).toBe(true);
+
+    // Follow up (§10's own required path) before the second restoration.
+    await exec.client.rpc("transition_case", { p_case_id: caseId, p_new_status: "IN_REPAIR" });
+
+    const { data: tech, error: techErr } = await exec.client.rpc("record_restoration", {
+      p_case_id: caseId,
+      p_restoration_type: "TECHNICAL",
+      p_details: "autotest: permanent fix",
+    });
+    expect(techErr).toBeNull();
+
+    const { data: techRow } = await exec.client
+      .from("restorations")
+      .select("follow_up_required")
+      .eq("id", (tech as { restoration_id: string }).restoration_id)
+      .single();
+    expect(techRow!.follow_up_required).toBe(false);
+  });
+});
+
 describe("Technical restoration verification failure (§4.2, §11)", () => {
   it("returns the case to IN_REPAIR with the failure reason recorded, never a false success", async () => {
     const exec = await signInAs("executive");

@@ -1688,3 +1688,95 @@ export from an actual client file called by a server component.
 `npm test`, so the suite fails identically at the network call here
 (RISK-05) — unchanged by this loop, since no test file was added or
 touched. Suite remains **97 tests across 16 files**.
+
+## Loop 22 — 2026-09-07
+
+Second loop of the Loops 21-25 batch. Continued the systematic column-sweep
+method (recommended for future batches in §H of the Loop 16-20 gate report):
+cross-referenced every column of `information_schema.columns` for the
+`maintenance` schema against `grep -rl` on `src/`.
+
+### §10 permanent-repair follow-up responsibility
+
+`maintenance.restorations.follow_up_required` (`not null default false`)
+has existed since Loop 1, and `evidence_ref` on `restorations`/`case_events`
+has too — both zero references anywhere in `src/`. Checked both against §10
+("When entered: record restoration details, preserve evidence,
+generate/retain permanent-repair follow-up responsibility for Executive,
+keep case non-closed unless a valid later path completes") before deciding
+what, if anything, was a real gap:
+
+- **`evidence_ref` — investigated, deliberately left alone.** Every RPC that
+  accepts `p_evidence_ref` (`transition_case`, `record_restoration`) has it
+  default to `null`, and no UI form anywhere passes it. But Loop 18 already
+  built a general, better-designed evidence-attachment mechanism (the
+  `maintenance.evidence` table + `EvidencePanel`, any signed-in user, not
+  staff-only) that already satisfies "preserve evidence" for a case
+  undergoing any transition, restoration included. Adding a second,
+  parallel free-text evidence pointer specific to restorations would be
+  redundant complexity, not a fix — the kind of duplicated mechanism
+  CLAUDE.md's "Maintenance MUST NOT become a second source of truth"
+  principle argues against even within the module's own schema. Left
+  untouched.
+- **`follow_up_required` — a real, narrower gap than it first looked.** The
+  rest of §10 was already correctly built: the transition graph has no
+  direct `TEMPORARILY_RESTORED -> TECHNICALLY_RESTORED` edge (a Loop 5/
+  RISK-12 regression guard, still tested in `qc-and-restoration.test.ts`),
+  so a case genuinely cannot close from that state, and `FollowUpButton`
+  already forces the only valid path back into repair work. What was
+  missing: `record_restoration` never set the flag, so once a case moved
+  on past `TEMPORARILY_RESTORED` the fact that it had ever needed a
+  stop-gap fix became unrecoverable from anywhere in this schema — an
+  audit/KPI gap, not a lifecycle-safety one.
+
+Migration `0022_maintenance_restoration_followup.sql`: `record_restoration`
+now sets `follow_up_required = (p_restoration_type = 'TEMPORARY')` on
+insert. Per the standing RISK-14 process rule, pulled the LIVE function
+definition via `pg_get_functiondef` immediately before writing the
+migration — every line besides that one value is byte-identical to what
+was live.
+
+**Live verification (staff JWT, role switch at the top level):**
+
+| Step | Result |
+|---|---|
+| `record_restoration(..., 'TEMPORARY', ...)` | `restorations.follow_up_required = true` |
+| case status after | `TEMPORARILY_RESTORED` |
+| `record_restoration(..., 'TECHNICAL', ...)` after the follow-up step | `restorations.follow_up_required = false` |
+| RISK-12 guard (direct `TEMPORARY -> TECHNICAL` without the follow-up step) | unaffected — only the insert's values changed, not the transition graph |
+
+### UI
+
+`restoration-history-panel.tsx` (new, staff-only via the page's existing
+`isStaffRow` gate): the case page never showed restoration history before
+this loop — the only prior query was the single pending-TECHNICAL-
+verification lookup, so a `TEMPORARY` restoration was invisible on the case
+page even while it was blocking closure. Plain presentational server
+component (no `"use client"` — read-only, no interactivity), listing every
+restoration with a type badge, a "Permanent-repair follow-up generated
+(§10)" badge when `follow_up_required` is true, and the verification
+result when present.
+
+`/kpi`: one new metric in "Quality / closure" — cases with at least one
+`TEMPORARY` restoration on record, and the total count of such
+restorations. Same real-vs-missing-data zero discipline as Loop 21's
+recurrence/CAPA group.
+
+### After Loop 16's server/client boundary lesson
+
+Re-scanned every `"use client"` file in the app. Clean — the new panel and
+KPI addition are both plain server components.
+
+### Tests
+
+Added one `it()` to the existing `qc-and-restoration.test.ts` (§10
+Scenario C file) rather than a new file: asserts `follow_up_required` is
+`true` for the `TEMPORARY` restoration and `false` for the `TECHNICAL` one
+recorded after the follow-up step. No new RLS surface — `restorations`
+policies are unchanged. Suite is now **98 tests across 16 files**.
+
+### Verified
+
+`tsc`, `lint`, `build` clean. Live-verified against Supabase project
+`maavrlqkdrisjwzhjdgg` before shipping (table above). The sandbox cannot
+reach Supabase for `npm test`; real signal is CI as always.
