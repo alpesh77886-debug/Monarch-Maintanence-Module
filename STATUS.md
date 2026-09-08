@@ -1,6 +1,17 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Interstitial fix (between Loop 59 and Loop 60) - the Boss
+Current loop: GATE 12 STOP (Loops 56-60 complete) - mandatory 5-loop
+  checkpoint per Section 19.9/19.13. Autonomous loop work is PAUSED,
+  AWAITING BOSS explicit continuation language before Loop 61. Loop 56
+  found RISK-32 (CRITICAL - reopen_case only checks is_staff(), not the
+  LOCKED "Executive + Manager" rule) and RISK-33 (MEDIUM - complainant-
+  disagreement joint-decision path has zero implementation), both OPEN
+  and awaiting a Boss decision on the exact mechanism (see
+  APPROVAL_REPORT_LOOP_56_60.md for the specific questions). Loop 60 (the
+  PM screen fix, below) shipped without waiting since it was an
+  unambiguous bug fix, not a design decision. See
+  APPROVAL_REPORT_LOOP_56_60.md and APPROVAL_GATE.md.
+Previously: Loop 60 - the Boss
   reported the /pm screen live, in Hinglish: bottom nav's 5 options
   became 4 on click, and the screen stopped looking like a mobile app.
   AppNav itself is a static 5-item array (confirmed by reading it first,
