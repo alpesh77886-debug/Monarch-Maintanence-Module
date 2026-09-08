@@ -4036,3 +4036,62 @@ refusal during smoke-testing was correct behaviour, not a defect —
 `create_pm_plan` as the Executive returned `FORBIDDEN: only Maintenance Manager
 may create a special/one-time PM plan (§17.2)`; wrong identity on my part, and
 §17.2 enforcing itself. Re-run as the Manager, it succeeded.
+
+## Loop 46 — 2026-09-08
+
+**Summary:** First loop of the Boss-approved "Type A" scope. Same
+enumerate-first method as Loops 43-45, applied to triggers and constraints:
+enumerate every one in the schema, read each in full, then find the one that
+doesn't match its business rule. RISK-31. Full evidence in
+`LOOP_46_REPORT.md`.
+
+**Requirements affected:** §16.3 spare request initiation, §29 audit trail.
+
+**Findings:**
+- **Triggers — 1 in the whole schema, correctly scoped.**
+  `case_assets_mark_known` (AFTER INSERT on `case_assets`) only ever follows an
+  already staff-authorized insert (`case_assets_insert`'s WITH CHECK is
+  `is_staff() AND linked_by = auth.uid()`). No finding.
+- **CHECK constraints — 24, read in full.** 23 matched their business rule
+  exactly. Every `notification_type` literal used at any insert site across
+  all 47 migrations was diffed against the 12-value constraint list: zero
+  mismatches.
+- **RISK-31 — `spare_requests.initiated_role` collapsed Manager into
+  Executive.** `raise_spare_request` set it with
+  `case when is_staff() then 'EXECUTIVE' else 'TECHNICIAN' end`. `is_staff()`
+  is true for BOTH locked software roles (§3.1), so a Manager-raised spare
+  request was recorded — and displayed — as if an Executive raised it.
+  Proven live: signed in as the seeded Manager, `initiated_by` was correctly
+  the Manager's own uuid but `initiated_role` was `'EXECUTIVE'`. User-visible:
+  `spares-panel.tsx` renders `Requested by {initiated_role.toLowerCase()}`.
+  Not a security defect — approval routing uses `estimated_amount` vs the
+  §3.3 ₹12,000 boundary, independent of this field — but a real audit-trail
+  accuracy defect.
+
+**Material changes:**
+- `supabase/migrations/0047_maintenance_spare_request_initiated_role_fix.sql`
+  — widens the constraint to allow `'MANAGER'` and recreates
+  `raise_spare_request` to derive the label from
+  `maintenance.current_staff_role()` (which already existed and already
+  returns the exact role) instead of the collapsing `is_staff()` check. §16.3
+  names only Technician/Executive as initiation paths and never mentions
+  Manager, but restricting the RPC to Executives only would have invented an
+  authority restriction the pack never states (§3.2 gives Manager override
+  authority and never says Manager cannot do what Executive can) — so the fix
+  records the role that exists rather than restricting who may act. Same
+  5-argument signature and both trailing defaults preserved (a second apply
+  was needed after the first hit `cannot remove parameter defaults from
+  existing function`).
+- `src/lib/supabase/database.types.ts` — `SpareRequest.initiated_role` was
+  also missing `"MANAGER"` in its TS union; corrected, since a future
+  exhaustive UI switch on this type would otherwise silently mishandle a
+  value the database can now genuinely produce.
+- `tests/spare-request-initiated-role.test.ts` (new, 4 tests).
+
+**Verified in all three directions plus the boundary:** Executive → `EXECUTIVE`,
+Manager → `MANAGER` (the regression this fixes), non-staff → `TECHNICIAN`; and
+the §3.3 ₹12,000 approval boundary re-verified unaffected
+(`requires_manager_approval: true` at ₹15,000 regardless of initiator).
+
+**Checks:** `tsc`, `lint`, `build` clean; `"use client"` re-scan across 36 files
+clean; function arity unchanged after the fix (one overload, 5 args).

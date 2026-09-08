@@ -90,6 +90,17 @@ Current gate: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was
   graph untouched; zero orphans across eight probes; the 24h window guard
   NOT weakened (one-time migration 0046, no new callable function left
   behind). See BACKLOG_CLEANUP_REPORT.md and APPROVAL_REPORT_LOOP_41_45.md.
+  Loop 46 (first Type-A loop, Boss said "Type A start karo") swept every
+  trigger (1, correctly scoped) and every CHECK constraint (24) in the
+  schema. RISK-31: spare_requests.initiated_role collapsed
+  MAINTENANCE_MANAGER into 'EXECUTIVE' because is_staff() is true for both
+  locked roles - proven live (a Manager's own spare request displayed as
+  "Requested by executive"). Not a security defect (approval routing uses
+  estimated_amount vs the ₹12,000 boundary, independent of this field) but
+  a real §16.3/§29 audit-trail accuracy bug. Fixed by deriving the label
+  from current_staff_role() (already existed, never used here); the TS
+  union type was also missing "MANAGER" and was corrected. See
+  LOOP_46_REPORT.md.
 
 Items that need the Boss and are NOT loop work — none has been guessed at:
   1. QC identities — ANSWERED. The QC login name comes from the Quality

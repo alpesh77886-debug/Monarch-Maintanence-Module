@@ -300,7 +300,7 @@ export interface SpareRequest {
   spare_name: string;
   quantity_requested: number;
   initiated_by: string;
-  initiated_role: "TECHNICIAN" | "EXECUTIVE";
+  initiated_role: "TECHNICIAN" | "EXECUTIVE" | "MANAGER";
   requested_at: string;
   estimated_amount: number | null;
   requires_manager_approval: boolean;
