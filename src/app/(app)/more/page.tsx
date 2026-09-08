@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { EmptyState } from "@/components/ui";
 
 // Loop 63 (Prompt §6, nav relabel): the bottom tab bar only has 5 slots
 // (Cases/Control/PM/Spares/More per the mockup's own in-app tab bar).
@@ -31,11 +32,7 @@ export default async function MorePage() {
     .maybeSingle();
 
   if (!isStaffRow) {
-    return (
-      <p className="rounded-lg border border-dashed border-line2 p-6 text-center text-sm text-muted">
-        More is visible to Maintenance staff only.
-      </p>
-    );
+    return <EmptyState title="More is visible to Maintenance staff only." />;
   }
 
   return (

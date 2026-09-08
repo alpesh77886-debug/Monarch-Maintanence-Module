@@ -197,3 +197,56 @@ export function Card({
     </div>
   );
 }
+
+// Loop 67 (design-system primitives, Prompt §44 "Performance/perceived
+// performance"): a plain pulsing block, the one building block every
+// route's loading.tsx composes into a shape matching that route's real
+// content (a list of cards, a header line, etc.) — never a generic spinner,
+// which the Prompt explicitly treats as the weaker signal since it can't
+// hint at the coming layout.
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-lg bg-white/[0.06] ${className}`.trim()} />;
+}
+
+// A skeleton shaped like one of this app's list-row Cards (case/spare/PM
+// row) — every route's loading.tsx composes N of these rather than
+// hand-drawing bars, so the loading shape always matches the Card it is
+// standing in for.
+export function SkeletonCard({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-xl border border-line2 bg-card p-4 ${className}`.trim()}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-4 w-16 rounded-full" />
+      </div>
+      <Skeleton className="mt-3 h-4 w-3/4" />
+      <Skeleton className="mt-2 h-3 w-1/2" />
+    </div>
+  );
+}
+
+// Loop 67: the one dashed-border "nothing here" notice every list page
+// (Spares/Emergency/My Work/More/PM, and the staff-only gates on each) was
+// already converging on independently, with small drifts in padding/radius
+// between them. One shared component so that drift stops happening and any
+// future visual change to it happens once.
+export function EmptyState({
+  title,
+  hint,
+  className = "",
+}: {
+  title: string;
+  hint?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-xl border border-dashed border-line2 p-8 text-center ${className}`.trim()}
+    >
+      <p className="text-sm text-muted">{title}</p>
+      {hint && <p className="mt-1 text-xs text-muted2">{hint}</p>}
+    </div>
+  );
+}

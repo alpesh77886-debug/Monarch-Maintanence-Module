@@ -1,6 +1,23 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 66 complete - Boss said "start loop 66 to 70",
+Current loop: Loop 67 complete - design-system primitives + propagation.
+  Added three shared primitives to src/components/ui.tsx: Skeleton (a
+  plain pulsing block), SkeletonCard (a Skeleton composition shaped like
+  this app's list-row Card, for loading.tsx files to compose N of), and
+  EmptyState (title + optional hint, the one dashed-border "nothing
+  here" notice that Spares/Emergency/My Work/More/PM were each already
+  drifting slightly on independently - now one shared source). Added
+  Next.js route-level loading.tsx (shown automatically while each async
+  server component fetches) to /pm, /spares, /emergency, /my-work,
+  /more - shape-matched skeletons instead of a blank screen or generic
+  spinner, per the Prompt's perceived-performance guidance. Replaced
+  every ad hoc empty-state <p> and staff-only-gate notice on those five
+  pages with <EmptyState>. Pure presentation-layer change - zero
+  business logic, zero data-fetching, zero RLS/authz touched. Verified
+  via the Loop 53 throwaway-route technique (route + proxy bypass, both
+  reverted before commit) at mobile viewport - skeleton cards and both
+  empty-state variants render correctly. tsc/eslint/build clean.
+Previously: Loop 66 complete - Boss said "start loop 66 to 70",
   closing Gate 13. Rebuilt cases/new/page.tsx from one flat form into a
   4-step progressive flow (Prompt section 13): What happened? (case
   type + symptom) -> Where? (area/line/shift) -> Anything else?
