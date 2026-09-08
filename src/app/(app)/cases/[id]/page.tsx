@@ -273,42 +273,59 @@ export default async function CaseDetailPage({
     Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
   );
 
+  // Loop 52 (Sarvam DR-04 "sticky primary action"): pulled out of the
+  // Overview tab so it's reachable from ANY tab without switching back —
+  // "the next lifecycle step always one thumb-tap away," per Sarvam's own
+  // wording. `sticky bottom-20` pins it just above the fixed mobile bottom
+  // nav (app-nav.tsx) once you've scrolled past it, using the same 5rem
+  // clearance `(app)/layout.tsx`'s <main> already reserves for that nav
+  // bar (`pb-20`) — no new offset invented, reusing an already-established
+  // safe zone. `md:static` drops the pinning on desktop, where the row
+  // already sits in view without needing to follow scroll. Not
+  // live-render-verified against a real device (RISK-05, see
+  // LOOP_51_REPORT.md) — the one piece of this loop's UI work that
+  // couldn't be screenshotted, flagged rather than assumed correct.
+  const primaryActions = (
+    <div className="sticky bottom-20 z-10 flex flex-wrap gap-2 rounded-xl border border-line2 bg-card/95 p-3 shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+      {canAcknowledge && (
+        <ActionSheetTrigger label="Acknowledge" sheetTitle="Acknowledge Case" variant="primary">
+          <AcknowledgeForm caseId={caseRow.id} />
+        </ActionSheetTrigger>
+      )}
+      {/* Loop 39 (RISK-27): acknowledging assigns ownership, so a REPORTED
+          case never needed this. A case that LOSES its owner later did —
+          §22.1's shift-end handover sets the owner to NULL by design when
+          nobody is available. Offered only when Acknowledge is not, so
+          there are never two buttons doing the same thing. */}
+      {canTakeOwnership && <TakeOwnershipButton caseId={caseRow.id} />}
+      {canMarkDuplicate && (
+        <ActionSheetTrigger label="Mark Duplicate" sheetTitle="Mark as Duplicate">
+          <MarkDuplicateForm caseId={caseRow.id} />
+        </ActionSheetTrigger>
+      )}
+      {canCloseFalseComplaint && (
+        <ActionSheetTrigger label="Not a real issue?" sheetTitle="Close False Complaint">
+          <CloseFalseComplaintForm caseId={caseRow.id} />
+        </ActionSheetTrigger>
+      )}
+      {isStaffRow && !caseIsTerminal && (
+        <ActionSheetTrigger label="Hand Over" sheetTitle="Hand Over Case">
+          <HandoverForm
+            caseId={caseRow.id}
+            staff={(staffList ?? []) as StaffMember[]}
+            currentOwnerId={caseRow.current_owner_user_id}
+          />
+        </ActionSheetTrigger>
+      )}
+    </div>
+  );
+  const hasPrimaryAction =
+    canAcknowledge || canTakeOwnership || canMarkDuplicate || canCloseFalseComplaint || (isStaffRow && !caseIsTerminal);
+
   const overviewTab = (
     <div className="flex flex-col gap-4">
       {escalationBanner}
       {emergencyPanel}
-      <div className="flex flex-wrap gap-2">
-        {canAcknowledge && (
-          <ActionSheetTrigger label="Acknowledge" sheetTitle="Acknowledge Case" variant="primary">
-            <AcknowledgeForm caseId={caseRow.id} />
-          </ActionSheetTrigger>
-        )}
-        {/* Loop 39 (RISK-27): acknowledging assigns ownership, so a REPORTED
-            case never needed this. A case that LOSES its owner later did —
-            §22.1's shift-end handover sets the owner to NULL by design when
-            nobody is available. Offered only when Acknowledge is not, so
-            there are never two buttons doing the same thing. */}
-        {canTakeOwnership && <TakeOwnershipButton caseId={caseRow.id} />}
-        {canMarkDuplicate && (
-          <ActionSheetTrigger label="Mark Duplicate" sheetTitle="Mark as Duplicate">
-            <MarkDuplicateForm caseId={caseRow.id} />
-          </ActionSheetTrigger>
-        )}
-        {canCloseFalseComplaint && (
-          <ActionSheetTrigger label="Not a real issue?" sheetTitle="Close False Complaint">
-            <CloseFalseComplaintForm caseId={caseRow.id} />
-          </ActionSheetTrigger>
-        )}
-        {isStaffRow && !caseIsTerminal && (
-          <ActionSheetTrigger label="Hand Over" sheetTitle="Hand Over Case">
-            <HandoverForm
-              caseId={caseRow.id}
-              staff={(staffList ?? []) as StaffMember[]}
-              currentOwnerId={caseRow.current_owner_user_id}
-            />
-          </ActionSheetTrigger>
-        )}
-      </div>
       {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
       {isStaffRow && (
         <PriorityPanel
@@ -554,6 +571,8 @@ export default async function CaseDetailPage({
           )}
         </Card>
       </div>
+
+      {hasPrimaryAction && primaryActions}
 
       <CaseDetailTabs
         tabs={{

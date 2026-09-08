@@ -1,6 +1,11 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 51 in progress (Boss: "loop 51 se loop 55 tak complete
+Current loop: Loop 52 complete - sticky mobile primary action (Sarvam
+  DR-04) pulled out of Overview tab, reachable from any tab now; KPI page
+  Group sections wrapped in a card shell. Sticky-bar positioning could not
+  be live-verified (RISK-05) - flagged as elevated-risk, not claimed as
+  done-and-confirmed. See LOOP_52_REPORT.md.
+Previously: Loop 51 in progress (Boss: "loop 51 se loop 55 tak complete
   karo...mujhe design complete ka msg chahiye" - explicit continuation past
   Gate 10). Case Detail (cases/[id]/page.tsx) restructured from one
   550-line unconditional-scroll page into Sarvam's own proposed local-nav

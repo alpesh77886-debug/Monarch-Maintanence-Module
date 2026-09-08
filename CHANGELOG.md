@@ -4378,3 +4378,38 @@ still untouched; zero RPCs/migrations/RLS changed.
 boundary re-scan (hooks-have-directive, plus this loop's addition —
 every `"use client"` file has a single default export or type-only extra
 exports) run repo-wide, clean.
+
+## Loop 52 — 2026-09-08
+
+**Summary:** Sticky mobile primary action (Sarvam DR-04) + KPI card
+grouping. Small, targeted loop — checked PM and Recurrence-rules pages
+first and found them already consistent with the reference-app card-list
+convention from Loop 50's token sweep, so no changes made there;
+diminishing-returns polish was deliberately skipped in favour of the two
+places with a genuine, identifiable gap.
+
+**Sticky primary action:** the primary action-buttons row (Acknowledge /
+Take Ownership / Mark Duplicate / Close False Complaint / Hand Over) was
+pulled out of the Overview tab entirely and now renders once at the page
+level, above the tab bar — reachable from any tab without switching back
+to Overview, matching Sarvam's own DR-04 wording ("the next lifecycle
+step always one thumb-tap away"), not just its visual effect.
+`sticky bottom-20 ... md:static` reuses the exact clearance
+`(app)/layout.tsx`'s `<main>` already reserves for the fixed mobile
+bottom nav (`pb-20`) — no new offset invented. **Honestly flagged as the
+one piece of this loop that couldn't be live-verified**: `tsc`/`eslint`/
+`next build` confirm it compiles, but whether it actually clears the
+bottom nav and reads cleanly on a real phone-width viewport needs a live
+render this sandbox can't produce (RISK-05) — recorded as elevated-risk,
+not claimed as confirmed-correct.
+
+**KPI page:** `Group` sections (Restoration & Execution, Production
+Impact, etc.) were a bare heading over a metrics grid with no container;
+wrapped in a card shell matching the reference apps' grouped-content
+convention. Inner `Metric` tiles moved from `bg-card` to `bg-bg2` so they
+read as their own layer against the now-`bg-card` parent instead of
+blending into it. Pure container/token change — every metric's
+computation, coverage line, and "no data" handling untouched.
+
+`tsc --noEmit`/`eslint`/`next build` all clean. No RPC, migration, or RLS
+surface touched.
