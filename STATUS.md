@@ -77,9 +77,14 @@ Current gate: **GATE 9 (Loops 41-45) AWAITING BOSS.** Autonomous loop
   batch. Loop 45 added RISK-30: evidence could be attached to ANY case by
   ANY signed-in user, including one who could not read that case - proven
   live, then fixed by making INSERT scope match SELECT scope via
-  can_read_case(). Two deletions await a yes: the 8 leaked e2e cases, and
-  the backlog of 484 pm_plans + 183 recurrence_rules + 4,175 dangling audit
-  rows. See APPROVAL_REPORT_LOOP_41_45.md.
+  can_read_case(). Both deletions are now DONE (Boss approved
+  conditional on no harm): 8 e2e cases -> 0, pm_plans 489 -> 0,
+  recurrence_rules 183 -> 0, audit_log 5,753 -> 520 with ZERO dangling left,
+  and PM_OVERDUE generators 183 -> 0 so the alert time-bomb is defused. Zero
+  non-synthetic rows deleted; staff, auth.users and the 26-edge lifecycle
+  graph untouched; zero orphans across eight probes; the 24h window guard
+  NOT weakened (one-time migration 0046, no new callable function left
+  behind). See BACKLOG_CLEANUP_REPORT.md and APPROVAL_REPORT_LOOP_41_45.md.
 
 Items that need the Boss and are NOT loop work — none has been guessed at:
   1. QC identities — ANSWERED. The QC login name comes from the Quality

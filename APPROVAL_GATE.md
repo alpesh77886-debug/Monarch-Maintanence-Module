@@ -29,16 +29,24 @@ far, and three of them in work reported as complete in the previous batch:
 | 44 | **RISK-29 - schema defaults grant every new object to `anon`** | **HIGH** |
 | 45 | RISK-30 - evidence attachable to any case by any signed-in user | HIGH |
 
-Two questions need you, and both are deletions I have NOT acted on because a
-deletion on an unanswered question is not reversible:
+Both deletions are now ANSWERED and DONE. The Boss said "dono hatao agar usse
+project ko koi nuksan nahi hai to... project safety first", so both were
+removed after every guard was checked, and nothing was forced past a refusal.
+Result in BACKLOG_CLEANUP_REPORT.md:
 
-  A. Delete the 8 leaked e2e cases (prefix-proven synthetic, created before
-     Loop 41's fix)?
-  B. Delete the historical backlog - 484 pm_plans (484/484 synthetic), 183
-     recurrence_rules (183/183), and 4,175 dangling audit rows? The
-     time-sensitive part is the 182 RECURRING plans: in 2-4 weeks the hourly
-     PM scan starts firing PM_OVERDUE alerts at a real Manager for
-     maintenance that does not exist.
+  A. 8 leaked e2e cases -> 0, via the guarded cleanup_synthetic_cases
+     (requested 8, deleted 8).
+  B. pm_plans 489 -> 0, pm_instances 3 -> 0, recurrence_rules 183 -> 0,
+     audit_log 5,753 -> 520 with 4,177 dangling rows removed and ZERO
+     dangling left. PM_OVERDUE generators 183 -> 0, so the alert time-bomb
+     is fully defused.
+
+  Non-synthetic rows deleted: ZERO. staff (2), auth.users (4) and the
+  26-edge locked lifecycle graph untouched. Zero orphans across eight
+  probes. The 24h window guard was NOT weakened - the work was done once in
+  0046 and left no new callable function behind. Case MC-000428 was
+  deliberately left alone: it was in neither approved list, and it is
+  harmless once its PM plan is gone.
 
 Still open from earlier gates:
   1. QC identities - ANSWERED (comes from the Quality module at integration).

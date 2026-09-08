@@ -3969,3 +3969,70 @@ to another user) is refused. All probe rows and the probe case removed.
 §19.13. Two deletions await an explicit yes and have NOT been acted on: the 8
 leaked e2e cases, and the historical backlog of 484 pm_plans + 183
 recurrence_rules + 4,175 dangling audit rows.
+
+## Boss-approved backlog cleanup — 2026-09-08
+
+**Summary:** The Boss answered the two open deletions with "dono hatao agar usse
+project ko koi nuksan nahi hai to... project safety first." Both removed, every
+guard checked first, nothing forced past a refusal. Full evidence in
+`BACKLOG_CLEANUP_REPORT.md`.
+
+**Result:**
+
+| | Before | After |
+|---|---|---|
+| Leaked e2e cases | 8 | **0** |
+| `pm_plans` | 489 | **0** |
+| `pm_instances` | 3 | **0** |
+| `recurrence_rules` | 183 | **0** |
+| `audit_log` | 5,753 | **520** |
+| Dangling audit rows | 4,177 | **0** |
+| PM_OVERDUE generators | 183 | **0** |
+| `staff` / `auth.users` / lifecycle edges | 2 / 4 / 26 | **2 / 4 / 26** |
+
+**Non-synthetic rows deleted: zero.** Verified before running — cases, pm_plans
+and recurrence_rules each had 0 rows without the `[AUTOTEST` prefix — and the
+migration aborts the whole transaction if that is ever untrue.
+
+**Material changes:**
+- `supabase/migrations/0046_maintenance_backlog_cleanup_one_time.sql` — a
+  one-time, fully guarded DO block. **The 24h window guard was NOT weakened:**
+  `cleanup_test_cases_since` / `cleanup_test_artifacts_since` both refuse a
+  window over 24h by design and this backlog dates from 2026-09-06, so rather
+  than relax that limit — which would permanently weaken the guard protecting
+  every future run — the work was done once, here, where it is auditable, and
+  **no new callable function was left behind**.
+- The 8 e2e cases went through the existing guarded `cleanup_synthetic_cases`
+  (`requested 8, deleted 8`), which re-checks every guard for itself.
+
+**The one plan that tripped a guard:** `[AUTOTEST] Monthly lube check` —
+RECURRING, 30-day, with an instance linked to case MC-000428. The guard exists so
+a surviving REAL case never silently loses its PM linkage; here both ends were
+provably synthetic (MC-000428 is `[AUTOTEST] PM instance case`, no duplicate
+pointing at it, no recurrence flag referencing it), so the chain was removed and
+the migration aborts if that case had turned out to be real. **It was the last
+remaining PM_OVERDUE generator** — leaving it would have kept notifying a real
+Manager every 30 days about maintenance that does not exist.
+
+**Deliberately NOT deleted:** case MC-000428 itself. The Boss approved two things
+— the 8 e2e cases and the backlog (plans, rules, audit rows) — and this case is in
+neither list. It is harmless once its plan is gone, because a case generates no
+notifications by itself.
+
+**Append-only history respected:** every audit row removed named a `target_table`
+that exists and a `target_id` whose subject had ALREADY ceased to exist. Each
+table is checked against ITSELF by name; an unrecognised table is skipped, never
+guessed at. All 520 surviving rows point at a live subject.
+
+**Zero orphans** across eight probes (audit, pm_instances, recurrence_flags,
+evidence, case_events, notifications, case_assignments, waits).
+
+**The app still works — checked, not assumed.** An empty `pm_plans` /
+`recurrence_rules` is a state the code had never seen: all three cron scans run
+clean on empty tables; a case can be created and acknowledged with events and
+audit rows written (2 and 2); a Manager can create a PM plan and a recurrence
+rule, repopulating from empty; and the teardown removed the smoke fixtures. One
+refusal during smoke-testing was correct behaviour, not a defect —
+`create_pm_plan` as the Executive returned `FORBIDDEN: only Maintenance Manager
+may create a special/one-time PM plan (§17.2)`; wrong identity on my part, and
+§17.2 enforcing itself. Re-run as the Manager, it succeeded.
