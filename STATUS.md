@@ -1,6 +1,12 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 48 complete. Gate 9 APPROVED, SCOPED to Type A. A Boss-directed
+Current loop: Loop 48 complete. All three Boss-approved Type A items
+  (A1 triggers/constraints sweep, A2 Vercel/Sentry audit, A3 mobile-first
+  UX pass) are now delivered and merged (PRs #48/#49/#50). NOT continuing
+  to Loop 49-50 by inventing filler work now that the approved scope is
+  exhausted - see TYPE_A_COMPLETION_REPORT.md. AWAITING BOSS for either
+  new scope, a Type B decision, or the promised Sarvam HTML.
+Gate 9 APPROVED, SCOPED to Type A. A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
