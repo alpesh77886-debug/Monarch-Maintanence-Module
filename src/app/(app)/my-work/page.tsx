@@ -4,11 +4,16 @@ import type { MaintenanceCase } from "@/lib/supabase/database.types";
 import { StatusBadge, Badge } from "@/components/ui";
 
 // Loop 62 (Prompt §47 "My Work" module): cases currently owned by the
-// signed-in user. A minimal real landing page — Loop 63 folds this into the
-// relabeled bottom nav; this loop only makes sure the Hub tile lands
-// somewhere real, per the mockup's own "every destination must map to a
-// real route" rule.
+// signed-in user. Loop 63 adds age display, matching the dashboard's own
+// convention (§25.2's duration measures) — real elapsed time, not a
+// fabricated SLA/overdue state (no case-level SLA exists in the locked pack).
 const TERMINAL = ["CLOSED", "REJECTED", "DUPLICATE"];
+
+function formatAge(iso: string): string {
+  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
 
 export default async function MyWorkPage() {
   const supabase = await createClient();
@@ -52,7 +57,10 @@ export default async function MyWorkPage() {
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-xs text-muted">{c.case_number}</span>
-                <StatusBadge status={c.status} />
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-xs text-muted">{formatAge(c.created_at)}</span>
+                  <StatusBadge status={c.status} />
+                </div>
               </div>
               <p className="mt-1.5 text-sm font-medium text-fg">
                 {c.major_complex_flag && (
