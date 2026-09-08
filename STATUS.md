@@ -1,6 +1,19 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 63 complete - relabeled AppNav's bottom tab bar to
+Current loop: Loop 64 complete - rebuilt cases/page.tsx from a plain
+  .map() list into a work queue (Prompt section 8, mockup Screen 003):
+  search box (plain GET form, no client JS, filters in JS after fetch
+  rather than a PostgREST .or() string - a symptom can legitimately
+  contain a comma/parenthesis that would break or-filter syntax),
+  status filter chips with live counts derived from what's actually
+  present in the data (never hardcoded), urgency-first sort (active
+  emergency claim first, then unassigned, then HIGH priority, ties
+  oldest-first - all real fields, nothing inferred, no case-level SLA
+  exists to sort by instead), age per row, and a FAB replacing the
+  header's "+ Report case" link. tsc/eslint/build clean; checked e2e
+  for anything clicking the old header button or inspecting list
+  markup - none exists.
+Previously: Loop 63 complete - relabeled AppNav's bottom tab bar to
   match the mockup's own in-app tab bar exactly: Cases, Control (was
   "Shift", same /dashboard route, no new screen invented), PM, Spares
   (new, links to Loop 62's /spares), More (new). Recurrence and KPIs
