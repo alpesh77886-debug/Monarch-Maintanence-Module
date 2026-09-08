@@ -50,6 +50,35 @@ export async function cleanupRun(label: string, startedAt: string): Promise<void
       `[cleanup:${label}] removed ${deleted} synthetic case(s)` +
         (tag ? ` tagged ${tag}.` : " created by this run (untagged, window-scoped).")
     );
+
+    // Loop 42 (F-42-1/F-42-2). The case cleanup above walks a case's dependents,
+    // so it never reached pm_plans or recurrence_rules — neither hangs off a
+    // case — and it removed audit rows only for target_table
+    // 'maintenance.cases', leaving every child row's audit entry dangling.
+    // Live counts before this ran: 484/484 pm_plans and 183/183
+    // recurrence_rules synthetic, and 4,175 of 5,659 audit rows (74%) pointing
+    // at ids that no longer existed.
+    //
+    // This runs AFTER the case cleanup on purpose: a run's audit rows only
+    // become sweepable once the case cleanup has removed their subjects.
+    const { data: artifacts, error: artifactError } = await client.rpc(
+      "cleanup_test_artifacts_since",
+      { p_since: startedAt, p_run_tag: tag }
+    );
+    if (artifactError) {
+      console.warn(`[cleanup:${label}] artifact sweep skipped — ${artifactError.message}`);
+      return;
+    }
+    const a = artifacts as {
+      pm_plans_deleted: number;
+      recurrence_rules_deleted: number;
+      dangling_audit_rows_deleted: number;
+    };
+    console.log(
+      `[cleanup:${label}] removed ${a.pm_plans_deleted} PM plan(s), ` +
+        `${a.recurrence_rules_deleted} recurrence rule(s), ` +
+        `${a.dangling_audit_rows_deleted} dangling audit row(s).`
+    );
   } catch (err) {
     console.warn(`[cleanup:${label}] skipped — ${(err as Error).message}`);
   }
