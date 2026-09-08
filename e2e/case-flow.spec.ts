@@ -44,7 +44,10 @@ test("executive can sign in, report a case, acknowledge it, and journal against 
   await expect(page.getByText("Status: REPORTED")).toBeVisible();
 
   // Acknowledge (this is acknowledge_case: ownership + priority + status, and
-  // since Loop 7 also a notification to the reporter).
+  // since Loop 7 also a notification to the reporter). Since Loop 51, this
+  // form opens as a bottom sheet from the sticky primary-action trigger
+  // rather than rendering inline — open it first.
+  await page.getByRole("button", { name: "Acknowledge", exact: true }).click();
   await expect(page.getByText("Acknowledge this case")).toBeVisible();
   await page.locator("form select").first().selectOption("HIGH");
   await page
@@ -55,7 +58,9 @@ test("executive can sign in, report a case, acknowledge it, and journal against 
   await expect(page.getByText("Status: ACKNOWLEDGED")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Priority: HIGH")).toBeVisible();
 
-  // Journal entry (§24 Observation + Action Continuity Journal).
+  // Journal entry (§24 Observation + Action Continuity Journal). Since
+  // Loop 51 this panel lives in the Journal tab, not the default Overview.
+  await page.getByRole("tab", { name: "Journal" }).click();
   const observation = "Motor casing hot to touch, unusual noise";
   await page.getByText("+ Add observation / action entry").click();
   await page.locator('label:has-text("Observation") textarea').fill(observation);
@@ -64,7 +69,8 @@ test("executive can sign in, report a case, acknowledge it, and journal against 
 
   // Audit trail must show the acknowledgement transition — append-only
   // history is a locked requirement (§27), so it has to be visible, not just
-  // stored.
+  // stored. Since Loop 51 this lives in the Audit tab.
+  await page.getByRole("tab", { name: "Audit" }).click();
   await expect(page.getByText(/REPORTED → ACKNOWLEDGED/)).toBeVisible();
 
   expect(errors, `browser errors during case flow:\n${errors.join("\n")}`).toEqual([]);
