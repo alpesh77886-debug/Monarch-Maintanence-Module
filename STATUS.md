@@ -101,6 +101,17 @@ Current gate: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was
   from current_staff_role() (already existed, never used here); the TS
   union type was also missing "MANAGER" and was corrected. See
   LOOP_46_REPORT.md.
+  Loop 47 swept the deployed runtime config for the first time (Vercel +
+  Sentry) - no prior loop had. Vercel: deployment protection is off,
+  judged safe because the app's boundary is Supabase auth + RLS, not
+  network access control; the GitHub repo is public (reported for the
+  Boss, not changed); env vars are exactly the two correctly-public
+  Supabase values, no secret anywhere in src/. Sentry: 2 "unresolved"
+  issues, both confirmed stale (127.0.0.1:3100, a GitHub Actions runner,
+  0 users impacted) - the Loop 16 use-client boundary defect, fixed
+  same-day two days earlier and absent from the source tree since. Both
+  resolved in Sentry with the root-cause chain recorded. No code change
+  this loop. See LOOP_47_REPORT.md.
 
 Items that need the Boss and are NOT loop work — none has been guessed at:
   1. QC identities — ANSWERED. The QC login name comes from the Quality
