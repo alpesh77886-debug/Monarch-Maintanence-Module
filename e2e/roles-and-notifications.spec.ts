@@ -30,8 +30,8 @@ test("staff see the PM surface and a Manager can approve a recurring plan (§17.
   await expect(page.getByRole("heading", { name: "Preventive Maintenance" })).toBeVisible();
 
   const title = e2eSymptom("monthly lube check");
-  await page.locator('input[placeholder="Title"]').fill(title);
-  await page.locator('input[placeholder="Frequency (days)"]').fill("30");
+  await page.getByLabel("Title").fill(title);
+  await page.getByLabel("Frequency (days)").fill("30");
   await page.getByRole("button", { name: "Create plan" }).click();
 
   // A freshly proposed RECURRING plan must show as awaiting approval —
@@ -104,9 +104,9 @@ test("spare request over ₹12,000 shows as needing Manager approval (§3.3)", a
   // Since Loop 51 the spare-request form lives in the Spares tab, not the
   // default Overview tab.
   await page.getByRole("tab", { name: "Spares" }).click();
-  await page.locator('input[placeholder="Spare name"]').fill("Gearbox assembly");
-  await page.locator('input[placeholder="Quantity"]').first().fill("1");
-  await page.locator('input[placeholder="Estimated amount (₹, optional)"]').fill("25000");
+  await page.getByLabel("Spare name").fill("Gearbox assembly");
+  await page.getByLabel("Quantity").first().fill("1");
+  await page.getByLabel("Estimated amount").fill("25000");
   await page.getByRole("button", { name: "Raise request" }).click();
 
   // The threshold decision is server-side; the UI must show the resulting

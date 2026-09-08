@@ -1,6 +1,19 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 68 complete - forms-standardization sweep (Prompt §37:
+Current loop: PR #67 CI fix - Loop 68's forms sweep removed the
+  placeholder attribute from several fields (moving that text into a
+  real <label>), and 3 e2e tests were still locating those fields by
+  their old placeholder string (input[placeholder="Title"] etc.) - this
+  is exactly the regression risk flagged before the PR was opened, and
+  it landed for real. Fixed e2e/case-flow.spec.ts and e2e/roles-and-
+  notifications.spec.ts to use page.getByLabel(...) instead, matching
+  FormField's real (wrapping-<label>) structure. Did not just guess -
+  built a throwaway preview page with the exact FormField usages
+  involved and ran a real Playwright script against it confirming all
+  6 getByLabel(...) calls actually locate and fill the right field
+  before pushing. tsc/eslint clean; preview route + proxy bypass
+  deleted/reverted before commit.
+Previously: Loop 68 complete - forms-standardization sweep (Prompt §37:
   Title -> Why/Context -> Field -> Helper -> Validation -> Primary Action
   -> Secondary/Cancel). Added FormField to src/components/ui.tsx (label
   above control, a visible required asterisk, optional helper text below
