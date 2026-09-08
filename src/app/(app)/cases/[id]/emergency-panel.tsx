@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §6: emergency is TWO-STEP — reporter/staff claim, then Executive/Manager
 // confirm. Only confirm_emergency starts the 1h clock (§7.3); there is no
@@ -105,13 +105,14 @@ export default function EmergencyPanel({
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-line bg-card p-3">
       <p className="text-sm font-medium text-fg">Claim Emergency / Safety-Critical</p>
-      <textarea
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason/evidence for the emergency claim"
-        className="rounded-lg border border-line2 p-2 text-sm"
-        rows={2}
-      />
+      <FormField label="Reason / evidence" required>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="w-full rounded-lg border border-line2 p-2 text-sm"
+          rows={2}
+        />
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button variant="danger" className="self-start" onClick={claim} disabled={submitting}>
         Claim Emergency

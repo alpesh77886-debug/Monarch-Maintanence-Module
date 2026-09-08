@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { RecurrenceFlag, CapaLink, StaffMember } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §18 recurrence + §19 CAPA.
 //
@@ -116,14 +116,15 @@ export default function RecurrenceCapaPanel({
                       Manager decides — the system does not confirm recurrence and
                       has not proposed a cause.
                     </p>
-                    <input
-                      value={decisionReason[f.id] ?? ""}
-                      onChange={(e) =>
-                        setDecisionReason({ ...decisionReason, [f.id]: e.target.value })
-                      }
-                      placeholder="Reason for confirming or dismissing (required)"
-                      className="rounded-lg border border-line2 p-1.5 text-sm"
-                    />
+                    <FormField label="Reason for confirming or dismissing" required>
+                      <input
+                        value={decisionReason[f.id] ?? ""}
+                        onChange={(e) =>
+                          setDecisionReason({ ...decisionReason, [f.id]: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+                      />
+                    </FormField>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -178,14 +179,15 @@ export default function RecurrenceCapaPanel({
                       </p>
                     ) : (
                       <div className="flex flex-col gap-1">
-                        <input
-                          value={rootCause[f.id] ?? ""}
-                          onChange={(e) =>
-                            setRootCause({ ...rootCause, [f.id]: e.target.value })
-                          }
-                          placeholder="Root cause, in your own words"
-                          className="rounded-lg border border-line2 p-1.5 text-sm"
-                        />
+                        <FormField label="Root cause" required hint="In your own words.">
+                          <input
+                            value={rootCause[f.id] ?? ""}
+                            onChange={(e) =>
+                              setRootCause({ ...rootCause, [f.id]: e.target.value })
+                            }
+                            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+                          />
+                        </FormField>
                         <Button
                           variant="secondary"
                           size="sm"
@@ -255,14 +257,15 @@ export default function RecurrenceCapaPanel({
                 {c.status === "OPEN" &&
                   (isManager ? (
                     <div className="mt-2 flex flex-col gap-1">
-                      <input
-                        value={verifyNote[c.id] ?? ""}
-                        onChange={(e) =>
-                          setVerifyNote({ ...verifyNote, [c.id]: e.target.value })
-                        }
-                        placeholder="Evidence for this verification (required)"
-                        className="rounded-lg border border-line2 p-1.5 text-sm"
-                      />
+                      <FormField label="Evidence for this verification" required>
+                        <input
+                          value={verifyNote[c.id] ?? ""}
+                          onChange={(e) =>
+                            setVerifyNote({ ...verifyNote, [c.id]: e.target.value })
+                          }
+                          className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+                        />
+                      </FormField>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -306,30 +309,35 @@ export default function RecurrenceCapaPanel({
         )}
 
         <div className="mt-2 flex flex-col gap-1">
-          <input
-            value={capaTitle}
-            onChange={(e) => setCapaTitle(e.target.value)}
-            placeholder="Raise a CAPA — title"
-            className="rounded-lg border border-line2 p-1.5 text-sm"
-          />
-          <input
-            value={capaAction}
-            onChange={(e) => setCapaAction(e.target.value)}
-            placeholder="Corrective action (optional)"
-            className="rounded-lg border border-line2 p-1.5 text-sm"
-          />
-          <select
-            value={capaOwner}
-            onChange={(e) => setCapaOwner(e.target.value)}
-            className="rounded-lg border border-line2 p-1.5 text-sm"
-          >
-            <option value="">Owner — Maintenance Manager…</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.full_name}
-              </option>
-            ))}
-          </select>
+          <p className="text-xs font-medium text-fg">Raise a CAPA</p>
+          <FormField label="Title" required>
+            <input
+              value={capaTitle}
+              onChange={(e) => setCapaTitle(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+            />
+          </FormField>
+          <FormField label="Corrective action">
+            <input
+              value={capaAction}
+              onChange={(e) => setCapaAction(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+            />
+          </FormField>
+          <FormField label="Owner">
+            <select
+              value={capaOwner}
+              onChange={(e) => setCapaOwner(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+            >
+              <option value="">Maintenance Manager…</option>
+              {managers.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.full_name}
+                </option>
+              ))}
+            </select>
+          </FormField>
           {/* Only Managers are listed because §19 fixes CAPA ownership there;
               raise_capa re-checks it server-side regardless. */}
           <Button

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { SafetyStop, ProductionBoundaryEvent } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §13 production restart boundary. Nothing in this panel authorises or blocks
 // a line start — Maintenance must not become Production's line-start
@@ -70,12 +70,13 @@ export default function ProductionBoundaryPanel({
             {activeStop.machine_ref ? ` · ${activeStop.machine_ref}` : ""}
             {activeStop.line_ref ? ` · ${activeStop.line_ref}` : ""}
           </p>
-          <input
-            value={liftReason}
-            onChange={(e) => setLiftReason(e.target.value)}
-            placeholder="Reason for lifting the stop"
-            className="rounded-lg border border-bad/25 p-2 text-sm"
-          />
+          <FormField label="Reason for lifting the stop" required labelClassName="text-red-300">
+            <input
+              value={liftReason}
+              onChange={(e) => setLiftReason(e.target.value)}
+              className="w-full rounded-lg border border-bad/25 p-2 text-sm"
+            />
+          </FormField>
           <Button
             variant="danger"
             className="self-start"
@@ -97,33 +98,38 @@ export default function ProductionBoundaryPanel({
             Raise a Maintenance safety / technical stop
           </p>
           <div className="flex gap-2">
-            <select
-              value={stopType}
-              onChange={(e) => setStopType(e.target.value as "SAFETY" | "TECHNICAL")}
-              className="rounded-lg border border-line2 p-2 text-sm"
-            >
-              <option value="SAFETY">Safety</option>
-              <option value="TECHNICAL">Technical</option>
-            </select>
-            <input
-              value={machineRef}
-              onChange={(e) => setMachineRef(e.target.value)}
-              placeholder="Machine ref"
-              className="w-32 rounded-lg border border-line2 p-2 text-sm"
-            />
-            <input
-              value={lineRef}
-              onChange={(e) => setLineRef(e.target.value)}
-              placeholder="Line ref"
-              className="w-28 rounded-lg border border-line2 p-2 text-sm"
-            />
+            <FormField label="Stop type">
+              <select
+                value={stopType}
+                onChange={(e) => setStopType(e.target.value as "SAFETY" | "TECHNICAL")}
+                className="w-full rounded-lg border border-line2 p-2 text-sm"
+              >
+                <option value="SAFETY">Safety</option>
+                <option value="TECHNICAL">Technical</option>
+              </select>
+            </FormField>
+            <FormField label="Machine ref" className="w-32">
+              <input
+                value={machineRef}
+                onChange={(e) => setMachineRef(e.target.value)}
+                className="w-full rounded-lg border border-line2 p-2 text-sm"
+              />
+            </FormField>
+            <FormField label="Line ref" className="w-28">
+              <input
+                value={lineRef}
+                onChange={(e) => setLineRef(e.target.value)}
+                className="w-full rounded-lg border border-line2 p-2 text-sm"
+              />
+            </FormField>
           </div>
-          <input
-            value={stopReason}
-            onChange={(e) => setStopReason(e.target.value)}
-            placeholder="Reason for the stop"
-            className="rounded-lg border border-line2 p-2 text-sm"
-          />
+          <FormField label="Reason for the stop" required>
+            <input
+              value={stopReason}
+              onChange={(e) => setStopReason(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-2 text-sm"
+            />
+          </FormField>
           <Button
             variant="danger"
             className="self-start"
@@ -160,12 +166,13 @@ export default function ProductionBoundaryPanel({
             This records what happened. It does not clear the stop and is not a
             successful-restart event.
           </p>
-          <input
-            value={breachReason}
-            onChange={(e) => setBreachReason(e.target.value)}
-            placeholder="Context — who started it, what was observed"
-            className="rounded-lg border border-line2 p-2 text-sm"
-          />
+          <FormField label="Context" required hint="Who started it, what was observed.">
+            <input
+              value={breachReason}
+              onChange={(e) => setBreachReason(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-2 text-sm"
+            />
+          </FormField>
           <Button
             variant="warning"
             className="self-start"
@@ -192,12 +199,13 @@ export default function ProductionBoundaryPanel({
         <p className="text-xs font-medium text-fg">
           Record: shift ended, production not restarted (§13.2)
         </p>
-        <input
-          value={notRestartedReason}
-          onChange={(e) => setNotRestartedReason(e.target.value)}
-          placeholder="Context — why it did not restart"
-          className="rounded-lg border border-line2 p-2 text-sm"
-        />
+        <FormField label="Context" required hint="Why it did not restart.">
+          <input
+            value={notRestartedReason}
+            onChange={(e) => setNotRestartedReason(e.target.value)}
+            className="w-full rounded-lg border border-line2 p-2 text-sm"
+          />
+        </FormField>
         <Button
           variant="secondary"
           className="self-start"

@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 export default function AssessmentForm({ caseId }: { caseId: string }) {
   const router = useRouter();
@@ -53,15 +53,14 @@ export default function AssessmentForm({ caseId }: { caseId: string }) {
       className="flex flex-col gap-3 rounded-xl border border-brand/25 bg-brand/10 p-4"
     >
       <p className="text-sm font-medium text-sky-300">Confirm assessment</p>
-      <label className="text-sm text-sky-300">
-        Assessment notes (optional)
+      <FormField label="Assessment notes" labelClassName="text-sky-300">
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-lg border border-brand/25 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-brand/25 px-3 py-2 text-base"
         />
-      </label>
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button type="submit" disabled={submitting}>
         {submitting ? "Confirming…" : "Confirm Assessment"}

@@ -1,6 +1,50 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 67 complete - design-system primitives + propagation.
+Current loop: PR #67 CI fix - Loop 68's forms sweep removed the
+  placeholder attribute from several fields (moving that text into a
+  real <label>), and 3 e2e tests were still locating those fields by
+  their old placeholder string (input[placeholder="Title"] etc.) - this
+  is exactly the regression risk flagged before the PR was opened, and
+  it landed for real. Fixed e2e/case-flow.spec.ts and e2e/roles-and-
+  notifications.spec.ts to use page.getByLabel(...) instead, matching
+  FormField's real (wrapping-<label>) structure. Did not just guess -
+  built a throwaway preview page with the exact FormField usages
+  involved and ran a real Playwright script against it confirming all
+  6 getByLabel(...) calls actually locate and fill the right field
+  before pushing. tsc/eslint clean; preview route + proxy bypass
+  deleted/reverted before commit.
+Previously: Loop 68 complete - forms-standardization sweep (Prompt §37:
+  Title -> Why/Context -> Field -> Helper -> Validation -> Primary Action
+  -> Secondary/Cancel). Added FormField to src/components/ui.tsx (label
+  above control, a visible required asterisk, optional helper text below
+  the control) and swept 24 form files onto it. The real finding this
+  loop surfaced: 18 files used a placeholder as a field's ONLY identifier
+  - no <label> at all - which is a direct violation of §37's "no
+  placeholder-only labels" (close-false-complaint-form, mark-duplicate-
+  form, handover-form, qc-panel, priority-panel, ptw-panel, spares-panel,
+  evidence-panel, asset-panel, impact-panel, root-cause-panel, emergency-
+  panel, production-boundary-panel, recurrence-capa-panel, pm/create-
+  plan-form, pm/pm-instance-card, recurrence-rules/create-recurrence-
+  rule-form, plus 6 forms that already had labels but were converted for
+  consistency: acknowledge-form, assessment-form, assign-technician-form,
+  intervention-form, waiting-form, restoration-form, observation-form).
+  Existing placeholder example text (e.g. "e.g. Conveyor Motor 7") was
+  preserved as FormField's hint prop, not deleted - nothing here is
+  invented copy, only real text moved into the right slot. "(required)"/
+  "(optional)" suffixes inside label strings were replaced by the
+  asterisk convention (required = asterisk, unmarked = optional). Two
+  scope calls, both explained in the PR: (1) spares-panel's dense
+  per-row Stores/approval micro-edits kept their compact placeholder-
+  only layout but gained aria-label, rather than a full FormField block
+  that would have broken the list-row density; (2) no "Why/Context" line
+  was added under any form title, since every candidate line would have
+  been restating already-visible field content or, worse, risked
+  reading as an invented operational claim - the titles already state
+  what each form does. Zero business logic, zero RPC/insert payload,
+  zero validation-gate behavior changed - purely label/structure. tsc/
+  eslint/build clean; live-rendered FormField's required-asterisk +
+  hint-text rendering via the Loop 53 throwaway-route technique.
+Previously: Loop 67 complete - design-system primitives + propagation.
   Added three shared primitives to src/components/ui.tsx: Skeleton (a
   plain pulsing block), SkeletonCard (a Skeleton composition shaped like
   this app's list-row Card, for loading.tsx files to compose N of), and

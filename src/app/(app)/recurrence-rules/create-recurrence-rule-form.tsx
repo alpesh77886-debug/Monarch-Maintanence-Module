@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // Loop 23: §18 configuration UI for `create_recurrence_rule` — Manager-only
 // at the RPC layer, so this form is only ever rendered for a Manager (see
@@ -65,46 +65,55 @@ export default function CreateRecurrenceRuleForm() {
         {" "}<code className="rounded bg-bg2 px-1">approval_note</code> is
         mandatory server-side for exactly this reason.
       </p>
-      <input
-        value={tierName}
-        onChange={(e) => setTierName(e.target.value)}
-        placeholder="Evidence tier name (e.g. &quot;Line-level, 30-day&quot;)"
-        className="rounded-lg border border-line2 p-2 text-sm"
-      />
+      <FormField label="Evidence tier name" required hint={'e.g. "Line-level, 30-day".'}>
+        <input
+          value={tierName}
+          onChange={(e) => setTierName(e.target.value)}
+          className="w-full rounded-lg border border-line2 p-2 text-sm"
+        />
+      </FormField>
       <div className="flex gap-2">
-        <select
-          value={matchOn}
-          onChange={(e) => setMatchOn(e.target.value as "ASSET_REF" | "LINE" | "AREA")}
-          className="rounded-lg border border-line2 p-2 text-sm"
-        >
-          <option value="LINE">Match on: Line</option>
-          <option value="AREA">Match on: Area</option>
-          <option value="ASSET_REF">Match on: Asset reference</option>
-        </select>
-        <input
-          type="number"
-          min="2"
-          value={thresholdCount}
-          onChange={(e) => setThresholdCount(e.target.value)}
-          placeholder="Threshold (occurrences, min 2)"
-          className="flex-1 rounded-lg border border-line2 p-2 text-sm"
-        />
-        <input
-          type="number"
-          min="1"
-          value={windowDays}
-          onChange={(e) => setWindowDays(e.target.value)}
-          placeholder="Window (days, min 1)"
-          className="flex-1 rounded-lg border border-line2 p-2 text-sm"
-        />
+        <FormField label="Match on">
+          <select
+            value={matchOn}
+            onChange={(e) => setMatchOn(e.target.value as "ASSET_REF" | "LINE" | "AREA")}
+            className="w-full rounded-lg border border-line2 p-2 text-sm"
+          >
+            <option value="LINE">Line</option>
+            <option value="AREA">Area</option>
+            <option value="ASSET_REF">Asset reference</option>
+          </select>
+        </FormField>
+        <FormField label="Threshold" required hint="Occurrences, min 2." className="flex-1">
+          <input
+            type="number"
+            min="2"
+            value={thresholdCount}
+            onChange={(e) => setThresholdCount(e.target.value)}
+            className="w-full rounded-lg border border-line2 p-2 text-sm"
+          />
+        </FormField>
+        <FormField label="Window" required hint="Days, min 1." className="flex-1">
+          <input
+            type="number"
+            min="1"
+            value={windowDays}
+            onChange={(e) => setWindowDays(e.target.value)}
+            className="w-full rounded-lg border border-line2 p-2 text-sm"
+          />
+        </FormField>
       </div>
-      <textarea
-        value={approvalNote}
-        onChange={(e) => setApprovalNote(e.target.value)}
-        placeholder="Approved basis for this threshold and window (required)"
-        rows={2}
-        className="rounded-lg border border-line2 p-2 text-sm"
-      />
+      <FormField
+        label="Approved basis for this threshold and window"
+        required
+      >
+        <textarea
+          value={approvalNote}
+          onChange={(e) => setApprovalNote(e.target.value)}
+          rows={2}
+          className="w-full rounded-lg border border-line2 p-2 text-sm"
+        />
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button className="self-start" onClick={submit} disabled={submitting || !canSubmit}>
         Create rule

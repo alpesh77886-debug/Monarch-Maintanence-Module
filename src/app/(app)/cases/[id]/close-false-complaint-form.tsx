@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §4.7: the reporting person (not staff) may close a false/wrong complaint
 // with a predefined closure reason, OTHER + explanation where applicable.
@@ -48,25 +48,28 @@ export default function CloseFalseComplaintForm({ caseId }: { caseId: string }) 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
       <p className="text-sm font-medium text-fg">This wasn&apos;t a real issue?</p>
-      <select
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        className="rounded-lg border border-line2 p-2 text-sm"
-      >
-        {PREDEFINED_REASONS.map((r) => (
-          <option key={r.value} value={r.value}>
-            {r.label}
-          </option>
-        ))}
-      </select>
+      <FormField label="Reason">
+        <select
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="rounded-lg border border-line2 p-2 text-sm w-full"
+        >
+          {PREDEFINED_REASONS.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </FormField>
       {reason === "OTHER" && (
-        <textarea
-          value={explanation}
-          onChange={(e) => setExplanation(e.target.value)}
-          placeholder="Explain why"
-          className="rounded-lg border border-line2 p-2 text-sm"
-          rows={2}
-        />
+        <FormField label="Explanation" required>
+          <textarea
+            value={explanation}
+            onChange={(e) => setExplanation(e.target.value)}
+            className="rounded-lg border border-line2 p-2 text-sm w-full"
+            rows={2}
+          />
+        </FormField>
       )}
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button variant="secondary" className="self-start" onClick={submit} disabled={submitting}>

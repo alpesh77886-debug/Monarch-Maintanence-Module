@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 type InternalReason =
   | "REPORTING_MANAGER_APPROVAL_PENDING"
@@ -87,25 +87,28 @@ export default function WaitingForm({ caseId }: { caseId: string }) {
       className="flex flex-col gap-3 rounded-xl border border-warn/25 bg-warn/10 p-4"
     >
       <p className="text-sm font-medium text-amber-300">Enter WAITING</p>
-      <label className="text-sm text-amber-300">
-        Reason type
+      <FormField label="Reason type" labelClassName="text-amber-300">
         <select
           value={reasonType}
           onChange={(e) => setReasonType(e.target.value as "INTERNAL" | "EXTERNAL")}
-          className="mt-1 block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
         >
           <option value="EXTERNAL">EXTERNAL (vendor, another department)</option>
           <option value="INTERNAL">INTERNAL (within Maintenance)</option>
         </select>
-      </label>
+      </FormField>
 
       {reasonType === "INTERNAL" && (
-        <label className="text-sm text-amber-300">
-          Internal dependency (required)
+        <FormField
+          label="Internal dependency"
+          required
+          labelClassName="text-amber-300"
+          hint={`${INTERNAL_REASONS.find((r) => r.value === internalReason)?.hint} Maintenance records this dependency only. It never creates or releases a Purchase Order, and never marks an approval as received — that stays with Purchase and with the approving authority.`}
+        >
           <select
             value={internalReason}
             onChange={(e) => setInternalReason(e.target.value as InternalReason)}
-            className="mt-1 block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
+            className="block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
           >
             {INTERNAL_REASONS.map((r) => (
               <option key={r.value} value={r.value}>
@@ -113,43 +116,36 @@ export default function WaitingForm({ caseId }: { caseId: string }) {
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs text-amber-300">
-            {INTERNAL_REASONS.find((r) => r.value === internalReason)?.hint}
-          </span>
-          <span className="mt-1 block text-xs text-amber-300">
-            Maintenance records this dependency only. It never creates or
-            releases a Purchase Order, and never marks an approval as received —
-            that stays with Purchase and with the approving authority.
-          </span>
-        </label>
+        </FormField>
       )}
 
-      <label className="text-sm text-amber-300">
-        Reason (required)
+      <FormField label="Reason" required labelClassName="text-amber-300">
         <textarea
           required
           value={reasonText}
           onChange={(e) => setReasonText(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-amber-300">
-        Dependency reference (PO number, ticket, etc.)
+      </FormField>
+      <FormField
+        label="Dependency reference"
+        labelClassName="text-amber-300"
+        hint="PO number, ticket, etc."
+      >
         <input
           value={dependencyRef}
           onChange={(e) => setDependencyRef(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-amber-300">
-        Expected resolution info
+      </FormField>
+      <FormField label="Expected resolution info" labelClassName="text-amber-300">
         <input
           value={expectedInfo}
           onChange={(e) => setExpectedInfo(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
         />
-      </label>
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button variant="warning" type="submit" disabled={submitting}>

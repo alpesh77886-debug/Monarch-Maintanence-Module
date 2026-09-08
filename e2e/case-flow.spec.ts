@@ -89,7 +89,7 @@ test("emergency claim/confirm two-step is enforced in the UI (§6)", async ({ pa
   ).toBeVisible();
 
   await page
-    .locator('textarea[placeholder="Reason/evidence for the emergency claim"]')
+    .getByLabel("Reason / evidence")
     .fill("Sparking panel next to operator station");
   await page.getByRole("button", { name: "Claim Emergency" }).click();
 
