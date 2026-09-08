@@ -2,10 +2,18 @@
 
 // §30 mobile-first: the primary nav is a fixed bottom tab bar (thumb-reach,
 // always visible, no menu to open) — the default/primary design, not a
-// shrunk desktop nav. At md: and up an additional left icon-rail appears
-// alongside it as a progressive enhancement for larger screens; the bottom
-// bar keeps working underneath so nothing is designed desktop-first and
-// merely shrunk down (§30's explicit rule).
+// shrunk desktop nav. At lg: and up (>1024px) an additional left icon-rail
+// appears alongside it as a progressive enhancement for larger screens; the
+// bottom bar keeps working underneath so nothing is designed desktop-first
+// and merely shrunk down (§30's explicit rule).
+//
+// Loop 70 (§16 "Responsive Model"): the rail used to switch on at Tailwind's
+// md: (768px), which falls inside the pack's own 641-1024px TABLET range —
+// §16's tablet bullets ask for "more breathing room" and two-column
+// layouts, never a nav rail; only the >1024px desktop bullets mention one.
+// Moved the switch to lg: (1024px) so tablet widths keep the thumb-reach
+// bottom bar (matching §16's own mobile/tablet vs. desktop split) and the
+// rail is a true desktop enhancement, not a mid-tablet one.
 //
 // Loop 50 (§30 visual layer): restyled to the MONARCH design language —
 // frosted "glass chrome" (.chrome-blur, globals.css) and a glowing active
@@ -103,7 +111,7 @@ export default function AppNav() {
   return (
     <>
       <nav
-        className="chrome-blur fixed inset-x-0 bottom-0 z-20 flex border-t border-line md:hidden"
+        className="chrome-blur fixed inset-x-0 bottom-0 z-20 flex border-t border-line lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
       >
@@ -125,7 +133,7 @@ export default function AppNav() {
       </nav>
 
       <nav
-        className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-line bg-bg1 px-3 py-4 md:flex"
+        className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-line bg-bg1 px-3 py-4 lg:flex"
         aria-label="Primary"
       >
         {NAV_ITEMS.map((item) => {

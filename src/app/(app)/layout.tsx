@@ -57,7 +57,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <div className="flex">
         {isStaff && <AppNav />}
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-20 pt-4 md:pb-4">{children}</main>
+        {/* Loop 70 (§16): max-width grows at lg:/xl: so desktop gets the
+            "more information density" the pack asks for instead of a
+            mobile-width column with permanent side padding on a wide
+            screen. pb-20 (bottom-nav clearance) matches AppNav's own
+            lg:hidden switch — the fixed bottom bar keeps needing that
+            clearance through the whole mobile+tablet range. */}
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-20 pt-4 lg:max-w-4xl lg:pb-4 xl:max-w-5xl">
+          {children}
+        </main>
       </div>
     </div>
   );
