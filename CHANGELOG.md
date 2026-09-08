@@ -4413,3 +4413,41 @@ computation, coverage line, and "no data" handling untouched.
 
 `tsc --noEmit`/`eslint`/`next build` all clean. No RPC, migration, or RLS
 surface touched.
+
+## Loop 53 — Forensic sweep on the Loop 51-52 restructure
+
+Ran the Sarvam-mandated 8-category sweep (triggers/constraints, RPC/state-
+transition guards, RLS/grants, client-side state gating, duplicate-submit/
+idempotency, error/rollback paths, mobile responsive behaviour, overall
+verification) against Loop 51-52's tab/sheet/sticky-bar restructure.
+Categories 1-6 confirmed clean by reasoning + grep (no SQL touched, all 15
+gating booleans identical pre/post, Sheet's unmount-on-close resets stale
+form state). One honest, non-blocking finding recorded rather than
+silently dropped: a successful submit inside a sheet doesn't explicitly
+close it — the gating boolean flipping false on `router.refresh()`
+abruptly unmounts the whole sheet (pre-existing behaviour from before
+Loop 51, now manifesting as a modal vanishing instead of an inline box
+disappearing); left for the Boss to weigh rather than patched
+unilaterally, since a real fix means touching every wrapped form.
+
+Category 7 (mobile responsive) previously flagged as reasoning-only in
+Loop 51/52 now has live-render confirmation: added a **local-only, never
+committed** two-line bypass to `proxy.ts` (reverted before continuing —
+confirmed by an empty `git status --short`) to get past the unconditional
+auth-redirect this sandbox otherwise hits (RISK-05, no live Supabase
+session), rendered a dummy-data preview route via Playwright at mobile
+(390×844) and desktop (1280×900) widths, then deleted the throwaway
+route. Confirmed by actual screenshots: the case header/badges/tab bar/
+sticky action row all render correctly at both widths; `ActionSheetTrigger`
+opens as a full-width bottom sheet with grab handle on mobile and a
+centered modal on desktop, matching the intended `sm:` breakpoint switch;
+Escape closes the sheet and returns focus to the exact trigger button
+(`document.activeElement` confirmed), verifying the focus-management code
+actually works, not just compiles. Caught one more real bug along the
+way: the original throwaway route lived under a `_`-prefixed folder,
+which Next.js App Router treats as a private folder excluded from
+routing — unrelated to any real app route (none use that prefix) but
+worth recording as a now-known Next.js 16 convention.
+
+Full detail in `LOOP_53_REPORT.md`. This loop shipped no product code —
+`git status --short` was empty at the end of it.
