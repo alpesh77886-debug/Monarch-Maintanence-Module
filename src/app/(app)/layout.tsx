@@ -40,7 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-bg">
       <header className="chrome-blur sticky top-0 z-30 flex h-14 items-center border-b border-line px-4">
         <div className="flex w-full items-center justify-between gap-3">
-          <Link href="/cases" className="flex items-center gap-2 text-base font-semibold text-fg">
+          <Link href="/home" className="flex items-center gap-2 text-base font-semibold text-fg">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange to-orange2 text-sm font-bold text-white shadow-[0_2px_8px_rgba(249,115,22,0.3)]">
               M
             </span>

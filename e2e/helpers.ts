@@ -68,18 +68,18 @@ export async function signIn(page: Page, account: AccountName) {
   // hid for five loops, and the message is what identified it.
   const inlineError = page.locator("form p.text-red-700");
   const landed = await Promise.race([
-    page.waitForURL(/\/cases$/, { timeout: 20_000 }).then(() => true),
+    page.waitForURL(/\/home$/, { timeout: 20_000 }).then(() => true),
     inlineError.waitFor({ timeout: 20_000 }).then(() => false),
   ]).catch(() => false);
 
   if (!landed) {
     const message = (await inlineError.textContent().catch(() => null))?.trim();
     throw new Error(
-      `signIn(${account}) did not reach /cases. ` +
+      `signIn(${account}) did not reach /home. ` +
         (message ? `Login page reported: "${message}"` : `No inline error shown; still on ${page.url()}`)
     );
   }
-  await expect(page).toHaveURL(/\/cases$/);
+  await expect(page).toHaveURL(/\/home$/);
 }
 
 // Every row these tests create is tagged so it is trivially identifiable in
