@@ -1,6 +1,24 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 62 complete - built the new Module Hub post-login
+Current loop: Loop 63 complete - relabeled AppNav's bottom tab bar to
+  match the mockup's own in-app tab bar exactly: Cases, Control (was
+  "Shift", same /dashboard route, no new screen invented), PM, Spares
+  (new, links to Loop 62's /spares), More (new). Recurrence and KPIs
+  don't fit the 5-slot bar anymore - folded into a new /more page
+  (staff-gated menu, Prompt section 17's "secondary controls live in a
+  surface such as More"), neither page's own content touched. My Work
+  now shows case age (same formatAge convention as the shift
+  dashboard). PR #61 (Loops 61-62) needed two real fixes before CI went
+  green: login/page.tsx still had a hardcoded router.replace("/cases")
+  Loop 62 missed (6 e2e failures, all signIn() timeouts - fixed in
+  c7183cf), and the Home module tiles' accessible link name wasn't
+  exactly "PM" since it included the tile's description text (1 e2e
+  failure - fixed in 8f43525 with aria-label, also a genuine
+  accessibility improvement). Both were real regressions this session's
+  own e2e suite caught, not flakes - confirmed by reading the actual
+  failure logs before touching anything. Merged. Live-render verified
+  the new nav via the Loop 53 technique. tsc/eslint/build clean.
+Previously: Loop 62 complete - built the new Module Hub post-login
   landing page (Prompt Section 47, mockup Screen 002): src/app/home/
   page.tsx + home-client.tsx, replacing the old direct-to-/cases
   redirect. 2-column module tiles (Cases, Shift, PM, Spare Consumption,
