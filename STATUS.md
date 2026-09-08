@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loops 41-45 COMPLETE. Gate 9 AWAITING BOSS. A Boss-directed
+Current loop: Loop 46 IN PROGRESS. Gate 9 APPROVED, SCOPED to Type A. A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
@@ -69,9 +69,14 @@ Current loop: Loops 41-45 COMPLETE. Gate 9 AWAITING BOSS. A Boss-directed
   a gap). Leaked-password protection deferred by the Boss to last. Two new
   questions: whether to also remove the 103 duplicate-primary cases, and
   the Sarvam Screen Architecture document needed to action the UX sections.
-Current gate: **GATE 9 (Loops 41-45) AWAITING BOSS.** Autonomous loop
-  work is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13; Loop 46 will not
-  start without explicit continuation language. Six defects this batch, two
+Current gate: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was
+  shown a percent-complete breakdown against SS32's 25-item checklist, split
+  into Type A (Claude-executable technical debt) and Type B (needs Boss
+  evidence/decisions). Reply: "Type A start karo". Loop 46+ proceeds on
+  triggers/constraints sweep, Vercel/Sentry config audit, and the SS30
+  mobile-first UX pass. Type B (shared test/prod DB, leaked-password
+  protection, 103 duplicate-primary cases, Sarvam doc, PENDING-01..04) is
+  NOT reopened by this reply and stays AWAITING BOSS. Six defects this batch, two
   of them the most serious in this project so far (RISK-28 CRITICAL, RISK-29
   HIGH), and three of them in work reported as complete in the previous
   batch. Loop 45 added RISK-30: evidence could be attached to ANY case by
@@ -85,6 +90,17 @@ Current gate: **GATE 9 (Loops 41-45) AWAITING BOSS.** Autonomous loop
   graph untouched; zero orphans across eight probes; the 24h window guard
   NOT weakened (one-time migration 0046, no new callable function left
   behind). See BACKLOG_CLEANUP_REPORT.md and APPROVAL_REPORT_LOOP_41_45.md.
+  Loop 46 (first Type-A loop, Boss said "Type A start karo") swept every
+  trigger (1, correctly scoped) and every CHECK constraint (24) in the
+  schema. RISK-31: spare_requests.initiated_role collapsed
+  MAINTENANCE_MANAGER into 'EXECUTIVE' because is_staff() is true for both
+  locked roles - proven live (a Manager's own spare request displayed as
+  "Requested by executive"). Not a security defect (approval routing uses
+  estimated_amount vs the ₹12,000 boundary, independent of this field) but
+  a real §16.3/§29 audit-trail accuracy bug. Fixed by deriving the label
+  from current_staff_role() (already existed, never used here); the TS
+  union type was also missing "MANAGER" and was corrected. See
+  LOOP_46_REPORT.md.
 
 Items that need the Boss and are NOT loop work — none has been guessed at:
   1. QC identities — ANSWERED. The QC login name comes from the Quality
