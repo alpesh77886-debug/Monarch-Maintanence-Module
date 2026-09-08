@@ -109,3 +109,14 @@ select:focus,
 textarea:focus {
   outline: none;
 }
+
+/* Hidden-scrollbar horizontal-scroll row — the reference apps' filter-chip
+   and chart-carousel recipe, reused here for Case Detail's sub-tab bar
+   (Sarvam §9: "horizontally scrollable Case Detail sub-tabs"). */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

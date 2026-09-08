@@ -4323,3 +4323,58 @@ diagnosis fields uncaptured).
 This is Loop 50 — the mandatory 5-loop gate stop per §19.9/§19.13. See
 `APPROVAL_REPORT_LOOP_46_50.md`: autonomous work is paused pending explicit
 Boss continuation language before Loop 51.
+
+## Loop 51 — 2026-09-08
+
+**Summary:** Boss approved Loops 51-55 ("loop 51 se loop 55 tak complete
+karo...mujhe design complete ka msg chahiye"). Case Detail
+(`cases/[id]/page.tsx`) restructured from one 550-line unconditional-scroll
+page into Sarvam's own proposed local-navigation model — very likely the
+direct fix for the Boss's earlier "mujhe ek bhi forms nahi dikh raha"
+confusion, since every lifecycle action lived inline and only appeared
+once its state-gating boolean happened to be true for that case.
+
+**What shipped:** a persistent case header stays outside the tabs; 10 tabs
+per Sarvam §2/§4 (Overview, Journal, Interventions, Assignments, Spares,
+Restorations, QC, Waiting, Audit, Evidence). The 4 forms that previously
+rendered as a permanent inline coloured box with no collapse toggle
+(Acknowledge, Mark Duplicate, Close False Complaint, Hand Over) now open
+as a bottom sheet via the new `components/sheet.tsx`
+(`ActionSheetTrigger`), matching Sarvam's DR-02 proposal — validated by
+the fact that the Boss's own Quality app already ships exactly this
+pattern (its Disposition wizard is a real, shipped bottom-sheet). The 5
+forms that already had their own collapse-by-default toggle (Assign,
+Intervention, Waiting, Observation, Restoration) were relocated into their
+matching tab unchanged. New `components/tabs.tsx` (`CaseDetailTabs`)
+switches tabs client-side from server-rendered JSX passed as props — no
+re-fetch, no new data layer, all 22+ of Loop 37's parallelized Supabase
+reads untouched.
+
+**Method: relocate, don't rewrite.** Every panel kept its exact existing
+component, props, and state-gating boolean; this loop only moved where in
+the JSX tree each one renders. No form's validation, RPC call, or error
+handling was touched — a deliberate risk-reduction choice given this
+sandbox can't live-render authenticated pages against real data (RISK-05).
+
+**A live boundary bug caught before shipping:** the first version of
+`sheet.tsx` had two non-default exports in a `"use client"` file consumed
+by a server component — exactly the Loop 16 lesson restated in
+`app-nav.tsx`'s own comment, invisible to `tsc`/`eslint`/`next build` by
+design. Caught by deliberately checking the new files against that known
+failure mode, not by any tool. Fixed to a single default export
+(`ActionSheetTrigger`); `tabs.tsx`'s `CaseDetailTabs` changed to a default
+export for the same reason. A repo-wide re-scan for the same shape came
+back clean everywhere else.
+
+**What this loop does NOT do:** no sticky mobile primary-action bar yet
+(Sarvam DR-04 — next); `VerifyRestorationCard`/`QcPanel`/`EmergencyPanel`/
+`CloseReopenActions`/`PriorityPanel` and the compliance/record panels
+stayed inline rather than becoming sheets (a judgement call, not an
+oversight — see `LOOP_51_REPORT.md`); the 2 remaining
+`IMPLEMENTATION_PACK.md` findings from the Sarvam-verification pass are
+still untouched; zero RPCs/migrations/RLS changed.
+
+`tsc --noEmit`/`eslint`/`next build` all clean; the `"use client"`
+boundary re-scan (hooks-have-directive, plus this loop's addition —
+every `"use client"` file has a single default export or type-only extra
+exports) run repo-wide, clean.

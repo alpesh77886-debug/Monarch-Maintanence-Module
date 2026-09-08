@@ -1,6 +1,27 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 50 complete. **GATE 10 (Loops 46-50) — MANDATORY STOP,
+Current loop: Loop 51 in progress (Boss: "loop 51 se loop 55 tak complete
+  karo...mujhe design complete ka msg chahiye" - explicit continuation past
+  Gate 10). Case Detail (cases/[id]/page.tsx) restructured from one
+  550-line unconditional-scroll page into Sarvam's own proposed local-nav
+  model: persistent header + 10 tabs (Overview/Journal/Interventions/
+  Assignments/Spares/Restorations/QC/Waiting/Audit/Evidence). The 4 forms
+  that previously rendered as a permanent inline coloured box (Acknowledge,
+  Mark Duplicate, Close False Complaint, Hand Over - the ones with no
+  existing collapse toggle, unlike Assign/Intervention/Waiting/Observation/
+  Restoration which already had one) now open as a bottom sheet, matching
+  Sarvam's DR-02 and the Boss's own already-shipped Quality-app disposition
+  wizard. Every panel kept its exact existing props/logic/RPC - this loop
+  relocated JSX, it did not rewrite any form's internals. New:
+  components/sheet.tsx (ActionSheetTrigger) and components/tabs.tsx
+  (CaseDetailTabs). One live boundary bug caught before shipping: the
+  first sheet.tsx had 2 non-default exports in a "use client" file
+  consumed by a server component - exactly the Loop 16 lesson, invisible
+  to tsc/eslint/build by design, caught by deliberately checking the new
+  files against that specific known failure mode and fixed to a single
+  default export (matching app-nav.tsx's own convention). A repo-wide
+  re-scan for the same shape came back clean. See LOOP_51_REPORT.md.
+Previously: Loop 50 complete. **GATE 10 (Loops 46-50) — MANDATORY STOP,
   AWAITING BOSS** per §19.9/§19.13. See APPROVAL_REPORT_LOOP_46_50.md.
   Loop 50: Boss flagged the live app as looking like "a basic webpage" and
   supplied two reference apps (AOS, Quality) as the concrete bar for "top

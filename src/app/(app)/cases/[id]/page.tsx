@@ -28,6 +28,8 @@ import AssetPanel from "./asset-panel";
 import RestorationHistoryPanel from "./restoration-history-panel";
 import Link from "next/link";
 import { Badge, Card, StatusBadge } from "@/components/ui";
+import ActionSheetTrigger from "@/components/sheet";
+import CaseDetailTabs from "@/components/tabs";
 import type {
   StaffMember,
   SafetyStop,
@@ -204,8 +206,321 @@ export default async function CaseDetailPage({
   const canCloseFalseComplaint =
     !!user && user.id === caseRow.reporter_user_id && caseRow.status === "REPORTED";
 
+  // Loop 51-52 (§30 visual layer, Sarvam DR-02/local-nav): this used to be
+  // 20+ sections rendered unconditionally down one long page — the direct
+  // cause of the Boss's "I can't find any forms" confusion, since every
+  // lifecycle action lived inline and only appeared once its state-gating
+  // boolean above happened to be true for THIS case. Reorganized into the
+  // 10 sections Sarvam's own local-nav spec names (Overview/Journal/
+  // Interventions/Assignments/Spares/Restorations/QC/Waiting/Audit/
+  // Evidence), so a screen only ever needs to hold what belongs to it.
+  // Every panel below is the SAME component with the SAME props and the
+  // SAME gating boolean as before this loop — this is a JSX relocation,
+  // not a rewrite of any panel's own logic, RPC call, or validation.
+  //
+  // The four forms that previously rendered as an always-visible coloured
+  // box the moment they became eligible (Acknowledge, Mark Duplicate,
+  // Close False Complaint, Handover) — none of which had their own
+  // collapse-by-default toggle, unlike Assign/Intervention/Waiting/
+  // Observation/Restoration, which already did — now open as a bottom
+  // sheet (components/sheet.tsx) from a trigger button instead, matching
+  // Sarvam's DR-02 and the Boss's own Quality app's disposition-wizard
+  // pattern. Each form's internal validation/RPC/error-handling is
+  // completely untouched inside the sheet.
+
+  const emergencyPanel = (caseRow.emergency_claimed || canClaimEmergency) && (
+    <EmergencyPanel
+      caseId={caseRow.id}
+      emergencyClaimed={caseRow.emergency_claimed}
+      emergencyClaimReason={caseRow.emergency_claim_reason}
+      emergencyConfirmed={caseRow.emergency_confirmed}
+      emergencyConfirmedAt={caseRow.emergency_confirmed_at}
+      canClaim={canClaimEmergency}
+      canConfirm={canConfirmEmergency}
+    />
+  );
+
+  const escalationBanner = (caseRow.emergency_confirmed || activeWait?.resume_ready_at) && (
+    // §22.2: the receiver needs escalation state at a glance, not buried
+    // in the audit trail.
+    <section className="rounded-xl border border-bad/25 bg-bad/10 p-4">
+      <h2 className="text-sm font-semibold text-red-300">Escalation state</h2>
+      <ul className="mt-1 flex flex-col gap-0.5 text-sm text-red-300">
+        {caseRow.emergency_confirmed && (
+          <li>
+            Confirmed emergency since{" "}
+            {caseRow.emergency_confirmed_at
+              ? new Date(caseRow.emergency_confirmed_at).toLocaleString()
+              : "—"}
+            {caseRow.emergency_escalated_at
+              ? ` · escalated ${new Date(caseRow.emergency_escalated_at).toLocaleString()}`
+              : " · 1h escalation clock running"}
+          </li>
+        )}
+        {activeWait?.resume_ready_at && (
+          <li>
+            Resume-ready since {new Date(activeWait.resume_ready_at).toLocaleString()}
+            {activeWait.last_escalated_at
+              ? ` · escalated ${new Date(activeWait.last_escalated_at).toLocaleString()}`
+              : ""}
+          </li>
+        )}
+      </ul>
+    </section>
+  );
+
+  const nameById = Object.fromEntries(
+    Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
+  );
+
+  const overviewTab = (
+    <div className="flex flex-col gap-4">
+      {escalationBanner}
+      {emergencyPanel}
+      <div className="flex flex-wrap gap-2">
+        {canAcknowledge && (
+          <ActionSheetTrigger label="Acknowledge" sheetTitle="Acknowledge Case" variant="primary">
+            <AcknowledgeForm caseId={caseRow.id} />
+          </ActionSheetTrigger>
+        )}
+        {/* Loop 39 (RISK-27): acknowledging assigns ownership, so a REPORTED
+            case never needed this. A case that LOSES its owner later did —
+            §22.1's shift-end handover sets the owner to NULL by design when
+            nobody is available. Offered only when Acknowledge is not, so
+            there are never two buttons doing the same thing. */}
+        {canTakeOwnership && <TakeOwnershipButton caseId={caseRow.id} />}
+        {canMarkDuplicate && (
+          <ActionSheetTrigger label="Mark Duplicate" sheetTitle="Mark as Duplicate">
+            <MarkDuplicateForm caseId={caseRow.id} />
+          </ActionSheetTrigger>
+        )}
+        {canCloseFalseComplaint && (
+          <ActionSheetTrigger label="Not a real issue?" sheetTitle="Close False Complaint">
+            <CloseFalseComplaintForm caseId={caseRow.id} />
+          </ActionSheetTrigger>
+        )}
+        {isStaffRow && !caseIsTerminal && (
+          <ActionSheetTrigger label="Hand Over" sheetTitle="Hand Over Case">
+            <HandoverForm
+              caseId={caseRow.id}
+              staff={(staffList ?? []) as StaffMember[]}
+              currentOwnerId={caseRow.current_owner_user_id}
+            />
+          </ActionSheetTrigger>
+        )}
+      </div>
+      {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
+      {isStaffRow && (
+        <PriorityPanel
+          caseId={caseRow.id}
+          priority={caseRow.priority}
+          priorityLockedByManager={caseRow.priority_set_by_role === "MAINTENANCE_MANAGER"}
+          isManager={isManager}
+        />
+      )}
+      {isStaffRow && (
+        <ProductionBoundaryPanel
+          caseId={caseRow.id}
+          status={caseRow.status}
+          activeStop={(activeStop as SafetyStop | null) ?? null}
+          boundaryEvents={(boundaryEvents ?? []) as ProductionBoundaryEvent[]}
+        />
+      )}
+      {isStaffRow && (
+        <PtwPanel
+          caseId={caseRow.id}
+          status={caseRow.status}
+          ptwRequired={caseRow.ptw_required}
+          ptwProofRef={caseRow.ptw_proof_ref}
+        />
+      )}
+      {isStaffRow && <AssetPanel caseId={caseRow.id} assets={(caseAssets ?? []) as CaseAsset[]} />}
+      {isStaffRow && (
+        <ImpactPanel
+          caseId={caseRow.id}
+          records={(impactRecords ?? []) as CaseImpactRecord[]}
+          nameById={nameById}
+        />
+      )}
+      {isStaffRow && (
+        <RecurrenceCapaPanel
+          caseId={caseRow.id}
+          flags={(recurrenceFlags ?? []) as RecurrenceFlag[]}
+          capas={(capaRows ?? []) as CapaLink[]}
+          staff={(staffList ?? []) as StaffMember[]}
+          isManager={isManager}
+          nameById={nameById}
+        />
+      )}
+    </div>
+  );
+
+  const journalTab = (
+    <div className="flex flex-col gap-4">
+      {isStaffRow && caseRow.current_owner_user_id && (
+        <ObservationForm caseId={caseRow.id} interventions={interventions ?? []} />
+      )}
+      <Card>
+        <h2 className="text-sm font-semibold text-fg">Observation + Action Continuity Journal</h2>
+        <ol className="mt-2 flex flex-col gap-2">
+          {observations?.map((o) => {
+            const linkedIntervention = interventions?.find((i) => i.id === o.intervention_id);
+            return (
+              <li key={o.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
+                <p className="text-xs text-muted2">{new Date(o.created_at).toLocaleString()}</p>
+                {linkedIntervention && (
+                  <p className="text-xs text-muted">
+                    <span className="font-medium">Intervention:</span> {linkedIntervention.action_taken}
+                  </p>
+                )}
+                {o.observation && <p><span className="font-medium">Observation:</span> {o.observation}</p>}
+                {o.action && <p><span className="font-medium">Action:</span> {o.action}</p>}
+                {o.result && <p><span className="font-medium">Result:</span> {o.result}</p>}
+                {o.current_condition && (
+                  <p><span className="font-medium">Current condition:</span> {o.current_condition}</p>
+                )}
+                {o.pending_action && <p><span className="font-medium">Pending:</span> {o.pending_action}</p>}
+                {o.blocker && <p><span className="font-medium">Blocker:</span> {o.blocker}</p>}
+                {o.next_step && <p><span className="font-medium">Next step:</span> {o.next_step}</p>}
+                {o.evidence_ref && <p><span className="font-medium">Evidence:</span> {o.evidence_ref}</p>}
+              </li>
+            );
+          })}
+          {observations?.length === 0 && <p className="text-sm text-muted">No journal entries yet.</p>}
+        </ol>
+      </Card>
+    </div>
+  );
+
+  const interventionsTab = (
+    <div className="flex flex-col gap-4">
+      {canRecordIntervention && user && <InterventionForm caseId={caseRow.id} currentUserId={user.id} />}
+      <Card>
+        <h2 className="text-sm font-semibold text-fg">Interventions</h2>
+        <ol className="mt-2 flex flex-col gap-2">
+          {interventions?.map((i) => (
+            <li key={i.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
+              <p className="text-xs text-muted2">{new Date(i.started_at).toLocaleString()}</p>
+              <p><span className="font-medium">Action:</span> {i.action_taken}</p>
+              {i.result && <p><span className="font-medium">Result:</span> {i.result}</p>}
+              {i.failure_mode && <p><span className="font-medium">Failure mode:</span> {i.failure_mode}</p>}
+            </li>
+          ))}
+          {interventions?.length === 0 && <p className="text-sm text-muted">No interventions recorded yet.</p>}
+        </ol>
+      </Card>
+      {isStaffRow && (
+        <RootCausePanel
+          caseId={caseRow.id}
+          records={(rootCauseRecords ?? []) as CaseRootCause[]}
+          nameById={nameById}
+        />
+      )}
+    </div>
+  );
+
+  const assignmentsTab = (
+    <div className="flex flex-col gap-4">
+      {isStaffRow && <AssignTechnicianForm caseId={caseRow.id} />}
+      <Card>
+        <h2 className="text-sm font-semibold text-fg">Assigned technicians</h2>
+        <ul className="mt-2 flex flex-col gap-1 text-sm text-fg">
+          {assignments?.map((a) => (
+            <li key={a.id}>
+              {a.technician_user_id}
+              {a.emergency_direct_start ? " (emergency direct start)" : ""}
+              {!a.is_active ? " — inactive" : ""}
+            </li>
+          ))}
+          {assignments?.length === 0 && <p className="text-sm text-muted">No technicians assigned yet.</p>}
+        </ul>
+      </Card>
+      <Card>
+        <h2 className="text-sm font-semibold text-fg">Ownership history</h2>
+        <ol className="mt-2 flex flex-col gap-1.5 text-sm text-fg">
+          {ownershipHistory?.map((o) => (
+            <li key={o.id} className="rounded-lg border border-line bg-bg2 p-2.5">
+              <span className="font-medium">{staffById.get(o.owner_user_id)?.full_name ?? o.owner_user_id}</span>
+              <span className="text-xs text-muted">
+                {" "}
+                — from {new Date(o.started_at).toLocaleString()}
+                {o.ended_at ? ` to ${new Date(o.ended_at).toLocaleString()}` : " (current)"}
+              </span>
+              {o.transfer_reason && <p className="text-xs text-muted">Reason: {o.transfer_reason}</p>}
+            </li>
+          ))}
+          {ownershipHistory?.length === 0 && (
+            <p className="text-sm text-muted">No owner yet — this case is unassigned.</p>
+          )}
+        </ol>
+      </Card>
+    </div>
+  );
+
+  const sparesTab = (
+    <SparesPanel
+      caseId={caseRow.id}
+      spareRequests={spareRequests ?? []}
+      spareUsage={spareUsage ?? []}
+      canRaise={canRaiseSpareRequest}
+      canRecordUsage={canRecordSpareUsage}
+      isManager={isManager}
+      isStaff={!!isStaffRow}
+    />
+  );
+
+  const restorationsTab = (
+    <div className="flex flex-col gap-4">
+      {pendingRestoration ? (
+        <VerifyRestorationCard restoration={pendingRestoration} />
+      ) : needsFollowUp ? (
+        <FollowUpButton caseId={caseRow.id} />
+      ) : (
+        canRecordRestoration && <RestorationForm caseId={caseRow.id} />
+      )}
+      {isStaffRow && <RestorationHistoryPanel restorations={restorationHistory ?? []} />}
+    </div>
+  );
+
+  const qcTab = isStaffRow && (
+    <QcPanel
+      caseId={caseRow.id}
+      status={caseRow.status}
+      qcRequired={caseRow.qc_required}
+      pendingClearance={pendingClearance ?? null}
+      isQcAuthority={isQcAuthority}
+    />
+  );
+
+  const waitingTab = activeWait ? (
+    <WaitingActiveCard wait={activeWait} />
+  ) : (
+    isStaffRow && <WaitingForm caseId={caseRow.id} />
+  );
+
+  const auditTab = (
+    <Card>
+      <h2 className="text-sm font-semibold text-fg">Audit trail</h2>
+      <ol className="mt-2 flex flex-col gap-1 text-xs text-muted">
+        {events?.map((e) => (
+          <li key={e.id}>
+            {new Date(e.occurred_at).toLocaleString()} — {e.event_type}
+            {e.previous_status && e.new_status ? ` (${e.previous_status} → ${e.new_status})` : ""}
+            {e.reason ? `: ${e.reason}` : ""}
+          </li>
+        ))}
+      </ol>
+    </Card>
+  );
+
+  // §5.1: any signed-in user may attach evidence, not staff-only — the
+  // reporter needs this as much as staff do.
+  const evidenceTab = !!user && (
+    <EvidencePanel caseId={caseRow.id} records={(evidenceRecords ?? []) as CaseEvidence[]} nameById={nameById} />
+  );
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div>
         <Link href="/cases" className="text-xs font-medium text-muted hover:text-fg">
           ← All cases
@@ -240,311 +555,20 @@ export default async function CaseDetailPage({
         </Card>
       </div>
 
-      {/* §5.1: any signed-in user may attach evidence, not staff-only — the
-          reporter needs this as much as staff do. */}
-      {!!user && (
-        <EvidencePanel
-          caseId={caseRow.id}
-          records={(evidenceRecords ?? []) as CaseEvidence[]}
-          nameById={Object.fromEntries(
-            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
-          )}
-        />
-      )}
-
-      {canCloseFalseComplaint && <CloseFalseComplaintForm caseId={caseRow.id} />}
-
-      {canMarkDuplicate && <MarkDuplicateForm caseId={caseRow.id} />}
-
-      {(caseRow.emergency_claimed || canClaimEmergency) && (
-        <EmergencyPanel
-          caseId={caseRow.id}
-          emergencyClaimed={caseRow.emergency_claimed}
-          emergencyClaimReason={caseRow.emergency_claim_reason}
-          emergencyConfirmed={caseRow.emergency_confirmed}
-          emergencyConfirmedAt={caseRow.emergency_confirmed_at}
-          canClaim={canClaimEmergency}
-          canConfirm={canConfirmEmergency}
-        />
-      )}
-
-      {canAcknowledge && <AcknowledgeForm caseId={caseRow.id} />}
-
-      {/* Loop 39 (RISK-27): acknowledging assigns ownership, so a REPORTED
-          case never needed this. A case that LOSES its owner later did —
-          §22.1's shift-end handover sets the owner to NULL by design when
-          nobody is available, and the dashboard lists exactly those cases as
-          needing an owner. Offered only when Acknowledge is not, so there are
-          never two buttons doing the same thing. */}
-      {canTakeOwnership && <TakeOwnershipButton caseId={caseRow.id} />}
-
-      {isStaffRow && caseRow.current_owner_user_id && (
-        <ObservationForm caseId={caseRow.id} interventions={interventions ?? []} />
-      )}
-
-      {activeWait ? (
-        <WaitingActiveCard wait={activeWait} />
-      ) : (
-        isStaffRow && <WaitingForm caseId={caseRow.id} />
-      )}
-
-      {isStaffRow && <AssignTechnicianForm caseId={caseRow.id} />}
-
-      {canRecordIntervention && user && (
-        <InterventionForm caseId={caseRow.id} currentUserId={user.id} />
-      )}
-
-      {pendingRestoration ? (
-        <VerifyRestorationCard restoration={pendingRestoration} />
-      ) : needsFollowUp ? (
-        <FollowUpButton caseId={caseRow.id} />
-      ) : (
-        canRecordRestoration && <RestorationForm caseId={caseRow.id} />
-      )}
-
-      {isStaffRow && <RestorationHistoryPanel restorations={restorationHistory ?? []} />}
-
-      <SparesPanel
-        caseId={caseRow.id}
-        spareRequests={spareRequests ?? []}
-        spareUsage={spareUsage ?? []}
-        canRaise={canRaiseSpareRequest}
-        canRecordUsage={canRecordSpareUsage}
-        isManager={isManager}
-        isStaff={!!isStaffRow}
+      <CaseDetailTabs
+        tabs={{
+          overview: overviewTab,
+          journal: journalTab,
+          interventions: interventionsTab,
+          assignments: assignmentsTab,
+          spares: sparesTab,
+          restorations: restorationsTab,
+          qc: qcTab,
+          waiting: waitingTab,
+          audit: auditTab,
+          evidence: evidenceTab,
+        }}
       />
-
-      {isStaffRow && (
-        <QcPanel
-          caseId={caseRow.id}
-          status={caseRow.status}
-          qcRequired={caseRow.qc_required}
-          pendingClearance={pendingClearance ?? null}
-          isQcAuthority={isQcAuthority}
-        />
-      )}
-
-      {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
-
-      {isStaffRow && (
-        <ProductionBoundaryPanel
-          caseId={caseRow.id}
-          status={caseRow.status}
-          activeStop={(activeStop as SafetyStop | null) ?? null}
-          boundaryEvents={(boundaryEvents ?? []) as ProductionBoundaryEvent[]}
-        />
-      )}
-
-      {isStaffRow && (
-        <PriorityPanel
-          caseId={caseRow.id}
-          priority={caseRow.priority}
-          priorityLockedByManager={caseRow.priority_set_by_role === "MAINTENANCE_MANAGER"}
-          isManager={isManager}
-        />
-      )}
-
-      {isStaffRow && (
-        <PtwPanel
-          caseId={caseRow.id}
-          status={caseRow.status}
-          ptwRequired={caseRow.ptw_required}
-          ptwProofRef={caseRow.ptw_proof_ref}
-        />
-      )}
-
-      {isStaffRow && (
-        <AssetPanel
-          caseId={caseRow.id}
-          assets={(caseAssets ?? []) as CaseAsset[]}
-        />
-      )}
-
-      {isStaffRow && (
-        <RootCausePanel
-          caseId={caseRow.id}
-          records={(rootCauseRecords ?? []) as CaseRootCause[]}
-          nameById={Object.fromEntries(
-            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
-          )}
-        />
-      )}
-
-      {isStaffRow && (
-        <ImpactPanel
-          caseId={caseRow.id}
-          records={(impactRecords ?? []) as CaseImpactRecord[]}
-          nameById={Object.fromEntries(
-            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
-          )}
-        />
-      )}
-
-      {isStaffRow && (
-        <RecurrenceCapaPanel
-          caseId={caseRow.id}
-          flags={(recurrenceFlags ?? []) as RecurrenceFlag[]}
-          capas={(capaRows ?? []) as CapaLink[]}
-          staff={(staffList ?? []) as StaffMember[]}
-          isManager={isManager}
-          nameById={Object.fromEntries(
-            Array.from(staffById.entries()).map(([sid, s]) => [sid, s.full_name])
-          )}
-        />
-      )}
-
-      {isStaffRow && !caseIsTerminal && (
-        <HandoverForm
-          caseId={caseRow.id}
-          staff={(staffList ?? []) as StaffMember[]}
-          currentOwnerId={caseRow.current_owner_user_id}
-        />
-      )}
-
-      {/* §22.2: the receiver needs escalation state at a glance, not buried
-          in the audit trail. */}
-      {(caseRow.emergency_confirmed || activeWait?.resume_ready_at) && (
-        <section className="rounded-xl border border-bad/25 bg-bad/10 p-4">
-          <h2 className="text-sm font-semibold text-red-300">Escalation state</h2>
-          <ul className="mt-1 flex flex-col gap-0.5 text-sm text-red-300">
-            {caseRow.emergency_confirmed && (
-              <li>
-                Confirmed emergency since{" "}
-                {caseRow.emergency_confirmed_at
-                  ? new Date(caseRow.emergency_confirmed_at).toLocaleString()
-                  : "—"}
-                {caseRow.emergency_escalated_at
-                  ? ` · escalated ${new Date(caseRow.emergency_escalated_at).toLocaleString()}`
-                  : " · 1h escalation clock running"}
-              </li>
-            )}
-            {activeWait?.resume_ready_at && (
-              <li>
-                Resume-ready since {new Date(activeWait.resume_ready_at).toLocaleString()}
-                {activeWait.last_escalated_at
-                  ? ` · escalated ${new Date(activeWait.last_escalated_at).toLocaleString()}`
-                  : ""}
-              </li>
-            )}
-          </ul>
-        </section>
-      )}
-
-      <Card>
-        <h2 className="text-sm font-semibold text-fg">Ownership history</h2>
-        <ol className="mt-2 flex flex-col gap-1.5 text-sm text-fg">
-          {ownershipHistory?.map((o) => (
-            <li key={o.id} className="rounded-lg border border-line bg-bg2 p-2.5">
-              <span className="font-medium">
-                {staffById.get(o.owner_user_id)?.full_name ?? o.owner_user_id}
-              </span>
-              <span className="text-xs text-muted">
-                {" "}
-                — from {new Date(o.started_at).toLocaleString()}
-                {o.ended_at ? ` to ${new Date(o.ended_at).toLocaleString()}` : " (current)"}
-              </span>
-              {o.transfer_reason && (
-                <p className="text-xs text-muted">Reason: {o.transfer_reason}</p>
-              )}
-            </li>
-          ))}
-          {ownershipHistory?.length === 0 && (
-            <p className="text-sm text-muted">
-              No owner yet — this case is unassigned.
-            </p>
-          )}
-        </ol>
-      </Card>
-
-      <Card>
-        <h2 className="text-sm font-semibold text-fg">Assigned technicians</h2>
-        <ul className="mt-2 flex flex-col gap-1 text-sm text-fg">
-          {assignments?.map((a) => (
-            <li key={a.id}>
-              {a.technician_user_id}
-              {a.emergency_direct_start ? " (emergency direct start)" : ""}
-              {!a.is_active ? " — inactive" : ""}
-            </li>
-          ))}
-          {assignments?.length === 0 && (
-            <p className="text-sm text-muted">No technicians assigned yet.</p>
-          )}
-        </ul>
-      </Card>
-
-      <Card>
-        <h2 className="text-sm font-semibold text-fg">Interventions</h2>
-        <ol className="mt-2 flex flex-col gap-2">
-          {interventions?.map((i) => (
-            <li key={i.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
-              <p className="text-xs text-muted2">{new Date(i.started_at).toLocaleString()}</p>
-              <p><span className="font-medium">Action:</span> {i.action_taken}</p>
-              {i.result && <p><span className="font-medium">Result:</span> {i.result}</p>}
-              {i.failure_mode && (
-                <p><span className="font-medium">Failure mode:</span> {i.failure_mode}</p>
-              )}
-            </li>
-          ))}
-          {interventions?.length === 0 && (
-            <p className="text-sm text-muted">No interventions recorded yet.</p>
-          )}
-        </ol>
-      </Card>
-
-      <Card>
-        <h2 className="text-sm font-semibold text-fg">
-          Observation + Action Continuity Journal
-        </h2>
-        <ol className="mt-2 flex flex-col gap-2">
-          {observations?.map((o) => {
-            const linkedIntervention = interventions?.find((i) => i.id === o.intervention_id);
-            return (
-              <li key={o.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
-                <p className="text-xs text-muted2">
-                  {new Date(o.created_at).toLocaleString()}
-                </p>
-                {linkedIntervention && (
-                  <p className="text-xs text-muted">
-                    <span className="font-medium">Intervention:</span> {linkedIntervention.action_taken}
-                  </p>
-                )}
-                {o.observation && <p><span className="font-medium">Observation:</span> {o.observation}</p>}
-                {o.action && <p><span className="font-medium">Action:</span> {o.action}</p>}
-                {o.result && <p><span className="font-medium">Result:</span> {o.result}</p>}
-                {o.current_condition && (
-                  <p><span className="font-medium">Current condition:</span> {o.current_condition}</p>
-                )}
-                {o.pending_action && (
-                  <p><span className="font-medium">Pending:</span> {o.pending_action}</p>
-                )}
-                {o.blocker && <p><span className="font-medium">Blocker:</span> {o.blocker}</p>}
-                {o.next_step && <p><span className="font-medium">Next step:</span> {o.next_step}</p>}
-                {o.evidence_ref && (
-                  <p><span className="font-medium">Evidence:</span> {o.evidence_ref}</p>
-                )}
-              </li>
-            );
-          })}
-          {observations?.length === 0 && (
-            <p className="text-sm text-muted">No journal entries yet.</p>
-          )}
-        </ol>
-      </Card>
-
-      <Card>
-        <h2 className="text-sm font-semibold text-fg">Audit trail</h2>
-        <ol className="mt-2 flex flex-col gap-1 text-xs text-muted">
-          {events?.map((e) => (
-            <li key={e.id}>
-              {new Date(e.occurred_at).toLocaleString()} — {e.event_type}
-              {e.previous_status && e.new_status
-                ? ` (${e.previous_status} → ${e.new_status})`
-                : ""}
-              {e.reason ? `: ${e.reason}` : ""}
-            </li>
-          ))}
-        </ol>
-      </Card>
     </div>
   );
 }
