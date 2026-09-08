@@ -8,16 +8,26 @@ import { Button } from "@/components/ui";
 
 // §5.1 / §26 — evidence attachment/reference.
 //
-// `maintenance.evidence` has existed since Loop 1 with its own RLS already
-// correct: unlike every other audit-sensitive table in this schema, it is
-// NOT gated behind an RPC — `evidence_insert` allows any authenticated user
-// to attach evidence to a case directly, with only `uploaded_by = auth.uid()`
-// enforced, the same shape as `cases_insert` (reporting a case is itself a
-// direct insert, no RPC). That is deliberate: §5.1 lists evidence as an
-// intake field, so the reporter — not just staff — needs to be able to
-// attach it, potentially before any staff RPC has touched the case at all.
-// This panel is a thin client over that existing, correct policy — nothing
-// here changes authorization.
+// Unlike every other audit-sensitive table in this schema, evidence is NOT
+// gated behind an RPC — it is a direct insert, the same shape as
+// `cases_insert`. That is deliberate: §5.1 lists evidence as an intake field,
+// so the reporter — not just staff — needs to be able to attach it, potentially
+// before any staff RPC has touched the case at all. This panel is a thin client
+// over that policy; nothing here changes authorization.
+//
+// This comment used to say the policy was "already correct". It was not
+// (RISK-30, Loop 45). The intent above is right, but until 0045 the policy
+// enforced only `uploaded_by = auth.uid()` with NO case predicate — so any
+// signed-in user could attach evidence to ANY case, including one they could
+// not read. Proven live: the non-staff technician identity wrote evidence onto
+// MC-009600, a case invisible to them, and could not even see the row
+// afterwards — while staff saw it as ordinary attached evidence.
+//
+// 0045 adds `maintenance.can_read_case(case_id)`, which is exactly the three
+// parties the intent names (staff, that case's reporter, an assigned
+// technician), so INSERT scope now matches SELECT scope. The intake path this
+// panel exists for is unchanged and verified: a non-staff reporter can still
+// attach evidence to their own case.
 //
 // `file_ref` is a REFERENCE, not an uploaded file. Building real file/photo
 // upload would mean Supabase Storage buckets, MIME handling, and a security
