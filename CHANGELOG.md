@@ -4095,3 +4095,62 @@ the §3.3 ₹12,000 approval boundary re-verified unaffected
 
 **Checks:** `tsc`, `lint`, `build` clean; `"use client"` re-scan across 36 files
 clean; function arity unchanged after the fix (one overload, 5 args).
+
+## Loop 47 — 2026-09-08
+
+**Summary:** Second loop of the Boss-approved "Type A" scope. First sweep of
+the deployed runtime configuration — every prior loop audited the database and
+application code, never the platform underneath. No migration, no application
+code change: infrastructure audit plus Sentry issue triage only. Full
+evidence in `LOOP_47_REPORT.md`.
+
+**Vercel:**
+- Deployment protection (password/SSO/trusted IPs) is off across the board.
+  Not treated as a defect — this app's authorization boundary is Supabase
+  auth + RLS (hardened through Loops 43-45), not network-level access
+  control; an unauthenticated visitor to any preview URL reaches a login
+  page, not data. Recorded rather than silently assumed: every PR branch
+  gets its own live, publicly reachable preview URL.
+- The GitHub repository is public (`githubRepoVisibility: "public"`,
+  confirmed from deployment metadata). No secret has ever been committed, but
+  changing repo visibility is an account-level, Boss-side decision — reported,
+  not changed.
+- `vercel.json`'s `regions: ["sin1"]` pin (from the earlier performance fix)
+  is unchanged; no drift.
+- Environment variables: exactly two used anywhere in `src/` —
+  `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` — both
+  correctly public by Supabase's own design, protected by RLS. No
+  `service_role` key or other secret referenced anywhere in the client or
+  server code.
+
+**Sentry:**
+- DSN and SDK config checked and found correct: DSN is a public submit-only
+  identifier (same category as the Supabase anon key), and `@sentry/nextjs`
+  v10's `sendDefaultPii` default (`false`) means the absence of an explicit
+  PII setting is the safe default, not a gap.
+- **Two "unresolved" issues found, both stale, both resolved.** Read in full
+  before triage rather than assumed: `MONARCH-MAINTENANCE-MODULE-2`
+  (`isPriorityLockedByManager()` called from server) and
+  `-3` (the generic client-side echo of the same throw — identical
+  `trace_id`). Both events came from `http://127.0.0.1:3100`, the local
+  Playwright e2e server, on a GitHub Actions runner (`server_name:
+  runnervmejwal`) — never real traffic, `Users Impacted: 0` on both. The
+  release SHA and timestamp window match Loop 16's `"use client"` boundary
+  defect, fixed the same day in commit `7f4099c`. `isPriorityLockedByManager`
+  no longer exists anywhere in the source tree (verified by grep), and every
+  subsequent loop's boundary re-scan has been clean, including this one.
+  First seen equals last seen — a single CI burst before the fix landed,
+  never recurred. Both marked resolved in Sentry with a comment recording
+  the full root-cause chain, so a future reader does not re-investigate a
+  two-day-old, already-dead error.
+
+**What this confirms:** the standing `"use client"` boundary rule (written
+after Loop 16, re-verified every loop since) has held — the only trace of
+that defect left anywhere was two stale Sentry rows, not a live recurrence.
+Also confirms Loop 44's anon lockdown is doing its job at the platform edge:
+deployment protection being off is safe specifically because the database no
+longer trusts an unauthenticated caller for anything.
+
+**What this does NOT resolve:** the shared test/production Supabase project
+question and the public-repository fact are both reported for the Boss's
+decision, not acted on — not something to invent an answer to.
