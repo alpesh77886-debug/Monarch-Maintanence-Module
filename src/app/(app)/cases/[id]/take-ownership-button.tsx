@@ -35,11 +35,11 @@ export default function TakeOwnershipButton({ caseId }: { caseId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-      <p className="text-sm text-amber-900">
+    <div className="flex flex-col gap-2 rounded-lg border border-warn/25 bg-warn/10 p-3">
+      <p className="text-sm text-amber-300">
         This case has no Maintenance owner.
       </p>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <div>
         <Button variant="warning" onClick={takeOwnership} disabled={submitting}>
           Take ownership

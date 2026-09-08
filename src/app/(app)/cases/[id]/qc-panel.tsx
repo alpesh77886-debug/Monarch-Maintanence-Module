@@ -78,11 +78,11 @@ export default function QcPanel({
     // step, rather than being shown buttons the server will refuse.
     if (!isQcAuthority) {
       return (
-        <div className="flex flex-col gap-1 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-          <p className="text-sm font-medium text-indigo-900">
+        <div className="flex flex-col gap-1 rounded-lg border border-brand/30 bg-brand/10 p-3">
+          <p className="text-sm font-medium text-brand">
             Sent to QC {new Date(pendingClearance.sent_to_qc_at).toLocaleString()} — awaiting QC decision
           </p>
-          <p className="text-xs text-indigo-800">
+          <p className="text-xs text-brand">
             QC clearance is decided by QC, not by Maintenance. This case stays in
             CLEARANCE_PENDING until an identity holding QC authority clears or
             rejects it.
@@ -92,11 +92,11 @@ export default function QcPanel({
     }
 
     return (
-      <div className="flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-        <p className="text-sm font-medium text-indigo-900">
+      <div className="flex flex-col gap-3 rounded-lg border border-brand/30 bg-brand/10 p-3">
+        <p className="text-sm font-medium text-brand">
           Sent to QC {new Date(pendingClearance.sent_to_qc_at).toLocaleString()} — awaiting decision
         </p>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
         {!rejecting ? (
           <div className="flex gap-2">
             <Button onClick={() => decide("CLEARED")} disabled={submitting}>
@@ -114,7 +114,7 @@ export default function QcPanel({
               onChange={(e) => setReason(e.target.value)}
               placeholder="Rejection reason (required)"
               rows={2}
-              className="rounded-lg border border-indigo-300 px-3 py-2 text-base"
+              className="rounded-lg border border-brand/40 px-3 py-2 text-base"
             />
             <div className="flex gap-2">
               <Button onClick={() => decide("REJECTED")} disabled={submitting || !reason.trim()}>
@@ -132,11 +132,11 @@ export default function QcPanel({
 
   if (status === "TECHNICALLY_RESTORED") {
     return (
-      <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
-        <p className="text-sm text-slate-700">
+      <div className="flex flex-col gap-2 rounded-lg border border-line bg-card p-3">
+        <p className="text-sm text-fg">
           QC required: <span className="font-medium">{qcRequired === null ? "not set" : String(qcRequired)}</span>
         </p>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setQcRequired(true)} disabled={submitting}>
             Set QC required = Yes

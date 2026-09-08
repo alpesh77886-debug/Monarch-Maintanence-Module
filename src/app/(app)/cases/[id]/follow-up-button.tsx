@@ -30,12 +30,12 @@ export default function FollowUpButton({ caseId }: { caseId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-orange-200 bg-orange-50 p-3">
-      <p className="text-sm text-orange-900">
+    <div className="flex flex-col gap-2 rounded-lg border border-orange/25 bg-orange/10 p-3">
+      <p className="text-sm text-orange-300">
         Temporary restoration is not a permanent repair (§10) — resume work to record
         the technical fix.
       </p>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button variant="warning" onClick={() => resume("IN_REPAIR")} disabled={submitting}>
           Resume repair (follow-up)

@@ -1,30 +1,40 @@
-// Shared presentational primitives — Button/Badge/IconButton — so every
-// panel across the app draws from one consistent design language instead of
-// each file inventing its own ad hoc color/radius/padding. Pure styling: no
-// business logic lives here, and every prop a caller already passes through
-// (onClick, disabled, type, etc.) is forwarded untouched. No "use client"
-// needed — these render no interactivity of their own, so a server
-// component can render a <Button> directly (the Loop 16 boundary lesson:
-// this file has no client-only export to trip on).
+// Shared presentational primitives — Button/Badge/StatusBadge/Card — so
+// every panel across the app draws from one consistent design language
+// instead of each file inventing its own ad hoc color/radius/padding. Pure
+// styling: no business logic lives here, and every prop a caller already
+// passes through (onClick, disabled, type, etc.) is forwarded untouched. No
+// "use client" needed — these render no interactivity of their own, so a
+// server component can render a <Button> directly (the Loop 16 boundary
+// lesson: this file has no client-only export to trip on).
+//
+// Loop 50 (§30 visual layer): restyled to the MONARCH design language
+// (dark surface stack, tinted-pill badges, gradient/glow buttons) adopted
+// from the Boss's two reference apps (AOS, Quality) rather than invented —
+// see globals.css's token comment. StatusBadge is new: it replaces three
+// separate, inconsistent case-status color maps that existed across
+// cases/page.tsx, dashboard/page.tsx, and cases/[id]/page.tsx (the last of
+// which hardcoded every status to the same blue tone — SARVAM_VERIFICATION_
+// REPORT.md finding 1c) with one canonical source every screen now shares.
 
 import type { ButtonHTMLAttributes, AnchorHTMLAttributes } from "react";
+import type { CaseStatus } from "@/lib/supabase/database.types";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "warning" | "success" | "ghost";
 export type ButtonSize = "sm" | "md";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
-    "bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-indigo-600 disabled:bg-indigo-300",
+    "bg-gradient-to-br from-brand to-brand2 text-white shadow-[0_4px_14px_rgba(59,130,246,0.35)] hover:brightness-110 focus-visible:outline-brand disabled:opacity-40 disabled:shadow-none",
   secondary:
-    "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-slate-400 disabled:text-slate-400 disabled:bg-slate-50",
+    "border border-line2 bg-white/[0.04] text-fg hover:bg-white/[0.08] focus-visible:outline-muted disabled:opacity-40",
   danger:
-    "bg-red-600 text-white shadow-sm hover:bg-red-500 focus-visible:outline-red-600 disabled:bg-red-300",
+    "bg-gradient-to-br from-bad to-red-700 text-white shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:brightness-110 focus-visible:outline-bad disabled:opacity-40 disabled:shadow-none",
   warning:
-    "bg-amber-600 text-white shadow-sm hover:bg-amber-500 focus-visible:outline-amber-600 disabled:bg-amber-300",
+    "bg-gradient-to-br from-warn to-orange-600 text-white shadow-[0_4px_14px_rgba(245,158,11,0.35)] hover:brightness-110 focus-visible:outline-warn disabled:opacity-40 disabled:shadow-none",
   success:
-    "bg-emerald-600 text-white shadow-sm hover:bg-emerald-500 focus-visible:outline-emerald-600 disabled:bg-emerald-300",
+    "bg-gradient-to-br from-good to-emerald-700 text-white shadow-[0_4px_14px_rgba(34,197,94,0.35)] hover:brightness-110 focus-visible:outline-good disabled:opacity-40 disabled:shadow-none",
   ghost:
-    "text-slate-600 hover:bg-slate-100 focus-visible:outline-slate-400 disabled:text-slate-300",
+    "text-muted hover:bg-white/[0.06] hover:text-fg focus-visible:outline-muted disabled:opacity-40",
 };
 
 // Loop 48 (§30 mobile-first UX, §32 item 21). "md" is the default/primary
@@ -41,7 +51,7 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 };
 
 const BASE =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-all duration-150 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed";
 
 export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize = "md", className = "") {
   return `${BASE} ${SIZE_CLASSES[size]} ${VARIANT_CLASSES[variant]} ${className}`.trim();
@@ -74,12 +84,14 @@ export function LinkButton({
   );
 }
 
+// Generic (non-lifecycle) tone badge — for anything that isn't a case
+// status: role labels, boolean flags, misc. category tags.
 const BADGE_TONES = {
-  neutral: "bg-slate-100 text-slate-700",
-  info: "bg-sky-100 text-sky-700",
-  warn: "bg-amber-100 text-amber-800",
-  danger: "bg-red-100 text-red-700",
-  success: "bg-emerald-100 text-emerald-700",
+  neutral: "bg-white/[0.06] text-muted border border-line2",
+  info: "bg-brand/15 text-sky-300 border border-brand/25",
+  warn: "bg-warn/15 text-amber-300 border border-warn/25",
+  danger: "bg-bad/15 text-red-300 border border-bad/25",
+  success: "bg-good/15 text-emerald-300 border border-good/25",
 } as const;
 
 export type BadgeTone = keyof typeof BADGE_TONES;
@@ -95,16 +107,81 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_TONES[tone]} ${className}`.trim()}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${BADGE_TONES[tone]} ${className}`.trim()}
     >
       {children}
     </span>
   );
 }
 
-// A consistent card shell used by list rows and panels — rounded-xl instead
-// of the previous rounded-lg, a hairline border, and a hover lift for
-// clickable rows, matching the reference dashboards' card language.
+// Canonical case-lifecycle status → colour map. This is the single source
+// every screen (queue cards, dashboard chart, case detail header) should
+// import from, rather than each maintaining its own partial/divergent copy.
+// Colour intent follows the Sarvam Screen Architecture's own DR-05 proposal
+// (§8 state badges): rose = needs triage/rejected-back, amber = active
+// diagnosis/waiting, violet = in-repair, teal = restored, green = released,
+// grey = terminal/inert.
+const STATUS_TONE: Record<CaseStatus, "rose" | "amber" | "brand" | "violet" | "teal" | "green" | "muted"> = {
+  REPORTED: "rose",
+  ACKNOWLEDGED: "amber",
+  NEEDS_INFORMATION: "amber",
+  ASSESSED: "brand",
+  ASSIGNED: "brand",
+  DIAGNOSING: "violet",
+  IN_REPAIR: "violet",
+  TEMPORARILY_RESTORED: "teal",
+  TECHNICALLY_RESTORED: "teal",
+  CLEARANCE_PENDING: "amber",
+  QC_REJECTED: "rose",
+  MAINTENANCE_RELEASED: "green",
+  CLOSED: "muted",
+  REOPENED: "rose",
+  DUPLICATE: "muted",
+  REJECTED: "muted",
+};
+
+const STATUS_TONE_CLASSES: Record<(typeof STATUS_TONE)[CaseStatus], string> = {
+  rose: "bg-bad/15 text-red-300 border border-bad/25",
+  amber: "bg-warn/15 text-amber-300 border border-warn/25",
+  brand: "bg-brand/15 text-sky-300 border border-brand/25",
+  violet: "bg-vio/15 text-purple-300 border border-vio/25",
+  teal: "bg-teal/15 text-teal-300 border border-teal/25",
+  green: "bg-good/15 text-emerald-300 border border-good/25",
+  muted: "bg-white/[0.06] text-muted border border-line2",
+};
+
+export function statusBadgeClass(status: CaseStatus, className = "") {
+  const tone = STATUS_TONE[status] ?? "muted";
+  return `inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ${STATUS_TONE_CLASSES[tone]} ${className}`.trim();
+}
+
+// Solid-fill variant of the same canonical map — for a bar-chart segment or
+// any other use that needs a plain background colour rather than a tinted
+// pill. Same STATUS_TONE lookup as statusBadgeClass, so the queue card, the
+// case-detail header, and the dashboard chart can never drift into three
+// different colour opinions again.
+const STATUS_TONE_FILL: Record<(typeof STATUS_TONE)[CaseStatus], string> = {
+  rose: "bg-bad",
+  amber: "bg-warn",
+  brand: "bg-brand",
+  violet: "bg-vio",
+  teal: "bg-teal",
+  green: "bg-good",
+  muted: "bg-line2",
+};
+
+export function statusFillClass(status: CaseStatus): string {
+  return STATUS_TONE_FILL[STATUS_TONE[status] ?? "muted"];
+}
+
+export function StatusBadge({ status, className = "" }: { status: CaseStatus; className?: string }) {
+  return <span className={statusBadgeClass(status, className)}>{status.replace(/_/g, " ")}</span>;
+}
+
+// A consistent card shell used by list rows and panels — dark surface,
+// hairline border, a soft two-layer shadow for depth (the reference apps'
+// "close shadow + diffuse far shadow" recipe), and a hover lift for
+// clickable rows.
 export function Card({
   className = "",
   children,
@@ -113,7 +190,9 @@ export function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className}`.trim()}>
+    <div
+      className={`rounded-xl border border-line2 bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.3),0_4px_16px_rgba(0,0,0,0.2)] ${className}`.trim()}
+    >
       {children}
     </div>
   );

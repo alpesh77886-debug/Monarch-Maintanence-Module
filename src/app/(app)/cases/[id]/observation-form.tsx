@@ -95,15 +95,15 @@ export default function ObservationForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
     >
       {interventions.length > 0 && (
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-fg">
           Related intervention (optional)
           <select
             value={interventionId}
             onChange={(e) => setInterventionId(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+            className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
           >
             <option value="">(not linked to a specific intervention)</option>
             {interventions.map((i) => (
@@ -114,74 +114,74 @@ export default function ObservationForm({
           </select>
         </label>
       )}
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Observation
         <textarea
           value={observation}
           onChange={(e) => setObservation(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Action taken
         <textarea
           value={action}
           onChange={(e) => setAction(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Result
         <textarea
           value={result}
           onChange={(e) => setResult(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Current condition
         <input
           value={currentCondition}
           onChange={(e) => setCurrentCondition(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Pending action
         <input
           value={pendingAction}
           onChange={(e) => setPendingAction(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Blocker
         <input
           value={blocker}
           onChange={(e) => setBlocker(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Next step
         <input
           value={nextStep}
           onChange={(e) => setNextStep(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Evidence reference (optional)
         <input
           value={evidenceRef}
           onChange={(e) => setEvidenceRef(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : "Save entry"}

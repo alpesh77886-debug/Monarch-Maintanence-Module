@@ -85,33 +85,33 @@ export default function EvidencePanel({
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
       data-testid="evidence-panel"
     >
-      <h2 className="text-sm font-semibold text-slate-900">Evidence (§5.1)</h2>
+      <h2 className="text-sm font-semibold text-fg">Evidence (§5.1)</h2>
 
       {sorted.length === 0 ? (
-        <p className="text-sm text-slate-500">No evidence attached yet.</p>
+        <p className="text-sm text-muted">No evidence attached yet.</p>
       ) : (
         <ul className="flex flex-col gap-1">
           {sorted.map((e) => (
-            <li key={e.id} className="rounded-md border border-slate-200 p-2 text-sm">
+            <li key={e.id} className="rounded-lg border border-line p-2 text-sm">
               {/^https?:\/\//i.test(e.file_ref) ? (
                 <a
                   href={e.file_ref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="break-all text-indigo-700 underline"
+                  className="break-all text-brand underline"
                 >
                   {e.file_ref}
                 </a>
               ) : (
-                <p className="break-all font-medium text-slate-800">{e.file_ref}</p>
+                <p className="break-all font-medium text-fg">{e.file_ref}</p>
               )}
               {e.description && (
-                <p className="mt-0.5 text-slate-600">{e.description}</p>
+                <p className="mt-0.5 text-muted">{e.description}</p>
               )}
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-xs text-muted2">
                 {nameById[e.uploaded_by] ?? "unknown"} · {new Date(e.created_at).toLocaleString()}
               </p>
             </li>
@@ -120,25 +120,25 @@ export default function EvidencePanel({
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-2">
-        <label className="text-xs text-slate-600">
+        <label className="text-xs text-muted">
           Evidence reference
           <input
             value={fileRef}
             onChange={(e) => setFileRef(e.target.value)}
             placeholder="a link, photo reference, or report number"
-            className="mt-0.5 w-full rounded-md border border-slate-300 p-1.5 text-sm"
+            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
         </label>
-        <label className="text-xs text-slate-600">
+        <label className="text-xs text-muted">
           Description (optional)
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="what this shows"
-            className="mt-0.5 w-full rounded-md border border-slate-300 p-1.5 text-sm"
+            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
         </label>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
         <Button size="sm" type="submit" className="self-start" disabled={submitting || !fileRef.trim()}>
           Attach evidence
         </Button>

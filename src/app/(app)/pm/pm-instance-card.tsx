@@ -8,10 +8,10 @@ import type { PmInstance } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui";
 
 const STATUS_STYLES: Record<string, string> = {
-  SCHEDULED: "bg-slate-100 text-slate-700",
-  OVERDUE: "bg-red-100 text-red-700",
-  COMPLETED: "bg-emerald-100 text-emerald-700",
-  RESCHEDULED: "bg-slate-200 text-slate-500",
+  SCHEDULED: "bg-bg2 text-fg",
+  OVERDUE: "bg-bad/15 text-red-300",
+  COMPLETED: "bg-good/15 text-emerald-300",
+  RESCHEDULED: "bg-card2 text-muted",
 };
 
 // §17.3 execution/assignment (link to a case) and §17.4 rescheduling
@@ -96,14 +96,14 @@ export default function PmInstanceCard({
   const canAct = instance.status === "SCHEDULED" || instance.status === "OVERDUE";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+    <div className="rounded-xl border border-line bg-card p-4 text-sm shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-medium text-slate-900">{planTitle}</p>
+        <p className="font-medium text-fg">{planTitle}</p>
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[instance.status]}`}>
           {instance.status}
         </span>
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-muted">
         Due {new Date(instance.due_at).toLocaleString()}
         {instance.overdue_since ? ` · overdue since ${new Date(instance.overdue_since).toLocaleString()}` : ""}
       </p>
@@ -111,7 +111,7 @@ export default function PmInstanceCard({
         <p className="mt-1 text-xs">
           Linked case:{" "}
           {linkedCaseNumber ? (
-            <Link href={`/cases/${instance.case_id}`} className="font-medium text-blue-700">
+            <Link href={`/cases/${instance.case_id}`} className="font-medium text-sky-300">
               {linkedCaseNumber}
             </Link>
           ) : (
@@ -119,16 +119,16 @@ export default function PmInstanceCard({
           )}
         </p>
       )}
-      {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-1 text-sm text-red-300">{error}</p>}
       {canAct && (
-        <div className="mt-2 flex flex-col gap-2 border-t border-slate-100 pt-2">
+        <div className="mt-2 flex flex-col gap-2 border-t border-line pt-2">
           {!instance.case_id && (
             <div className="flex gap-2">
               <input
                 value={caseNumber}
                 onChange={(e) => setCaseNumber(e.target.value)}
                 placeholder="Case number to link"
-                className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
+                className="flex-1 rounded-lg border border-line2 p-1 text-xs"
               />
               <Button
                 variant="secondary"
@@ -145,13 +145,13 @@ export default function PmInstanceCard({
               type="datetime-local"
               value={newDueAt}
               onChange={(e) => setNewDueAt(e.target.value)}
-              className="rounded-md border border-slate-300 p-1 text-xs"
+              className="rounded-lg border border-line2 p-1 text-xs"
             />
             <input
               value={rescheduleReason}
               onChange={(e) => setRescheduleReason(e.target.value)}
               placeholder="Reschedule reason"
-              className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
+              className="flex-1 rounded-lg border border-line2 p-1 text-xs"
             />
             <Button variant="secondary" size="sm" onClick={reschedule} disabled={submitting}>
               Reschedule

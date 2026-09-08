@@ -6,6 +6,10 @@
 // alongside it as a progressive enhancement for larger screens; the bottom
 // bar keeps working underneath so nothing is designed desktop-first and
 // merely shrunk down (§30's explicit rule).
+//
+// Loop 50 (§30 visual layer): restyled to the MONARCH design language —
+// frosted "glass chrome" (.chrome-blur, globals.css) and a glowing active
+// state on both surfaces, matching the reference apps' nav treatment.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -100,7 +104,7 @@ export default function AppNav() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white/95 backdrop-blur md:hidden"
+        className="chrome-blur fixed inset-x-0 bottom-0 z-20 flex border-t border-line md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
       >
@@ -110,8 +114,8 @@ export default function AppNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
-                active ? "text-indigo-600" : "text-slate-500"
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors ${
+                active ? "text-brand" : "text-muted"
               }`}
             >
               {item.icon(active)}
@@ -122,7 +126,7 @@ export default function AppNav() {
       </nav>
 
       <nav
-        className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-slate-200 bg-white px-3 py-4 md:flex"
+        className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-line bg-bg1 px-3 py-4 md:flex"
         aria-label="Primary"
       >
         {NAV_ITEMS.map((item) => {
@@ -131,8 +135,10 @@ export default function AppNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                active ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                active
+                  ? "bg-gradient-to-br from-brand/[0.22] to-brand2/[0.14] text-fg shadow-[0_0_12px_rgba(59,130,246,0.15)] border border-brand/25"
+                  : "border border-transparent text-muted hover:bg-white/[0.05] hover:text-fg"
               }`}
             >
               {item.icon(active)}

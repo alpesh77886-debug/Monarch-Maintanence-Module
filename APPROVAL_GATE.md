@@ -11,6 +11,7 @@
 | 7 (Loops 31–35) | [`APPROVAL_REPORT_LOOP_31_35.md`](./APPROVAL_REPORT_LOOP_31_35.md) | Approved — "ye karlo iske baad you can proceed for 36 to 40 loop" (given alongside the forensic remediation brief) | 2026-09-07 |
 | 8 (Loops 36–40) | [`APPROVAL_REPORT_LOOP_36_40.md`](./APPROVAL_REPORT_LOOP_36_40.md) | Approved — "itna complete karne ke baad tum loop 41 se 45 start kar sakte ho...Mera approval hai" (given in advance, conditional on the RISK-25 + cleanup task completing first — it did, and merged as PR #41) | 2026-09-07 |
 | 9 (Loops 41–45) | [`APPROVAL_REPORT_LOOP_41_45.md`](./APPROVAL_REPORT_LOOP_41_45.md) | Approved — SCOPED to "Type A" only (technical debt Claude can execute without Boss input): "Type A start karo", after the Boss was shown a Type A/Type B split of remaining work | — |
+| 10 (Loops 46–50) | [`APPROVAL_REPORT_LOOP_46_50.md`](./APPROVAL_REPORT_LOOP_46_50.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -86,3 +87,16 @@ exhausted. Holding here, AWAITING BOSS, until either new Type A-equivalent
 scope is approved, a Type B item gets an explicit decision, or the
 promised Sarvam Screen Architecture HTML arrives for the forensic
 verification pass.
+
+**Current state: GATE 10 (Loops 46-50) — MANDATORY STOP, AWAITING BOSS.**
+The Boss then supplied the full Sarvam HTML and answered Type B items 4-7
+(Loop 49: DB cleanup, done; Sarvam forensic verification, 3 findings
+flagged), then flagged the live app as looking like "a basic webpage" and
+supplied 2 reference apps — AOS and Quality — as the concrete bar for "top
+tier" (Loop 50: design-token overhaul, Stage 1 of a visual redesign). The
+Boss's own instruction ("start karo 1st round of loop... 50 se aage") is
+the standing authorization for the redesign generally, but per §19.9 this
+5-loop gate still applies at Loop 50 itself — Loop 51 (the redesign's next
+stage, restructuring Case Detail into Sarvam's proposed bottom-sheet
+model) does not start without an explicit continuation reply to
+`APPROVAL_REPORT_LOOP_46_50.md`.

@@ -33,7 +33,7 @@ export default function NotificationBell({
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
-        className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-bg2"
       >
         <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.7}>
           <path
@@ -44,7 +44,7 @@ export default function NotificationBell({
           <path d="M10 18a2 2 0 0 0 4 0" strokeLinecap="round" />
         </svg>
         {notifications.length > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-bad px-1 text-[10px] font-semibold text-white">
             {notifications.length}
           </span>
         )}
@@ -52,17 +52,17 @@ export default function NotificationBell({
       {open && (
         <div
           data-testid="notification-panel"
-          className="absolute right-0 z-20 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+          className="absolute right-0 z-20 mt-2 w-80 rounded-xl border border-line bg-card p-2 shadow-lg"
         >
           {notifications.length === 0 && (
-            <p className="p-2 text-sm text-slate-500">No unread notifications.</p>
+            <p className="p-2 text-sm text-muted">No unread notifications.</p>
           )}
           <ul className="flex flex-col gap-1">
             {notifications.map((n) => (
-              <li key={n.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2 text-sm">
-                <p className="text-slate-800">{n.message}</p>
+              <li key={n.id} className="rounded-lg border border-line bg-bg2 p-2 text-sm">
+                <p className="text-fg">{n.message}</p>
                 <div className="mt-1 flex items-center justify-between">
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted2">
                     {new Date(n.created_at).toLocaleString()}
                   </p>
                   <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export default function NotificationBell({
                       <Link
                         href={`/cases/${n.case_id}`}
                         onClick={() => setOpen(false)}
-                        className="text-xs font-medium text-indigo-700 hover:underline"
+                        className="text-xs font-medium text-brand hover:underline"
                       >
                         View case
                       </Link>

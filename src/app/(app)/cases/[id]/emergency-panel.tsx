@@ -65,17 +65,17 @@ export default function EmergencyPanel({
 
   if (emergencyConfirmed) {
     return (
-      <div className="rounded-lg border border-red-300 bg-red-50 p-3">
-        <p className="text-sm font-semibold text-red-900">
+      <div className="rounded-lg border border-bad/25 bg-bad/10 p-3">
+        <p className="text-sm font-semibold text-red-300">
           Confirmed Emergency / Safety-Critical
         </p>
-        <p className="text-xs text-red-800">
+        <p className="text-xs text-red-300">
           Confirmed at{" "}
           {emergencyConfirmedAt ? new Date(emergencyConfirmedAt).toLocaleString() : "—"} — 1h
           escalation clock is running.
         </p>
         {emergencyClaimReason && (
-          <p className="mt-1 text-xs text-red-800">Claim reason: {emergencyClaimReason}</p>
+          <p className="mt-1 text-xs text-red-300">Claim reason: {emergencyClaimReason}</p>
         )}
       </div>
     );
@@ -83,12 +83,12 @@ export default function EmergencyPanel({
 
   if (emergencyClaimed) {
     return (
-      <div className="flex flex-col gap-2 rounded-lg border border-orange-300 bg-orange-50 p-3">
-        <p className="text-sm font-semibold text-orange-900">
+      <div className="flex flex-col gap-2 rounded-lg border border-orange/25 bg-orange/10 p-3">
+        <p className="text-sm font-semibold text-orange-300">
           Emergency/Safety-Critical claimed — awaiting Executive/Manager confirmation
         </p>
-        <p className="text-xs text-orange-800">{emergencyClaimReason}</p>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        <p className="text-xs text-orange-300">{emergencyClaimReason}</p>
+        {error && <p className="text-sm text-red-300">{error}</p>}
         {canConfirm && (
           <Button variant="warning" className="self-start" onClick={confirm} disabled={submitting}>
             Confirm Emergency (starts 1h escalation clock)
@@ -103,16 +103,16 @@ export default function EmergencyPanel({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-sm font-medium text-slate-900">Claim Emergency / Safety-Critical</p>
+    <div className="flex flex-col gap-2 rounded-lg border border-line bg-card p-3">
+      <p className="text-sm font-medium text-fg">Claim Emergency / Safety-Critical</p>
       <textarea
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="Reason/evidence for the emergency claim"
-        className="rounded-md border border-slate-300 p-2 text-sm"
+        className="rounded-lg border border-line2 p-2 text-sm"
         rows={2}
       />
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <Button variant="danger" className="self-start" onClick={claim} disabled={submitting}>
         Claim Emergency
       </Button>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import type { MaintenanceCase, StaffMember } from "@/lib/supabase/database.types";
+import type { CaseStatus, MaintenanceCase, StaffMember } from "@/lib/supabase/database.types";
 import { StatCard, BarBreakdown, Icons } from "@/components/stat-card";
+import { statusFillClass } from "@/components/ui";
 
 // §22 shift-handover dashboard: total open, Executive-wise pending/completed,
 // unassigned, aging, priority/status, current owner.
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
 
   if (!isStaffRow) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+      <p className="rounded-lg border border-dashed border-line2 p-6 text-center text-sm text-muted">
         The shift dashboard is visible to Maintenance staff only.
       </p>
     );
@@ -82,41 +83,21 @@ export default async function DashboardPage() {
 
   const oldestOpen = [...open].slice(0, 10);
 
-  // F-07: this map used to key WAITING and QC_PENDING — neither is a value of
-  // maintenance.case_status, so they were dead entries. The real problem was
-  // the mirror image: eight statuses that DO exist were missing, so half the
-  // lifecycle rendered in the same grey as REJECTED/DUPLICATE. WAITING is a
-  // dependency/hold overlay (maintenance.waits), never a case status, so it
-  // is deliberately absent here. All 16 enum values are now covered.
-  const statusColor: Record<string, string> = {
-    REPORTED: "bg-slate-400",
-    ACKNOWLEDGED: "bg-blue-400",
-    NEEDS_INFORMATION: "bg-yellow-400",
-    ASSESSED: "bg-sky-400",
-    ASSIGNED: "bg-sky-500",
-    DIAGNOSING: "bg-amber-400",
-    IN_REPAIR: "bg-amber-500",
-    TEMPORARILY_RESTORED: "bg-orange-400",
-    TECHNICALLY_RESTORED: "bg-teal-500",
-    CLEARANCE_PENDING: "bg-violet-500",
-    QC_REJECTED: "bg-rose-500",
-    MAINTENANCE_RELEASED: "bg-emerald-400",
-    CLOSED: "bg-emerald-600",
-    REOPENED: "bg-fuchsia-500",
-    REJECTED: "bg-slate-300",
-    DUPLICATE: "bg-slate-300",
-  };
-  const statusCounts = new Map<string, number>();
+  // Loop 50: this used to be its own local status->colour map (drifted from
+  // the queue card's and case-detail's own copies — three inconsistent
+  // opinions on the same 16 states, see SARVAM_VERIFICATION_REPORT.md).
+  // Now sourced from the one canonical map in components/ui.tsx.
+  const statusCounts = new Map<CaseStatus, number>();
   for (const c of cases) statusCounts.set(c.status, (statusCounts.get(c.status) ?? 0) + 1);
   const statusSegments = [...statusCounts.entries()].map(([label, value]) => ({
     label,
     value,
-    colorClass: statusColor[label] ?? "bg-slate-300",
+    colorClass: statusFillClass(label),
   }));
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-lg font-semibold text-slate-900">Shift dashboard</h1>
+      <h1 className="text-lg font-semibold text-fg">Shift dashboard</h1>
 
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatCard label="Open cases" value={open.length} icon={Icons.clipboard} tone="info" />
@@ -141,10 +122,10 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-900">By staff member</h2>
+        <h2 className="text-sm font-semibold text-fg">By staff member</h2>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full min-w-[28rem] text-left text-sm">
-            <thead className="text-xs uppercase text-slate-500">
+            <thead className="text-xs uppercase text-muted">
               <tr>
                 <th className="py-1 pr-3">Staff</th>
                 <th className="py-1 pr-3">Shift</th>
@@ -154,22 +135,22 @@ export default async function DashboardPage() {
             </thead>
             <tbody>
               {perStaff.map(({ staff: s, pending, completed }) => (
-                <tr key={s.id} className="border-t border-slate-100">
-                  <td className="py-1 pr-3 text-slate-800">
+                <tr key={s.id} className="border-t border-line">
+                  <td className="py-1 pr-3 text-fg">
                     {s.full_name}
-                    <span className="ml-1 text-xs text-slate-400">
+                    <span className="ml-1 text-xs text-muted2">
                       {s.role === "MAINTENANCE_MANAGER" ? "Manager" : "Executive"}
                     </span>
                   </td>
                   <td className="py-1 pr-3 text-xs">
                     {s.is_available ? (
-                      <span className="text-emerald-700">On shift</span>
+                      <span className="text-emerald-300">On shift</span>
                     ) : (
-                      <span className="text-slate-400">Off shift</span>
+                      <span className="text-muted2">Off shift</span>
                     )}
                   </td>
-                  <td className="py-1 pr-3 text-slate-800">{pending}</td>
-                  <td className="py-1 text-slate-800">{completed}</td>
+                  <td className="py-1 pr-3 text-fg">{pending}</td>
+                  <td className="py-1 text-fg">{completed}</td>
                 </tr>
               ))}
             </tbody>
@@ -179,7 +160,7 @@ export default async function DashboardPage() {
 
       {unassigned.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-amber-800">
+          <h2 className="text-sm font-semibold text-amber-300">
             Unassigned — waiting for a Maintenance owner
           </h2>
           <ul className="mt-2 flex flex-col gap-1">
@@ -187,11 +168,11 @@ export default async function DashboardPage() {
               <li key={c.id}>
                 <Link
                   href={`/cases/${c.id}`}
-                  className="block rounded-md border border-amber-200 bg-amber-50 p-2 text-sm"
+                  className="block rounded-lg border border-warn/25 bg-warn/10 p-2 text-sm"
                 >
-                  <span className="font-mono text-xs text-amber-700">{c.case_number}</span>{" "}
-                  <span className="text-slate-800">{c.symptom}</span>
-                  <span className="ml-1 text-xs text-slate-500">
+                  <span className="font-mono text-xs text-amber-300">{c.case_number}</span>{" "}
+                  <span className="text-fg">{c.symptom}</span>
+                  <span className="ml-1 text-xs text-muted">
                     · {c.status} · age {formatAge(c.created_at)}
                   </span>
                 </Link>
@@ -202,8 +183,8 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-900">Oldest open cases</h2>
-        <p className="mt-1 text-xs text-slate-500">
+        <h2 className="text-sm font-semibold text-fg">Oldest open cases</h2>
+        <p className="mt-1 text-xs text-muted">
           Sorted by age. Age is shown as-is — no case-level SLA is defined in the
           approved design, so nothing here is labelled &ldquo;overdue&rdquo;.
         </p>
@@ -212,14 +193,14 @@ export default async function DashboardPage() {
             <li key={c.id}>
               <Link
                 href={`/cases/${c.id}`}
-                className="block rounded-md border border-slate-200 bg-white p-2 text-sm"
+                className="block rounded-lg border border-line bg-card p-2 text-sm"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs text-slate-500">{c.case_number}</span>
-                  <span className="text-xs text-slate-500">age {formatAge(c.created_at)}</span>
+                  <span className="font-mono text-xs text-muted">{c.case_number}</span>
+                  <span className="text-xs text-muted">age {formatAge(c.created_at)}</span>
                 </div>
-                <p className="text-slate-800">{c.symptom}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-fg">{c.symptom}</p>
+                <p className="text-xs text-muted">
                   {c.status}
                   {c.priority ? ` · ${c.priority}` : ""} ·{" "}
                   {c.current_owner_user_id
@@ -229,7 +210,7 @@ export default async function DashboardPage() {
               </Link>
             </li>
           ))}
-          {open.length === 0 && <p className="text-sm text-slate-500">No open cases.</p>}
+          {open.length === 0 && <p className="text-sm text-muted">No open cases.</p>}
         </ul>
       </section>
     </div>

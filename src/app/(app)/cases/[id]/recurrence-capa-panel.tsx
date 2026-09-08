@@ -61,34 +61,34 @@ export default function RecurrenceCapaPanel({
 
   return (
     <section
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4 shadow-sm"
       data-testid="recurrence-capa-panel"
     >
-      <h2 className="text-sm font-semibold text-slate-900">Recurrence &amp; CAPA</h2>
+      <h2 className="text-sm font-semibold text-fg">Recurrence &amp; CAPA</h2>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
 
       {/* ---------------- §18 recurrence ---------------- */}
       <div>
-        <h3 className="text-xs font-semibold uppercase text-slate-500">
+        <h3 className="text-xs font-semibold uppercase text-muted">
           Recurrence flags
         </h3>
         {flags.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-muted">
             No recurrence flagged for this case.
           </p>
         ) : (
           <ul className="mt-1 flex flex-col gap-2">
             {flags.map((f) => (
-              <li key={f.id} className="rounded-md border border-slate-200 p-2 text-sm">
+              <li key={f.id} className="rounded-lg border border-line p-2 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={
                       f.status === "SUSPECTED"
-                        ? "rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800"
+                        ? "rounded bg-warn/15 px-1.5 py-0.5 text-xs text-amber-300"
                         : f.status === "CONFIRMED"
-                          ? "rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-800"
-                          : "rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600"
+                          ? "rounded bg-bad/15 px-1.5 py-0.5 text-xs text-red-300"
+                          : "rounded bg-bg2 px-1.5 py-0.5 text-xs text-muted"
                     }
                   >
                     {f.status === "SUSPECTED"
@@ -98,12 +98,12 @@ export default function RecurrenceCapaPanel({
                         : "Dismissed"}
                   </span>
                   {f.evidence_tier && (
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-muted">
                       evidence tier: {f.evidence_tier}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-slate-600">
+                <p className="mt-1 text-xs text-muted">
                   {f.related_case_ids.length} related cases
                   {f.match_value ? ` · matched on ${f.match_value}` : ""}
                 </p>
@@ -111,7 +111,7 @@ export default function RecurrenceCapaPanel({
                 {f.status === "SUSPECTED" && (
                   <div className="mt-2 flex flex-col gap-1">
                     {/* §18: a human confirms recurrence status. */}
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted">
                       Flagged by the system as <em>suspected</em>. An Executive or
                       Manager decides — the system does not confirm recurrence and
                       has not proposed a cause.
@@ -122,7 +122,7 @@ export default function RecurrenceCapaPanel({
                         setDecisionReason({ ...decisionReason, [f.id]: e.target.value })
                       }
                       placeholder="Reason for confirming or dismissing (required)"
-                      className="rounded-md border border-slate-300 p-1.5 text-sm"
+                      className="rounded-lg border border-line2 p-1.5 text-sm"
                     />
                     <div className="flex gap-2">
                       <Button
@@ -159,7 +159,7 @@ export default function RecurrenceCapaPanel({
                 )}
 
                 {f.decision_reason && (
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted">
                     {f.status === "CONFIRMED" ? "Confirmed" : "Dismissed"} by{" "}
                     {nameById[f.confirmed_by ?? ""] ?? "unknown"}: {f.decision_reason}
                   </p>
@@ -169,10 +169,10 @@ export default function RecurrenceCapaPanel({
                 {f.status === "CONFIRMED" && (
                   <div className="mt-2">
                     {f.root_cause_note ? (
-                      <p className="text-xs text-slate-600">
+                      <p className="text-xs text-muted">
                         <span className="font-medium">Root cause:</span>{" "}
                         {f.root_cause_note}{" "}
-                        <span className="text-slate-400">
+                        <span className="text-muted2">
                           — {nameById[f.root_cause_note_by ?? ""] ?? "unknown"}
                         </span>
                       </p>
@@ -184,7 +184,7 @@ export default function RecurrenceCapaPanel({
                             setRootCause({ ...rootCause, [f.id]: e.target.value })
                           }
                           placeholder="Root cause, in your own words"
-                          className="rounded-md border border-slate-300 p-1.5 text-sm"
+                          className="rounded-lg border border-line2 p-1.5 text-sm"
                         />
                         <Button
                           variant="secondary"
@@ -217,19 +217,19 @@ export default function RecurrenceCapaPanel({
 
       {/* ---------------- §19 CAPA ---------------- */}
       <div>
-        <h3 className="text-xs font-semibold uppercase text-slate-500">CAPA</h3>
+        <h3 className="text-xs font-semibold uppercase text-muted">CAPA</h3>
         {capas.length > 0 && (
           <ul className="mt-1 flex flex-col gap-2">
             {capas.map((c) => (
-              <li key={c.id} className="rounded-md border border-slate-200 p-2 text-sm">
+              <li key={c.id} className="rounded-lg border border-line p-2 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-slate-800">{c.title}</span>
+                  <span className="font-medium text-fg">{c.title}</span>
                   {c.source === "SYSTEM_SUGGESTED" && (
-                    <span className="rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800">
+                    <span className="rounded bg-brand/15 px-1.5 py-0.5 text-xs text-sky-300">
                       suggested — not certified
                     </span>
                   )}
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted">
                     {c.status === "OPEN"
                       ? "open"
                       : c.status === "VERIFIED_EFFECTIVE"
@@ -237,14 +237,14 @@ export default function RecurrenceCapaPanel({
                         : "verified NOT effective"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   Owner: {nameById[c.owner_user_id] ?? "unknown"} (Manager)
                 </p>
                 {c.corrective_action && (
-                  <p className="mt-0.5 text-xs text-slate-600">{c.corrective_action}</p>
+                  <p className="mt-0.5 text-xs text-muted">{c.corrective_action}</p>
                 )}
                 {c.verification_note && (
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="mt-0.5 text-xs text-muted">
                     Verification: {c.verification_note} —{" "}
                     {nameById[c.effectiveness_verified_by ?? ""] ?? "unknown"}
                   </p>
@@ -261,7 +261,7 @@ export default function RecurrenceCapaPanel({
                           setVerifyNote({ ...verifyNote, [c.id]: e.target.value })
                         }
                         placeholder="Evidence for this verification (required)"
-                        className="rounded-md border border-slate-300 p-1.5 text-sm"
+                        className="rounded-lg border border-line2 p-1.5 text-sm"
                       />
                       <div className="flex gap-2">
                         <Button
@@ -296,7 +296,7 @@ export default function RecurrenceCapaPanel({
                       </div>
                     </div>
                   ) : (
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted">
                       Effectiveness verification is the Maintenance Manager&rsquo;s.
                     </p>
                   ))}
@@ -310,18 +310,18 @@ export default function RecurrenceCapaPanel({
             value={capaTitle}
             onChange={(e) => setCapaTitle(e.target.value)}
             placeholder="Raise a CAPA — title"
-            className="rounded-md border border-slate-300 p-1.5 text-sm"
+            className="rounded-lg border border-line2 p-1.5 text-sm"
           />
           <input
             value={capaAction}
             onChange={(e) => setCapaAction(e.target.value)}
             placeholder="Corrective action (optional)"
-            className="rounded-md border border-slate-300 p-1.5 text-sm"
+            className="rounded-lg border border-line2 p-1.5 text-sm"
           />
           <select
             value={capaOwner}
             onChange={(e) => setCapaOwner(e.target.value)}
-            className="rounded-md border border-slate-300 p-1.5 text-sm"
+            className="rounded-lg border border-line2 p-1.5 text-sm"
           >
             <option value="">Owner — Maintenance Manager…</option>
             {managers.map((m) => (

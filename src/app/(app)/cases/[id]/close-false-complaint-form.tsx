@@ -46,12 +46,12 @@ export default function CloseFalseComplaintForm({ caseId }: { caseId: string }) 
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-medium text-slate-900">This wasn&apos;t a real issue?</p>
+    <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
+      <p className="text-sm font-medium text-fg">This wasn&apos;t a real issue?</p>
       <select
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        className="rounded-md border border-slate-300 p-2 text-sm"
+        className="rounded-lg border border-line2 p-2 text-sm"
       >
         {PREDEFINED_REASONS.map((r) => (
           <option key={r.value} value={r.value}>
@@ -64,11 +64,11 @@ export default function CloseFalseComplaintForm({ caseId }: { caseId: string }) 
           value={explanation}
           onChange={(e) => setExplanation(e.target.value)}
           placeholder="Explain why"
-          className="rounded-md border border-slate-300 p-2 text-sm"
+          className="rounded-lg border border-line2 p-2 text-sm"
           rows={2}
         />
       )}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <Button variant="secondary" className="self-start" onClick={submit} disabled={submitting}>
         Close as false/wrong complaint
       </Button>

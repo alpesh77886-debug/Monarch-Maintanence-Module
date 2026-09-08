@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
+/* Loop 50 (§30/§32 visual layer). MONARCH design language, adopted from the
+   Boss's two reference apps (AOS + Quality) rather than invented — both
+   share this exact token set (same hex values, same variable names), so
+   this is the established brand system, not a new one. Dark-first by
+   design (matches both references): a single page-level surface stack,
+   translucent-white borders, and a small tinted-pill palette for
+   status/semantic color, reused everywhere via @theme inline below so
+   ordinary Tailwind utilities (bg-card, text-muted, border-line, ...)
+   stay available across every component without each file re-declaring
+   raw hex. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0a0f18;
+  --bg1: #111827;
+  --bg2: #1a2332;
+  --card: #131924;
+  --card2: #1c2535;
+  --line: rgba(255, 255, 255, 0.08);
+  --line2: rgba(255, 255, 255, 0.14);
+  --fg: #f1f5f9;
+  --muted: #94a3b8;
+  --muted2: #64748b;
+  --brand: #3b82f6;
+  --brand2: #2563eb;
+  --orange: #f97316;
+  --orange2: #ea580c;
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --vio: #a855f7;
+  --teal: #14b8a6;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-bg: var(--bg);
+  --color-bg1: var(--bg1);
+  --color-bg2: var(--bg2);
+  --color-card: var(--card);
+  --color-card2: var(--card2);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-muted2: var(--muted2);
+  --color-brand: var(--brand);
+  --color-brand2: var(--brand2);
+  --color-orange: var(--orange);
+  --color-orange2: var(--orange2);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-vio: var(--vio);
+  --color-teal: var(--teal);
+  --font-sans: "Inter", var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Shared "glass chrome" treatment for fixed/sticky surfaces (top header,
+   bottom tab bar, desktop rail) — the one deliberately reused effect from
+   both reference apps, applied once here rather than duplicated per file. */
+.chrome-blur {
+  background: color-mix(in srgb, var(--bg1) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line2);
+  border-radius: 999px;
+}
+
+/* Base form-control styling. A plain element selector has lower specificity
+   than any Tailwind utility class, so a file that already sets its own
+   background, text or border colour on an input keeps that value untouched
+   — this only fills the gap for the ~27 form files that set border/radius
+   /padding but never a background or text color, which previously fell
+   back to each browser's un-styled (often white) native control against
+   the new dark page. Translucent fill matches the reference apps' input
+   treatment. */
+input,
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--fg);
+  border-radius: 8px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted2);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
 }

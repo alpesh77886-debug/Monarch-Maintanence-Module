@@ -21,7 +21,7 @@ export default async function PmPage() {
 
   if (!isStaffRow) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+      <p className="rounded-lg border border-dashed border-line2 p-6 text-center text-sm text-muted">
         Preventive maintenance planning is visible to Maintenance staff only.
       </p>
     );
@@ -54,24 +54,24 @@ export default async function PmPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-lg font-semibold text-slate-900">Preventive Maintenance</h1>
+      <h1 className="text-lg font-semibold text-fg">Preventive Maintenance</h1>
 
       <CreatePlanForm isManager={isManager} />
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-900">Plans</h2>
+        <h2 className="text-sm font-semibold text-fg">Plans</h2>
         <div className="mt-2 flex flex-col gap-2">
           {(plans as PmPlan[] | null)?.map((p) => (
             <PmPlanCard key={p.id} plan={p} isManager={isManager} />
           ))}
           {plans?.length === 0 && (
-            <p className="text-sm text-slate-500">No PM plans yet.</p>
+            <p className="text-sm text-muted">No PM plans yet.</p>
           )}
         </div>
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-900">Instances</h2>
+        <h2 className="text-sm font-semibold text-fg">Instances</h2>
         <div className="mt-2 flex flex-col gap-2">
           {(instances as PmInstance[] | null)?.map((i) => (
             <PmInstanceCard
@@ -82,7 +82,7 @@ export default async function PmPage() {
             />
           ))}
           {instances?.length === 0 && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               No PM instances yet — approved recurring plans generate these automatically.
             </p>
           )}

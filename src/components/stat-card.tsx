@@ -11,11 +11,11 @@
 // a client file at all).
 
 const TONES = {
-  neutral: "bg-slate-50 text-slate-600",
-  info: "bg-sky-50 text-sky-700",
-  warn: "bg-amber-50 text-amber-700",
-  danger: "bg-red-50 text-red-700",
-  success: "bg-emerald-50 text-emerald-700",
+  neutral: "bg-bg2 text-muted",
+  info: "bg-brand/10 text-sky-300",
+  warn: "bg-warn/10 text-amber-300",
+  danger: "bg-bad/10 text-red-300",
+  success: "bg-good/10 text-emerald-300",
 } as const;
 
 export type StatCardTone = keyof typeof TONES;
@@ -80,19 +80,19 @@ export function StatCard({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+    <div className="flex items-start gap-3 rounded-lg border border-line bg-card p-3">
       {icon && (
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-base ${TONES[tone]}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base ${TONES[tone]}`}
           aria-hidden="true"
         >
           {icon}
         </span>
       )}
       <div className="min-w-0">
-        <p className="text-xs text-slate-500">{label}</p>
-        <p className="text-xl font-semibold text-slate-900">{value}</p>
-        {sublabel && <p className="mt-0.5 text-xs text-slate-400">{sublabel}</p>}
+        <p className="text-xs text-muted">{label}</p>
+        <p className="text-xl font-semibold text-fg">{value}</p>
+        {sublabel && <p className="mt-0.5 text-xs text-muted2">{sublabel}</p>}
       </div>
     </div>
   );
@@ -112,9 +112,9 @@ export function BarBreakdown({
   segments: { label: string; value: number; colorClass: string }[];
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs font-medium text-slate-600">{title}</p>
-      <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+    <div className="rounded-lg border border-line bg-card p-3">
+      <p className="text-xs font-medium text-muted">{title}</p>
+      <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-bg2">
         {total > 0 &&
           segments.map((s) =>
             s.value > 0 ? (
@@ -129,13 +129,13 @@ export function BarBreakdown({
       </div>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
         {segments.map((s) => (
-          <span key={s.label} className="flex items-center gap-1.5 text-xs text-slate-500">
+          <span key={s.label} className="flex items-center gap-1.5 text-xs text-muted">
             <span className={`h-2 w-2 rounded-full ${s.colorClass}`} />
             {s.label}: {s.value}
           </span>
         ))}
       </div>
-      {total === 0 && <p className="mt-1 text-xs text-slate-400">No data yet.</p>}
+      {total === 0 && <p className="mt-1 text-xs text-muted2">No data yet.</p>}
     </div>
   );
 }

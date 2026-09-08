@@ -27,7 +27,7 @@ import EvidencePanel from "./evidence-panel";
 import AssetPanel from "./asset-panel";
 import RestorationHistoryPanel from "./restoration-history-panel";
 import Link from "next/link";
-import { Badge, Card } from "@/components/ui";
+import { Badge, Card, StatusBadge } from "@/components/ui";
 import type {
   StaffMember,
   SafetyStop,
@@ -207,28 +207,28 @@ export default async function CaseDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/cases" className="text-xs font-medium text-slate-500 hover:text-slate-700">
+        <Link href="/cases" className="text-xs font-medium text-muted hover:text-fg">
           ← All cases
         </Link>
         <Card className="mt-2">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-mono text-xs text-slate-500">{caseRow.case_number}</p>
-            <Badge tone="info">{caseRow.status}</Badge>
+            <p className="font-mono text-xs text-muted">{caseRow.case_number}</p>
+            <StatusBadge status={caseRow.status} />
             {caseRow.priority && <Badge tone="neutral">{caseRow.priority}</Badge>}
             {caseRow.major_complex_flag && <Badge tone="danger">MAJOR/COMPLEX</Badge>}
           </div>
-          <h1 className="mt-2 text-lg font-semibold text-slate-900">{caseRow.symptom}</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="mt-2 text-lg font-semibold text-fg">{caseRow.symptom}</h1>
+          <p className="mt-1 text-sm text-muted">
             {caseRow.case_type} · Status: <span className="font-medium">{caseRow.status}</span>
             {caseRow.priority ? ` · Priority: ${caseRow.priority}` : ""}
           </p>
           {caseRow.duplicate_of_case_id && (
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-muted">
               Duplicate of{" "}
               {duplicatePrimaryCaseNumber ? (
                 <Link
                   href={`/cases/${caseRow.duplicate_of_case_id}`}
-                  className="font-medium text-indigo-700 hover:underline"
+                  className="font-medium text-brand hover:underline"
                 >
                   {duplicatePrimaryCaseNumber}
                 </Link>
@@ -404,9 +404,9 @@ export default async function CaseDetailPage({
       {/* §22.2: the receiver needs escalation state at a glance, not buried
           in the audit trail. */}
       {(caseRow.emergency_confirmed || activeWait?.resume_ready_at) && (
-        <section className="rounded-xl border border-red-200 bg-red-50 p-4">
-          <h2 className="text-sm font-semibold text-red-900">Escalation state</h2>
-          <ul className="mt-1 flex flex-col gap-0.5 text-sm text-red-900">
+        <section className="rounded-xl border border-bad/25 bg-bad/10 p-4">
+          <h2 className="text-sm font-semibold text-red-300">Escalation state</h2>
+          <ul className="mt-1 flex flex-col gap-0.5 text-sm text-red-300">
             {caseRow.emergency_confirmed && (
               <li>
                 Confirmed emergency since{" "}
@@ -431,25 +431,25 @@ export default async function CaseDetailPage({
       )}
 
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">Ownership history</h2>
-        <ol className="mt-2 flex flex-col gap-1.5 text-sm text-slate-700">
+        <h2 className="text-sm font-semibold text-fg">Ownership history</h2>
+        <ol className="mt-2 flex flex-col gap-1.5 text-sm text-fg">
           {ownershipHistory?.map((o) => (
-            <li key={o.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+            <li key={o.id} className="rounded-lg border border-line bg-bg2 p-2.5">
               <span className="font-medium">
                 {staffById.get(o.owner_user_id)?.full_name ?? o.owner_user_id}
               </span>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted">
                 {" "}
                 — from {new Date(o.started_at).toLocaleString()}
                 {o.ended_at ? ` to ${new Date(o.ended_at).toLocaleString()}` : " (current)"}
               </span>
               {o.transfer_reason && (
-                <p className="text-xs text-slate-500">Reason: {o.transfer_reason}</p>
+                <p className="text-xs text-muted">Reason: {o.transfer_reason}</p>
               )}
             </li>
           ))}
           {ownershipHistory?.length === 0 && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               No owner yet — this case is unassigned.
             </p>
           )}
@@ -457,8 +457,8 @@ export default async function CaseDetailPage({
       </Card>
 
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">Assigned technicians</h2>
-        <ul className="mt-2 flex flex-col gap-1 text-sm text-slate-700">
+        <h2 className="text-sm font-semibold text-fg">Assigned technicians</h2>
+        <ul className="mt-2 flex flex-col gap-1 text-sm text-fg">
           {assignments?.map((a) => (
             <li key={a.id}>
               {a.technician_user_id}
@@ -467,17 +467,17 @@ export default async function CaseDetailPage({
             </li>
           ))}
           {assignments?.length === 0 && (
-            <p className="text-sm text-slate-500">No technicians assigned yet.</p>
+            <p className="text-sm text-muted">No technicians assigned yet.</p>
           )}
         </ul>
       </Card>
 
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">Interventions</h2>
+        <h2 className="text-sm font-semibold text-fg">Interventions</h2>
         <ol className="mt-2 flex flex-col gap-2">
           {interventions?.map((i) => (
-            <li key={i.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-sm">
-              <p className="text-xs text-slate-400">{new Date(i.started_at).toLocaleString()}</p>
+            <li key={i.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
+              <p className="text-xs text-muted2">{new Date(i.started_at).toLocaleString()}</p>
               <p><span className="font-medium">Action:</span> {i.action_taken}</p>
               {i.result && <p><span className="font-medium">Result:</span> {i.result}</p>}
               {i.failure_mode && (
@@ -486,25 +486,25 @@ export default async function CaseDetailPage({
             </li>
           ))}
           {interventions?.length === 0 && (
-            <p className="text-sm text-slate-500">No interventions recorded yet.</p>
+            <p className="text-sm text-muted">No interventions recorded yet.</p>
           )}
         </ol>
       </Card>
 
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">
+        <h2 className="text-sm font-semibold text-fg">
           Observation + Action Continuity Journal
         </h2>
         <ol className="mt-2 flex flex-col gap-2">
           {observations?.map((o) => {
             const linkedIntervention = interventions?.find((i) => i.id === o.intervention_id);
             return (
-              <li key={o.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-sm">
-                <p className="text-xs text-slate-400">
+              <li key={o.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
+                <p className="text-xs text-muted2">
                   {new Date(o.created_at).toLocaleString()}
                 </p>
                 {linkedIntervention && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted">
                     <span className="font-medium">Intervention:</span> {linkedIntervention.action_taken}
                   </p>
                 )}
@@ -526,14 +526,14 @@ export default async function CaseDetailPage({
             );
           })}
           {observations?.length === 0 && (
-            <p className="text-sm text-slate-500">No journal entries yet.</p>
+            <p className="text-sm text-muted">No journal entries yet.</p>
           )}
         </ol>
       </Card>
 
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">Audit trail</h2>
-        <ol className="mt-2 flex flex-col gap-1 text-xs text-slate-500">
+        <h2 className="text-sm font-semibold text-fg">Audit trail</h2>
+        <ol className="mt-2 flex flex-col gap-1 text-xs text-muted">
           {events?.map((e) => (
             <li key={e.id}>
               {new Date(e.occurred_at).toLocaleString()} — {e.event_type}

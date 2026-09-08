@@ -70,14 +70,14 @@ export default function NewCasePage() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h1 className="text-lg font-semibold text-slate-900">Report a case</h1>
+      <h1 className="text-lg font-semibold text-fg">Report a case</h1>
 
-      <label className="text-sm font-medium text-slate-700">
+      <label className="text-sm font-medium text-fg">
         Case type
         <select
           value={caseType}
           onChange={(e) => setCaseType(e.target.value as CaseType)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         >
           {CASE_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -87,36 +87,36 @@ export default function NewCasePage() {
         </select>
       </label>
 
-      <label className="text-sm font-medium text-slate-700">
+      <label className="text-sm font-medium text-fg">
         Symptom / complaint
         <textarea
           required
           value={symptom}
           onChange={(e) => setSymptom(e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
 
-      <label className="text-sm font-medium text-slate-700">
+      <label className="text-sm font-medium text-fg">
         Area (optional)
         <input
           value={area}
           onChange={(e) => setArea(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
 
-      <label className="text-sm font-medium text-slate-700">
+      <label className="text-sm font-medium text-fg">
         Line (optional)
         <input
           value={line}
           onChange={(e) => setLine(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-fg">
         <input
           type="checkbox"
           checked={assetKnown}
@@ -130,7 +130,7 @@ export default function NewCasePage() {
           checkbox, not an algorithmic guess, and it is not later overridden
           here because the pack only documents the classification happening
           at creation, not a change flow for it. */}
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-fg">
         <input
           type="checkbox"
           checked={majorComplex}
@@ -140,7 +140,7 @@ export default function NewCasePage() {
       </label>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-red-300">{error}</p>
       )}
 
       <Button type="submit" disabled={submitting} className="w-full">
