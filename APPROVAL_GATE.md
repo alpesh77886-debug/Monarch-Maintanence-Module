@@ -13,6 +13,7 @@
 | 9 (Loops 41–45) | [`APPROVAL_REPORT_LOOP_41_45.md`](./APPROVAL_REPORT_LOOP_41_45.md) | Approved — SCOPED to "Type A" only (technical debt Claude can execute without Boss input): "Type A start karo", after the Boss was shown a Type A/Type B split of remaining work | — |
 | 10 (Loops 46–50) | [`APPROVAL_REPORT_LOOP_46_50.md`](./APPROVAL_REPORT_LOOP_46_50.md) | Approved — "loop 51 se loop 55 tak complete karo...mujhe design complete ka msg chahiye" | — |
 | 11 (Loops 51–55) | [`APPROVAL_REPORT_LOOP_51_55.md`](./APPROVAL_REPORT_LOOP_51_55.md) | Approved — "Continue...Loop 56 to 60" | 2026-09-08 |
+| 12 (Loops 56–60) | [`APPROVAL_REPORT_LOOP_56_60.md`](./APPROVAL_REPORT_LOOP_56_60.md) | AWAITING BOSS | 2026-09-08 |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -126,3 +127,24 @@ against the Blueprint's own registry) as the most concrete, lowest-risk,
 already-flagged-as-incomplete item, consistent with "no new business rule
 invention" since it verifies existing claimed coverage rather than adding
 scope.
+
+**GATE 12 (Loops 56-60) — AWAITING BOSS.** Loop 56's re-verification found
+two real LOCKED-rule gaps — **RISK-32** (CRITICAL: `reopen_case` enforces
+only `is_staff()`, not the LOCKED "Executive + Manager" rule) and
+**RISK-33** (MEDIUM: the complainant-disagreement joint-decision path from
+§11 has zero implementation) — plus closed 2 genuine test-coverage gaps
+(NS-007, NS-019) on already-correct code. Loops 57-58 were pure
+verification (confirmed RISK-32 has no siblings; confirmed the visual
+redesign held; refreshed V1 completion to 23/25 §32 items). Loop 59 was a
+dependency security audit (0 vulnerabilities, 2 patch bumps). Loop 60: the
+Boss reported the `/pm` screen live as broken ("5 bottom-nav options
+become 4"), root-caused to a React hydration mismatch from
+locale/timezone-dependent date formatting in `pm-plan-card.tsx`/
+`pm-instance-card.tsx`, fixed with a new `src/lib/format.ts` pinning
+locale+timeZone, verified via reproduction before and after the fix, and
+shipped (merged in PR #59 alongside the Loop 59 dependency bump). Full
+detail in `APPROVAL_REPORT_LOOP_56_60.md`. RISK-32 and RISK-33 remain
+`OPEN` in `RISK_REGISTER.md`, not fixed, both needing a specific Boss
+decision on the reopen and complainant-disagreement mechanisms before
+Loop 61 can act on them. Per §19.9 the same mandatory stop applies again
+at Loop 65 once the next batch is approved.
