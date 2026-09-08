@@ -3769,3 +3769,75 @@ was wrong about the database and right only about what it measured. The probe
 covered the eleven FK-linked dependents; `audit_log` deliberately has no foreign
 key — that absence is what keeps history append-only — so the one table that
 could dangle was the one table not checked.
+
+## Loop 43 — 2026-09-08
+
+**Summary:** Went back to authorization and found the worst defect in this
+project so far. The §4 LOCKED lifecycle graph was writable by an
+unauthenticated caller. RISK-28, CRITICAL. Full evidence in
+`LOOP_43_REPORT.md`.
+
+**Requirements affected:** §4 LOCKED lifecycle graph, §6 emergency gate,
+§12 QC boundary, §29 authorization, §42 Change Control.
+
+**Findings:**
+- **RISK-28 (CRITICAL) — `maintenance.status_transitions` had RLS disabled.**
+  That table IS the §4 locked graph; every transition check in the product
+  (`transition_case` in 0003 and its 0034 rewrite, plus 0007, 0011, 0012, 0019)
+  validates edges against it. Migration 0003 created it and never enabled RLS.
+  Supabase grants full DML on a schema's tables to `anon` and `authenticated` by
+  default, so nothing stopped a client writing to it.
+  **Proven live as the `anon` role with NO JWT** — any holder of the public anon
+  key, signed in or not:
+    * `insert ('REPORTED','CLOSED')` **SUCCEEDED**. That edge alone closes a case
+      straight from REPORTED — no diagnosis, no repair, no QC clearance, no
+      restoration verification — and `transition_case` would have accepted it as
+      legitimate, writing a clean audit trail for a closure that skipped every
+      control.
+    * `delete from maintenance.status_transitions` with no WHERE **SUCCEEDED**,
+      leaving **0 edges**. With an empty graph every transition in the product
+      fails: total denial of service on the case lifecycle.
+  Both reverted immediately; the graph verified back to exactly its canonical 26
+  edges **set-wise** against 0003 (0 missing, 0 extra).
+  Same class as RISK-19 but strictly worse in reach: RISK-19 needed a session and
+  forged one case; this needs no session and rewrites the rule every case is
+  judged by.
+- **Controls confirm the hole was specific, not general.** The same anon INSERT
+  probe against `cases` and `audit_log` was refused by RLS in both cases. RLS was
+  working everywhere it was switched on; `status_transitions` was the only table
+  in the schema where it was never switched on.
+- **`idempotency_keys` flagged by the same sweep is safe.** RLS enabled with zero
+  policies denies everything, and nothing in `src/` reads it.
+
+**Material changes:**
+- `supabase/migrations/0043_maintenance_lifecycle_graph_lockdown.sql` — RLS
+  enabled on `status_transitions`; a SELECT-only policy for `authenticated`; and
+  deliberately NO write policy, because changing this table is a §42 Change
+  Control action performed by a migration, never a runtime write. Staff cannot
+  write to it either — staff authority does not extend to rewriting the rules
+  staff are judged by. RLS is enabled without FORCE, matching every other table
+  here, so the SECURITY DEFINER RPCs that read the graph as the table owner are
+  unaffected. Defence in depth: default write grants revoked from `anon` and
+  `authenticated`, SELECT revoked from `anon`, and `idempotency_keys`' unusable
+  default write grants revoked too.
+- `tests/lifecycle-graph-lockdown.test.ts` (new, 5 tests) — non-staff INSERT
+  refused, **staff** INSERT refused, staff DELETE refused and the edge survives,
+  an illegal transition still refused end-to-end, and a **canary** on the
+  canonical edge count so any future runtime write to the graph fails CI.
+
+**Verified after the fix:** anon INSERT → `permission denied`; anon DELETE-all →
+`permission denied`; staff-authenticated INSERT → `permission denied`;
+`authenticated` SELECT → 26 edges. And end-to-end through the real RPC on a real
+case, `REPORTED → ACKNOWLEDGED` still **succeeds** while `ACKNOWLEDGED → CLOSED`
+is still refused with `INVALID_TRANSITION` — the lockdown did not break the
+SECURITY DEFINER path. Probe case removed afterwards via the run-tag cleanup.
+
+**How it was found, and why no earlier loop found it:** by sweeping
+`pg_class.relrowsecurity` and `pg_policy` across every table in the schema rather
+than reading policy definitions. Loops 26–39 audited RPC bodies, policy
+predicates and business rules in detail, and this sat underneath all of them,
+because **a table with no policies does not appear when you audit policies.**
+Enumerate the objects first, then audit the ones that exist. Loops 41 and 42
+learned the same lesson about cleanup (the case-walker never saw tables that do
+not hang off a case); this is that lesson again in the authorization layer, where
+it costs more.

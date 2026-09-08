@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 42 complete (Gate 8 approved). A Boss-directed
+Current loop: Loop 43 complete (Gate 8 approved). A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
@@ -32,6 +32,22 @@ Current loop: Loop 42 complete (Gate 8 approved). A Boss-directed
   audit_log deliberately has no FK, so the one table that could dangle was
   the one not checked. Mechanism built and proven; the historical backlog
   is NOT yet deleted and waits on the Boss. See LOOP_42_REPORT.md.
+  Loop 43 returned to authorization and found the WORST defect in this
+  project so far - RISK-28, CRITICAL. maintenance.status_transitions IS
+  the SS4 LOCKED lifecycle graph that every transition check validates
+  against, and migration 0003 created it without ever enabling RLS. With
+  Supabase's default schema grants, an UNAUTHENTICATED caller could insert
+  a REPORTED->CLOSED edge (closing any case with no diagnosis, no repair,
+  no QC clearance - and transition_case would have accepted it as
+  legitimate) or delete the whole graph (total denial of service on the
+  lifecycle). Both proven live as the anon role with no JWT, reverted
+  immediately, and the graph verified back to exactly its canonical 26
+  edges set-wise. Fixed in 0043: RLS on, SELECT-only for authenticated, no
+  write policy for anyone including staff, write grants revoked. Verified
+  the lockdown did not break the SECURITY DEFINER path - a legal
+  transition still succeeds, an illegal one still raises
+  INVALID_TRANSITION. 5 tests including a canary on the edge count. See
+  LOOP_43_REPORT.md.
   Boss-side items: QC identities ANSWERED (they will come from the Quality
   module at integration; qc_authority staying empty is now a decision, not
   a gap). Leaked-password protection deferred by the Boss to last. Two new
