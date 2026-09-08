@@ -10,11 +10,25 @@
 | 6 (Loops 26–30) | [`APPROVAL_REPORT_LOOP_26_30.md`](./APPROVAL_REPORT_LOOP_26_30.md) | Approved — "approved loops 31 to 35" | 2026-09-07 |
 | 7 (Loops 31–35) | [`APPROVAL_REPORT_LOOP_31_35.md`](./APPROVAL_REPORT_LOOP_31_35.md) | Approved — "ye karlo iske baad you can proceed for 36 to 40 loop" (given alongside the forensic remediation brief) | 2026-09-07 |
 | 8 (Loops 36–40) | [`APPROVAL_REPORT_LOOP_36_40.md`](./APPROVAL_REPORT_LOOP_36_40.md) | Approved — "itna complete karne ke baad tum loop 41 se 45 start kar sakte ho...Mera approval hai" (given in advance, conditional on the RISK-25 + cleanup task completing first — it did, and merged as PR #41) | 2026-09-07 |
-| 9 (Loops 41–45) | [`APPROVAL_REPORT_LOOP_41_45.md`](./APPROVAL_REPORT_LOOP_41_45.md) | **AWAITING BOSS** | — |
+| 9 (Loops 41–45) | [`APPROVAL_REPORT_LOOP_41_45.md`](./APPROVAL_REPORT_LOOP_41_45.md) | Approved — SCOPED to "Type A" only (technical debt Claude can execute without Boss input): "Type A start karo", after the Boss was shown a Type A/Type B split of remaining work | — |
 
-Current state: **GATE 9 (Loops 41-45) AWAITING BOSS.** Autonomous loop work
-is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13. Loop 46 will not start
-without explicit continuation language.
+Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
+percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
+checklist, split into "Type A" (technical debt Claude can execute without
+further input) and "Type B" (items that need Boss evidence/decisions and
+cannot be invented). The Boss replied "Type A start karo" — explicit,
+scoped continuation language for Type A only. Loop 46+ may proceed on:
+
+  A1. Triggers/constraints enumerate-first sweep (the same method that found
+      RISK-28/29/30 — a trigger or constraint with no policy counterpart is
+      the next class of invisible object).
+  A2. Vercel/Sentry runtime configuration audit — no loop has swept this.
+  A3. Mobile-first UX pass (§30) — genuinely incomplete: only 4 of 36 client
+      components use any responsive Tailwind classes, and no dedicated
+      mobile-first design pass has ever happened. This is §32 item 21.
+
+Type B remains AWAITING BOSS and is NOT reopened by this approval — none of
+the six items below have been answered by "Type A start karo":
 
 Loops 41-45 found six defects, two of them the most serious in this project so
 far, and three of them in work reported as complete in the previous batch:
