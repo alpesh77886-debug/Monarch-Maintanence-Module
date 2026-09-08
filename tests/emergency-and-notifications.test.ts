@@ -73,6 +73,18 @@ describe("Emergency two-step workflow (§6, §7.3)", () => {
     }));
     expect(error).toBeNull();
 
+    // NS-009 (Blueprint Gap Matrix, Loop 56): a claim alone must never start
+    // the 1h escalation clock — emergency_confirmed stays false until an
+    // authorized confirmation, checked explicitly rather than only implied
+    // by the later confirmed-case assertion below.
+    const { data: claimedOnly } = await mgr.client
+      .from("cases")
+      .select("emergency_confirmed, emergency_confirmed_at")
+      .eq("id", caseId)
+      .single();
+    expect(claimedOnly!.emergency_confirmed).toBe(false);
+    expect(claimedOnly!.emergency_confirmed_at).toBeNull();
+
     // reporter (non-staff) cannot confirm their own claim
     ({ error } = await tech.client.rpc("confirm_emergency", { p_case_id: caseId }));
     expect(error?.message).toMatch(/FORBIDDEN/);

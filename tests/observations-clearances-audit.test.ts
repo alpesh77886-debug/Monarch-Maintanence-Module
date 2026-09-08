@@ -242,4 +242,37 @@ describe("audit_log — RLS (Loop 25)", () => {
     });
     expect(error).not.toBeNull();
   });
+
+  // Blueprint Gap Matrix (Loop 56) NS-019: audit entries must be append-only
+  // — no UPDATE or DELETE policy exists on audit_log (0002), so both are
+  // already structurally blocked by RLS default-deny. This makes that
+  // guarantee a checked regression rather than an inferred one.
+  it("NS-019: has no UPDATE or DELETE policy — a staff member cannot alter or remove an entry", async () => {
+    const exec = await signInAs("executive");
+    const caseId = await driveToInRepair(exec, testSymptom("NS-019 audit append-only"));
+    const { data: row } = await exec.client
+      .from("audit_log")
+      .select("id, reason")
+      .eq("target_id", caseId)
+      .limit(1)
+      .single();
+    expect(row).not.toBeNull();
+
+    const update = await exec.client
+      .from("audit_log")
+      .update({ reason: "tampered" })
+      .eq("id", row!.id)
+      .select();
+    expect(update.data ?? []).toHaveLength(0);
+
+    const del = await exec.client.from("audit_log").delete().eq("id", row!.id).select();
+    expect(del.data ?? []).toHaveLength(0);
+
+    const { data: unchanged } = await exec.client
+      .from("audit_log")
+      .select("id, reason")
+      .eq("id", row!.id)
+      .single();
+    expect(unchanged!.reason).toBe(row!.reason);
+  });
 });
