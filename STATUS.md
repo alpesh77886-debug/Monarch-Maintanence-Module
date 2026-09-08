@@ -1,6 +1,41 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 69 complete - action-sheet accessibility audit
+Current loop: Loop 70 complete - desktop/tablet responsive pass (Prompt
+  §16 "Responsive Model": mobile <=640px, tablet 641-1024px, desktop
+  >1024px - this project's Tailwind config has no custom breakpoints,
+  so sm:/lg: land exactly on the pack's own 640/1024 thresholds).
+  Real finding: the left nav rail (app-nav.tsx) switched on at
+  Tailwind's md: (768px), which sits INSIDE the pack's tablet range -
+  but §16's tablet bullets never mention a nav rail, only desktop's
+  do. From 768-1024px the app was already showing desktop-style
+  navigation a full tablet-width early. Moved the switch to lg:
+  (1024px) so bottom-nav (with its pb-20 clearance) persists through
+  the whole tablet range and the rail is a true desktop-only
+  enhancement. Also: (app)/layout.tsx's <main> and home/home-client.tsx's
+  <main> were both hard-capped at max-w-3xl (768px) regardless of
+  viewport - meaning even a 1920px desktop screen rendered a fixed
+  mobile-width column centered in empty space, the opposite of §16's
+  desktop ask for "more information density." Widened both to
+  lg:max-w-4xl xl:max-w-5xl, and gave the Home module-tile grid a
+  third column at lg: (6 tiles -> clean 3x2 desktop layout instead of
+  a stretched 2-column one). Verified all three breakpoints (390/800/
+  1280px) visually via the Loop 53 throwaway-route technique, rendering
+  the real AppNav/layout structure and the real HomeClient component
+  with dummy props (not simplified stand-ins) - screenshots confirmed
+  bottom-nav-through-tablet, rail-at-desktop, and the 2->3 column tile
+  grid all behave as intended; mobile view unchanged from before. tsc/
+  eslint/build clean; only app-nav.tsx/layout.tsx/home-client.tsx
+  touched - zero business logic. Deliberately did NOT attempt full
+  multi-column redesigns of Case Queue/Case Detail/PM/Spares (§16's
+  desktop bullets also mention "side panels/drawers where useful") -
+  that is real remaining scope for a future loop, flagged honestly in
+  the Gate 14 report rather than rushed through as the last loop
+  before a mandatory stop. Also flagged (not fixed, out of this loop's
+  §16 scope): the mobile header still shows AvailabilityToggle/
+  NotificationBell/SignOutButton unconditionally, which §17 "Mobile
+  Header" says should live in a surface like More instead - a §17
+  finding, not §16, left for the Boss to scope into a future batch.
+Previously: Loop 69 complete - action-sheet accessibility audit
   (Prompt §11 "Action Sheet Quality Bar", explicit warning: "Do not
   claim 'full accessibility' unless it is actually implemented. Verify
   keyboard focus behavior rather than relying on comments."). Audited

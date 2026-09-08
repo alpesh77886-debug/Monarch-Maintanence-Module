@@ -93,7 +93,10 @@ export default function HomeClient({
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10 pt-4">
+      {/* Loop 70 (§16 "Responsive Model"): wider max-width + a third tile
+          column at lg: — desktop gets real information density instead of
+          a mobile-width hub centered in empty space. */}
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10 pt-4 lg:max-w-4xl xl:max-w-5xl">
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-teal">
@@ -129,7 +132,7 @@ export default function HomeClient({
           <h2 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted">
             Core workspace
           </h2>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3">
             {tiles.map((tile) => (
               <Link
                 key={tile.href}
