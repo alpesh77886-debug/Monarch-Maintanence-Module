@@ -1,6 +1,23 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 70 complete - desktop/tablet responsive pass (Prompt
+Current loop: GATE 14 STOP (Loops 66-70 complete) - mandatory 5-loop
+  checkpoint per Section 19.9/19.13. Autonomous loop work is PAUSED,
+  AWAITING BOSS explicit continuation language before Loop 71 - even
+  though the Boss pre-approved the full 66-70 range ("start loop 66 to
+  70"), the hard-stop-and-report requirement is independent of that
+  pre-approval per this project's own non-negotiable governance rule.
+  Loop 70 landed the desktop/tablet responsive pass (nav-rail
+  breakpoint corrected from md: to lg: since it was showing desktop
+  nav a full tablet-width early; main containers widened past their
+  mobile-only max-w-3xl cap for lg:/xl:) and this Gate 14 stop report.
+  Full batch summary (all 5 loops, the one real CI regression and its
+  fix, two confirmed live-DB flakes, honest progress check against
+  Loop 61's estimate, and two concrete next-batch candidates -
+  §16's harder desktop-layout half, §17's mobile-header cleanup) is in
+  APPROVAL_REPORT_LOOP_66_70.md. RISK-32/RISK-33 remain OPEN,
+  untouched by this entire UX-reconstruction span. See
+  APPROVAL_GATE.md for the full gate log.
+Previously: Loop 70 complete - desktop/tablet responsive pass (Prompt
   §16 "Responsive Model": mobile <=640px, tablet 641-1024px, desktop
   >1024px - this project's Tailwind config has no custom breakpoints,
   so sm:/lg: land exactly on the pack's own 640/1024 thresholds).
