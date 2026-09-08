@@ -4493,3 +4493,45 @@ by RISK-05 as always (this sandbox can't reach the live Supabase project
 directly) — CI is the verification path, and all three changes were kept
 deliberately small/additive to minimize what CI needs to catch. Full detail
 in `LOOP_54_REPORT.md`.
+
+## Loop 56 — Golden-scenario / negative-test re-verification (§32/§33)
+
+Boss approved "Continue...Loop 56 to 60" without picking a specific
+candidate from `APPROVAL_REPORT_LOOP_51_55.md`'s list — proceeded on the
+lowest-risk one: re-verify the Blueprint's §32 golden scenarios and §33
+negative tests against the actual 216-test suite, since it confirms
+existing claimed coverage rather than inventing scope.
+
+**Headline finding, CRITICAL**: `reopen_case` only checks `is_staff()` —
+any single Executive OR Manager can reopen a `CLOSED` case alone. This
+contradicts `IMPLEMENTATION_PACK.md` line 150's own LOCKED text —
+"Reopen authority = Executive + Manager" — confirmed in the pack itself,
+not just the new Blueprint (which independently states the same rule in
+its permission matrix and NS-014). Logged as **RISK-32**. Not fixed this
+loop: the exact mechanism ("Executive + Manager" could mean Manager-only
+override, a genuine two-actor joint action like the emergency claim-then-
+confirm two-step, or something else) is a design decision, not a bug with
+one obvious fix — flagged for the Boss per "no silent architecture drift,"
+the same handling Loop 54's G1 got.
+
+Also found: the "complainant disagreement" path (§11 — "complainant +
+Executive jointly decide... no unilateral closure") has zero implementation
+anywhere — no RPC, state field, or gate represents it. Logged as
+**RISK-33**, also awaiting a Boss decision on what "jointly decide" means
+as an actual interaction.
+
+Everything else in the §32/§33 registry came back MATCH, MATCH-by-
+construction (the rule is architecturally impossible to violate, e.g. no
+Stores-stock-mutation code path exists to attempt), or already-documented-
+and-deliberately-not-automated (two cases, NS-013 and NS-018, both already
+explained in their own test files' header comments from Loops 10 and 12 —
+not fresh gaps, re-confirmed as sound). Full section-by-section table in
+`LOOP_56_REPORT.md`.
+
+Fixed 2 genuine test-coverage gaps that were already structurally
+guaranteed by existing code but untested — NS-007 (temp restoration can't
+be closed directly, no such transition-graph edge exists) and NS-019
+(`audit_log` has no UPDATE/DELETE policy) — plus strengthened one existing
+assertion (NS-009: `emergency_confirmed` explicitly checked false between
+claim and confirm, not just implied). All additive, `tsc --noEmit`/`eslint`
+clean, no RPC/migration/business-logic change.

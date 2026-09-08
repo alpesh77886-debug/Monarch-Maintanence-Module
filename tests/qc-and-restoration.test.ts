@@ -174,6 +174,38 @@ describe("Scenario C — temporary restoration + follow-up (§10, §38, RISK-12 
       .single();
     expect(finalCase!.status).toBe("TECHNICALLY_RESTORED");
   });
+
+  // Blueprint Gap Matrix (Loop 56) NS-007: a TEMPORARILY_RESTORED case must
+  // never be closeable directly — temporary restoration is explicitly a
+  // non-closure state (§10). No such edge exists in status_transitions
+  // (0003), so this is already structurally impossible; this test just
+  // makes that guarantee a checked regression rather than an inferred one.
+  it("NS-007: rejects a direct TEMPORARILY_RESTORED -> CLOSED attempt", async () => {
+    const exec = await signInAs("executive");
+    const caseId = await driveToInRepair(exec, testSymptom("NS-007 no closure from temp"));
+
+    const { error } = await exec.client.rpc("record_restoration", {
+      p_case_id: caseId,
+      p_restoration_type: "TEMPORARY",
+      p_details: "autotest: temp fix, must not be closeable",
+    });
+    expect(error).toBeNull();
+
+    const closeAttempt = await exec.client.rpc("transition_case", {
+      p_case_id: caseId,
+      p_new_status: "CLOSED",
+      p_reason: "autotest: should be rejected",
+    });
+    expect(closeAttempt.error).not.toBeNull();
+    expect(closeAttempt.error!.message).toContain("INVALID_TRANSITION");
+
+    const { data: stillOpen } = await exec.client
+      .from("cases")
+      .select("status")
+      .eq("id", caseId)
+      .single();
+    expect(stillOpen!.status).toBe("TEMPORARILY_RESTORED");
+  });
 });
 
 describe("§10 — follow_up_required is generated only for TEMPORARY (Loop 22)", () => {
