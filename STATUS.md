@@ -1,6 +1,34 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 61 complete - Boss supplied a new 47-section Mobile UX
+Current loop: Loop 62 complete - built the new Module Hub post-login
+  landing page (Prompt Section 47, mockup Screen 002): src/app/home/
+  page.tsx + home-client.tsx, replacing the old direct-to-/cases
+  redirect. 2-column module tiles (Cases, Shift, PM, Spare Consumption,
+  My Work, Emergency) with real single-purpose-query badges (open
+  cases, my open cases, PM overdue, spare approvals pending, active
+  emergency claims - nothing fabricated), shift banner sourced from the
+  real is_available toggle, quick actions, hamburger-triggered side
+  drawer (Work/Preferences/Account). A signed-in non-staff identity
+  (the demo technician login) gets a reduced hub - Cases tile only,
+  mirroring AppNav's own staff gating - not a crash or a silently full
+  hub; fixed an e2e regression this caused (roles-and-notifications.spec.ts
+  expects zero "PM" links for a non-staff user) before it could reach CI.
+  Built 3 new minimal-but-real landing routes the hub links to since
+  none existed before: /spares, /emergency (reads the real
+  emergency_claimed/emergency_confirmed flags - there is no "EMERGENCY"
+  priority tier in the locked schema, so this does not invent one),
+  /my-work. Added a real, working light/dark theme toggle (Prompt
+  Section 47 "Theme Setting") - a data-theme attribute flips Loop 50's
+  already-centralized CSS custom properties, so every existing
+  bg-card/text-fg/... utility repaints for free, FOUC-safe via a
+  blocking init script. proxy.ts/page.tsx redirect targets changed from
+  /cases to /home; e2e/helpers.ts's signIn() updated to match.
+  Live-render verified via the Loop 53 throwaway-route+proxy-bypass
+  technique: initial hub, drawer open, both theme states screenshotted
+  at 390x844, zero console/hydration errors, light theme repaints
+  correctly. tsc/eslint/build all clean. Nav relabeling (AppNav's
+  bottom bar) is explicitly Loop 63's scope, not touched here.
+Previously: Loop 61 complete - Boss supplied a new 47-section Mobile UX
   Reconstruction Prompt V2 plus an ENTERPRISE V3 screen-mockup HTML
   reference, and approved Loops 61-70 to begin this work (a full
   navigation/IA + Control Tower + Case Queue + Case Detail cockpit +
