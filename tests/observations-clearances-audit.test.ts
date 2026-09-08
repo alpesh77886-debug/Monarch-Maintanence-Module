@@ -250,13 +250,17 @@ describe("audit_log — RLS (Loop 25)", () => {
   it("NS-019: has no UPDATE or DELETE policy — a staff member cannot alter or remove an entry", async () => {
     const exec = await signInAs("executive");
     const caseId = await driveToInRepair(exec, testSymptom("NS-019 audit append-only"));
-    const { data: row } = await exec.client
+    // driveToInRepair performs several transitions, each of which writes its
+    // own audit_log row for this case — .single() would wrongly demand
+    // exactly one match, so select the list and take the first row, same
+    // pattern as the "is staff-only to read" test above.
+    const { data: rows } = await exec.client
       .from("audit_log")
       .select("id, reason")
       .eq("target_id", caseId)
-      .limit(1)
-      .single();
-    expect(row).not.toBeNull();
+      .limit(1);
+    expect(rows ?? []).not.toHaveLength(0);
+    const row = rows![0];
 
     const update = await exec.client
       .from("audit_log")
