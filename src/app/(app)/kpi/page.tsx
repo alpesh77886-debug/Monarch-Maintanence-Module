@@ -64,7 +64,7 @@ export default async function KpiPage() {
 
   if (!staffRow) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+      <p className="rounded-lg border border-dashed border-line2 p-6 text-center text-sm text-muted">
         KPI reporting is visible to Maintenance staff only.
       </p>
     );
@@ -212,8 +212,8 @@ export default async function KpiPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-semibold text-slate-900">KPIs</h1>
-        <p className="mt-1 text-xs text-slate-500">
+        <h1 className="text-lg font-semibold text-fg">KPIs</h1>
+        <p className="mt-1 text-xs text-muted">
           Every measure shows the number of cases it was actually computed from.
           Nothing here is compared against a target, because the approved design
           defines no KPI targets or SLAs.
@@ -279,7 +279,7 @@ export default async function KpiPage() {
           }
           coverage={`recorded on ${outputLossValues.length} of ${total} cases`}
         />
-        <p className="col-span-full text-xs text-slate-500">
+        <p className="col-span-full text-xs text-muted">
           Cases with no recorded figure are excluded from these totals — they are
           not counted as zero. A total is only as complete as its coverage line.
         </p>
@@ -365,7 +365,7 @@ export default async function KpiPage() {
           value={String(awaitingApproval)}
           coverage="§3.3 authority boundary"
         />
-        <p className="col-span-full rounded-md bg-amber-50 p-2 text-xs text-amber-800">
+        <p className="col-span-full rounded-lg bg-warn/10 p-2 text-xs text-amber-300">
           These are <strong>Maintenance-entered estimates</strong>, not an
           authoritative costing. §25.2 requires financial impact to come from an
           authoritative source, and §24 lists fabricating financial impact as
@@ -412,7 +412,7 @@ export default async function KpiPage() {
           value={String(capaSystemSuggested)}
           coverage="labelled as suggested, never auto-certified"
         />
-        <p className="col-span-full text-xs text-slate-500">
+        <p className="col-span-full text-xs text-muted">
           The mechanism has existed since Loop 15. These are real counts, not
           placeholders — a 0 here means the detector ran (or would run) and
           found nothing, not that the feature is unbuilt. Detection stays
@@ -427,7 +427,7 @@ export default async function KpiPage() {
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+      <h2 className="text-sm font-semibold text-fg">{title}</h2>
       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">{children}</div>
     </section>
   );
@@ -444,16 +444,16 @@ function Metric({
 }) {
   const noData = value === "no data";
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs text-slate-500">{label}</p>
+    <div className="rounded-lg border border-line bg-card p-3">
+      <p className="text-xs text-muted">{label}</p>
       <p
         className={`text-lg font-semibold ${
-          noData ? "italic text-slate-400" : "text-slate-900"
+          noData ? "italic text-muted2" : "text-fg"
         }`}
       >
         {value}
       </p>
-      <p className="mt-0.5 text-xs text-slate-400">{coverage}</p>
+      <p className="mt-0.5 text-xs text-muted2">{coverage}</p>
     </div>
   );
 }

@@ -48,22 +48,22 @@ export default function MarkDuplicateForm({ caseId }: { caseId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-medium text-slate-900">Mark as duplicate</p>
+    <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
+      <p className="text-sm font-medium text-fg">Mark as duplicate</p>
       <input
         value={primaryCaseNumber}
         onChange={(e) => setPrimaryCaseNumber(e.target.value)}
         placeholder="Primary case number (e.g. MC-000123)"
-        className="rounded-md border border-slate-300 p-2 text-sm"
+        className="rounded-lg border border-line2 p-2 text-sm"
       />
       <textarea
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="Reason"
-        className="rounded-md border border-slate-300 p-2 text-sm"
+        className="rounded-lg border border-line2 p-2 text-sm"
         rows={2}
       />
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <Button
         variant="secondary"
         className="self-start"

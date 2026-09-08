@@ -4266,3 +4266,60 @@ their actual migration SQL. Findings flagged for the Boss's
 prioritization, not fixed unprompted — matching the completion
 protocol's own instruction not to silently change the locked contract.
 See `SARVAM_VERIFICATION_REPORT.md`.
+
+## Loop 50 — 2026-09-08
+
+**Summary:** Design-token overhaul — Stage 1 of a visual redesign the Boss
+asked for directly after flagging the live app as looking like "a basic
+webpage." Two reference apps (AOS, Quality — the Boss's own sibling
+products) were read in full before any code changed. Presentation-layer
+only: zero RPCs, migrations, RLS policies, or business rules touched.
+
+**Key finding:** AOS and Quality share the exact same design-token scheme —
+identical hex values, identical radius/shadow conventions, both naming
+Inter as their font. This is the Boss's own established MONARCH design
+language, not something to invent; Maintenance was using generic Tailwind
+slate/indigo, disconnected from either sibling app.
+
+**What shipped:** MONARCH tokens adopted into `globals.css` (dark 5-level
+surface stack, wired into Tailwind v4's `@theme inline`), Inter now
+actually loaded via `next/font/google` (neither reference app loads the
+font it names — a small deliberate improvement, not a deviation).
+`components/ui.tsx` rewritten: gradient/glow buttons, layered-shadow
+cards, and a new canonical case-status colour map (`StatusBadge`/
+`statusFillClass`) that replaces the three separate, inconsistent
+status-colour maps Loop 49's Sarvam report flagged — directly closes that
+report's finding 1c (Case Detail's badge was hardcoded to one tone
+regardless of actual state). `app-nav.tsx`/`(app)/layout.tsx` chrome
+restyled with backdrop-blur glass and a glowing active-nav state. 41 files'
+worth of old-palette Tailwind classes (~700 occurrences) swept onto the
+new tokens via a reviewed, word-boundary-matched substitution, verified
+against `tsc`/`eslint`/`next build` after every pass.
+
+**Two self-inflicted bugs caught before shipping, not after:** the sweep
+briefly rewrote a deliberate `bg-white/[opacity]` translucent overlay
+(just-written into the new `ui.tsx`) into a nonsensical
+`bg-card/[opacity]` — caught by reading the diff, not by tsc, since tsc
+has no opinion on whether a colour choice makes sense. A CSS comment
+listing Tailwind class examples contained the literal string `*/`, which
+closed the comment early and broke the whole stylesheet parse — caught by
+actually starting the dev server and hitting a 500, not by any linter.
+Both fixed and re-verified.
+
+**Live verification:** `RISK-05` (this sandbox can't reach the live
+Supabase project) still applies, confirmed again — but `/login` needs no
+data to render, so it was actually built, run, and screenshotted (desktop
++ mobile) via a local `next dev` + Playwright script rather than assumed
+correct from the diff; both screenshots sent to the Boss. Authenticated
+views (Cases, Case Detail, Dashboard, KPI, PM) are CI's job to verify, same
+as every prior loop.
+
+**What this loop does NOT do:** does not restructure Case Detail into
+Sarvam's proposed bottom-sheet action model (still one long page — the
+next stage); does not touch the 2 remaining `IMPLEMENTATION_PACK.md`
+findings from Loop 49 (intake form missing shift/priority, 2 of 8 §9
+diagnosis fields uncaptured).
+
+This is Loop 50 — the mandatory 5-loop gate stop per §19.9/§19.13. See
+`APPROVAL_REPORT_LOOP_46_50.md`: autonomous work is paused pending explicit
+Boss continuation language before Loop 51.

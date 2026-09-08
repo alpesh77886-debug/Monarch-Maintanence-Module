@@ -35,8 +35,8 @@ export default function AvailabilityToggle({ isAvailable }: { isAvailable: boole
       title={error ?? (isAvailable ? "You can receive handovers" : "You will not receive handovers")}
       className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
         isAvailable
-          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-          : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+          ? "bg-good/15 text-emerald-300 hover:bg-good/20"
+          : "bg-card2 text-muted hover:bg-line2"
       }`}
     >
       {isAvailable ? "On shift" : "Off shift"}

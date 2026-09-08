@@ -1,6 +1,40 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 49 complete. Boss supplied the full Sarvam Screen
+Current loop: Loop 50 complete. **GATE 10 (Loops 46-50) — MANDATORY STOP,
+  AWAITING BOSS** per §19.9/§19.13. See APPROVAL_REPORT_LOOP_46_50.md.
+  Loop 50: Boss flagged the live app as looking like "a basic webpage" and
+  supplied two reference apps (AOS, Quality) as the concrete bar for "top
+  tier." Both read in full by dedicated research agents before any code
+  changed. Key finding: AOS and Quality share the exact same design-token
+  scheme (identical hex values, --r radius, Inter font) - this is the
+  Boss's own established MONARCH design language, not something to invent.
+  Maintenance was using generic Tailwind slate/indigo, disconnected from
+  either sibling app - the concrete reason it read as "basic." Adopted the
+  MONARCH tokens into globals.css (dark 5-level surface stack, Tailwind
+  v4 @theme inline wiring, Inter now actually loaded via next/font -
+  neither reference app loads the font it names), rewrote
+  components/ui.tsx (gradient/glow buttons, layered-shadow cards, and a
+  NEW canonical case-status colour map that replaces the three separate
+  inconsistent maps flagged in Loop 49's Sarvam report - closes finding 1c,
+  the hardcoded-blue Case Detail badge), restyled app-nav.tsx/layout.tsx
+  chrome with backdrop-blur glass, and swept 41 files' worth of old-palette
+  Tailwind classes onto the new tokens via a reviewed substitution (~700
+  occurrences, word-boundary matched, verified against tsc/eslint/build
+  after every pass). Caught and fixed two self-inflicted bugs before
+  shipping: the sweep briefly corrupted a deliberate bg-white/[opacity]
+  overlay into a nonsensical bg-card/[opacity], and a CSS comment
+  containing the literal string "*/" broke the whole stylesheet parse -
+  both found by actually reading the diff and running the dev server, not
+  assumed clean because tsc passed. Live-screenshotted /login (desktop +
+  mobile) via a local next dev + Playwright script and sent both to the
+  Boss - the one route this sandbox can render without live Supabase data
+  (RISK-05 still blocks the rest; CI verifies those). Does NOT restructure
+  Case Detail into Sarvam's bottom-sheet model (still one long page - next
+  stage, pending this gate) and does NOT touch the 2 remaining
+  IMPLEMENTATION_PACK.md findings (intake shift/priority, diagnosis
+  fields) - pure presentation-layer change, zero RPCs/migrations/RLS
+  touched. See LOOP_50_REPORT.md.
+Previously: Loop 49 complete. Boss supplied the full Sarvam Screen
   Architecture HTML and answered the remaining Type B questions (items
   1/2/3 LOTO/recurrence-threshold/permission-matrix stay PENDING per
   Boss's own instruction; item 4 stale test data - delete if harmless;

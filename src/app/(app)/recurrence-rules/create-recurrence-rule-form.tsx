@@ -57,25 +57,25 @@ export default function CreateRecurrenceRuleForm() {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-medium text-slate-900">New recurrence rule (§18)</p>
-      <p className="text-xs text-slate-500">
+    <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
+      <p className="text-sm font-medium text-fg">New recurrence rule (§18)</p>
+      <p className="text-xs text-muted">
         PENDING-04: no threshold or window is supplied by this app. Enter only a
         value the Boss has explicitly approved, and cite that basis below —
-        {" "}<code className="rounded bg-slate-100 px-1">approval_note</code> is
+        {" "}<code className="rounded bg-bg2 px-1">approval_note</code> is
         mandatory server-side for exactly this reason.
       </p>
       <input
         value={tierName}
         onChange={(e) => setTierName(e.target.value)}
         placeholder="Evidence tier name (e.g. &quot;Line-level, 30-day&quot;)"
-        className="rounded-md border border-slate-300 p-2 text-sm"
+        className="rounded-lg border border-line2 p-2 text-sm"
       />
       <div className="flex gap-2">
         <select
           value={matchOn}
           onChange={(e) => setMatchOn(e.target.value as "ASSET_REF" | "LINE" | "AREA")}
-          className="rounded-md border border-slate-300 p-2 text-sm"
+          className="rounded-lg border border-line2 p-2 text-sm"
         >
           <option value="LINE">Match on: Line</option>
           <option value="AREA">Match on: Area</option>
@@ -87,7 +87,7 @@ export default function CreateRecurrenceRuleForm() {
           value={thresholdCount}
           onChange={(e) => setThresholdCount(e.target.value)}
           placeholder="Threshold (occurrences, min 2)"
-          className="flex-1 rounded-md border border-slate-300 p-2 text-sm"
+          className="flex-1 rounded-lg border border-line2 p-2 text-sm"
         />
         <input
           type="number"
@@ -95,7 +95,7 @@ export default function CreateRecurrenceRuleForm() {
           value={windowDays}
           onChange={(e) => setWindowDays(e.target.value)}
           placeholder="Window (days, min 1)"
-          className="flex-1 rounded-md border border-slate-300 p-2 text-sm"
+          className="flex-1 rounded-lg border border-line2 p-2 text-sm"
         />
       </div>
       <textarea
@@ -103,9 +103,9 @@ export default function CreateRecurrenceRuleForm() {
         onChange={(e) => setApprovalNote(e.target.value)}
         placeholder="Approved basis for this threshold and window (required)"
         rows={2}
-        className="rounded-md border border-slate-300 p-2 text-sm"
+        className="rounded-lg border border-line2 p-2 text-sm"
       />
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <Button className="self-start" onClick={submit} disabled={submitting || !canSubmit}>
         Create rule
       </Button>

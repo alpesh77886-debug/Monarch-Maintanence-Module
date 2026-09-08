@@ -60,48 +60,48 @@ export default function AssetPanel({
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
       data-testid="asset-panel"
     >
-      <h2 className="text-sm font-semibold text-slate-900">Asset / machine (§5.1)</h2>
+      <h2 className="text-sm font-semibold text-fg">Asset / machine (§5.1)</h2>
 
       {assets.length === 0 ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted">
           No asset linked yet. Link one once it&rsquo;s identified — never
           guess it from the symptom.
         </p>
       ) : (
         <ul className="flex flex-col gap-1">
           {assets.map((a) => (
-            <li key={a.id} className="rounded-md border border-slate-200 p-2 text-sm">
-              <p className="font-medium text-slate-800">{a.asset_name}</p>
-              {a.asset_ref && <p className="text-xs text-slate-500">Ref: {a.asset_ref}</p>}
-              <p className="text-xs text-slate-400">{new Date(a.linked_at).toLocaleString()}</p>
+            <li key={a.id} className="rounded-lg border border-line p-2 text-sm">
+              <p className="font-medium text-fg">{a.asset_name}</p>
+              {a.asset_ref && <p className="text-xs text-muted">Ref: {a.asset_ref}</p>}
+              <p className="text-xs text-muted2">{new Date(a.linked_at).toLocaleString()}</p>
             </li>
           ))}
         </ul>
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-2">
-        <label className="text-xs text-slate-600">
+        <label className="text-xs text-muted">
           Asset / machine name
           <input
             value={assetName}
             onChange={(e) => setAssetName(e.target.value)}
             placeholder="e.g. Conveyor Motor 7"
-            className="mt-0.5 w-full rounded-md border border-slate-300 p-1.5 text-sm"
+            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
         </label>
-        <label className="text-xs text-slate-600">
+        <label className="text-xs text-muted">
           Asset reference (optional)
           <input
             value={assetRef}
             onChange={(e) => setAssetRef(e.target.value)}
             placeholder="asset tag / ID if known"
-            className="mt-0.5 w-full rounded-md border border-slate-300 p-1.5 text-sm"
+            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
         </label>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
         <Button size="sm" type="submit" className="self-start" disabled={submitting || !assetName.trim()}>
           Link asset
         </Button>

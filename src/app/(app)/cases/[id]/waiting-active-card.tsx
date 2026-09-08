@@ -27,23 +27,23 @@ export default function WaitingActiveCard({ wait }: { wait: CaseWait }) {
   const canResume = wait.reason_type === "INTERNAL" || !!wait.resume_ready_at;
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
-      <p className="text-sm font-medium text-amber-900">
+    <div className="flex flex-col gap-2 rounded-lg border border-warn/25 bg-warn/10 p-3">
+      <p className="text-sm font-medium text-amber-300">
         WAITING ({wait.reason_type}) since {new Date(wait.entered_at).toLocaleString()}
       </p>
-      <p className="text-sm text-amber-900">{wait.reason_text}</p>
+      <p className="text-sm text-amber-300">{wait.reason_text}</p>
       {wait.dependency_ref && (
-        <p className="text-xs text-amber-800">Dependency: {wait.dependency_ref}</p>
+        <p className="text-xs text-amber-300">Dependency: {wait.dependency_ref}</p>
       )}
       {wait.expected_resolution_info && (
-        <p className="text-xs text-amber-800">Expected: {wait.expected_resolution_info}</p>
+        <p className="text-xs text-amber-300">Expected: {wait.expected_resolution_info}</p>
       )}
       {wait.resume_ready_at && (
-        <p className="text-xs font-medium text-emerald-700">
+        <p className="text-xs font-medium text-emerald-300">
           Resume-ready since {new Date(wait.resume_ready_at).toLocaleString()}
         </p>
       )}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         {wait.reason_type === "EXTERNAL" && !wait.resume_ready_at && (
           <Button variant="warning" onClick={() => callRpc("mark_wait_resolved")} disabled={submitting}>

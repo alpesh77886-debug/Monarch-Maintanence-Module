@@ -45,28 +45,28 @@ export default function RecurrenceRuleCard({
   return (
     <div
       className={`rounded-xl border p-4 text-sm shadow-sm ${
-        rule.is_active ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50"
+        rule.is_active ? "border-line bg-card" : "border-line bg-bg2"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="font-medium text-slate-900">{rule.tier_name}</p>
+        <p className="font-medium text-fg">{rule.tier_name}</p>
         <span
           className={`rounded px-1.5 py-0.5 text-xs font-medium ${
-            rule.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+            rule.is_active ? "bg-good/10 text-emerald-300" : "bg-bg2 text-muted"
           }`}
         >
           {rule.is_active ? "Active" : "Inactive"}
         </span>
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-muted">
         Match on {rule.match_on} · {rule.threshold_count}+ occurrences within{" "}
         {rule.window_days} days
       </p>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-muted">
         Set by {createdByName} on {new Date(rule.created_at).toLocaleDateString()}
       </p>
-      <p className="mt-1 text-slate-700">{rule.approval_note}</p>
-      {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
+      <p className="mt-1 text-fg">{rule.approval_note}</p>
+      {error && <p className="mt-1 text-sm text-red-300">{error}</p>}
       {isManager && (
         <Button variant="secondary" size="sm" className="mt-2" onClick={toggle} disabled={submitting}>
           {rule.is_active ? "Deactivate" : "Reactivate"}

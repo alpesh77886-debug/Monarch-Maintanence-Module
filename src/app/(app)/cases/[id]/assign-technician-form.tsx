@@ -62,20 +62,20 @@ export default function AssignTechnicianForm({ caseId }: { caseId: string }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
     >
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Technician email
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
           placeholder="technician@monarch.test"
         />
       </label>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>
           {submitting ? "Assigning…" : "Assign"}

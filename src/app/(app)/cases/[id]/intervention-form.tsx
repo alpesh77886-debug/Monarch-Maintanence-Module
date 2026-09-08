@@ -59,35 +59,35 @@ export default function InterventionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
     >
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Action taken
         <textarea
           required
           value={actionTaken}
           onChange={(e) => setActionTaken(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Result
         <input
           value={result}
           onChange={(e) => setResult(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-fg">
         Failure mode (if identified)
         <input
           value={failureMode}
           onChange={(e) => setFailureMode(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : "Save intervention"}

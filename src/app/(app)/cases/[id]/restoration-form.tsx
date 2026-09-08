@@ -48,30 +48,30 @@ export default function RestorationForm({ caseId }: { caseId: string }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4"
+      className="flex flex-col gap-3 rounded-xl border border-teal/25 bg-teal/10 p-4"
     >
-      <label className="text-sm text-teal-900">
+      <label className="text-sm text-teal-300">
         Restoration type
         <select
           value={type}
           onChange={(e) => setType(e.target.value as "TEMPORARY" | "TECHNICAL")}
-          className="mt-1 block w-full rounded-md border border-teal-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-teal/25 px-3 py-2 text-base"
         >
           <option value="TECHNICAL">Technical (permanent, needs verification)</option>
           <option value="TEMPORARY">Temporary (stop-gap, not a closure)</option>
         </select>
       </label>
-      <label className="text-sm text-teal-900">
+      <label className="text-sm text-teal-300">
         Details
         <textarea
           required
           value={details}
           onChange={(e) => setDetails(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-md border border-teal-300 px-3 py-2 text-base"
+          className="mt-1 block w-full rounded-lg border border-teal/25 px-3 py-2 text-base"
         />
       </label>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : "Record"}

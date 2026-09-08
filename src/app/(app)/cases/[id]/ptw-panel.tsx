@@ -70,13 +70,13 @@ export default function PtwPanel({
 
   return (
     <section
-      className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm"
       data-testid="ptw-panel"
     >
-      <h2 className="text-sm font-semibold text-slate-900">
+      <h2 className="text-sm font-semibold text-fg">
         Permit to Work (§14)
       </h2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         PTW required:{" "}
         <span className="font-medium">
           {ptwRequired === null ? "not set" : ptwRequired ? "Yes" : "No"}
@@ -90,7 +90,7 @@ export default function PtwPanel({
         )}
       </p>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
 
       {status === "DIAGNOSING" && (
         <div className="flex flex-col gap-1">
@@ -98,7 +98,7 @@ export default function PtwPanel({
             value={requireReason}
             onChange={(e) => setRequireReason(e.target.value)}
             placeholder="Basis for this PTW determination (required)"
-            className="rounded-md border border-slate-300 p-1.5 text-sm"
+            className="rounded-lg border border-line2 p-1.5 text-sm"
           />
           <div className="flex gap-2">
             <Button
@@ -129,7 +129,7 @@ export default function PtwPanel({
             value={proofRef}
             onChange={(e) => setProofRef(e.target.value)}
             placeholder="Permit / proof reference"
-            className="rounded-md border border-slate-300 p-1.5 text-sm"
+            className="rounded-lg border border-line2 p-1.5 text-sm"
           />
           <Button
             size="sm"
@@ -140,7 +140,7 @@ export default function PtwPanel({
           >
             Link proof
           </Button>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Repair work cannot start until a proof is linked (§14.2).
           </p>
         </div>

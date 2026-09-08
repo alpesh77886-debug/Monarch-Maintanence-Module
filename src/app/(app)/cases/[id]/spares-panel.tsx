@@ -169,26 +169,26 @@ export default function SparesPanel({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">Spares</h2>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+    <section className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-fg">Spares</h2>
+      {error && <p className="text-sm text-red-300">{error}</p>}
 
       <div className="flex flex-col gap-1">
         {spareRequests.length === 0 && (
-          <p className="text-sm text-slate-500">No spare requests yet.</p>
+          <p className="text-sm text-muted">No spare requests yet.</p>
         )}
         {spareRequests.map((r) => (
-          <div key={r.id} className="rounded-md border border-slate-100 p-2 text-sm">
-            <p className="font-medium text-slate-800">
+          <div key={r.id} className="rounded-lg border border-line p-2 text-sm">
+            <p className="font-medium text-fg">
               {r.spare_name} × {r.quantity_requested}
               {r.estimated_amount != null ? ` — ₹${r.estimated_amount}` : ""}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted">
               Requested by {r.initiated_role.toLowerCase()} ·{" "}
               {new Date(r.requested_at).toLocaleString()}
             </p>
             {r.requires_manager_approval && (
-              <p className="mt-1 text-xs font-medium text-amber-700">
+              <p className="mt-1 text-xs font-medium text-amber-300">
                 {r.approved_at
                   ? `Manager-approved ${new Date(r.approved_at).toLocaleString()} (proof: ${r.approval_proof_ref})`
                   : "Exceeds ₹12,000 — awaiting Manager approval"}
@@ -202,7 +202,7 @@ export default function SparesPanel({
                     setApprovalProofByRequest((prev) => ({ ...prev, [r.id]: e.target.value }))
                   }
                   placeholder="Approval proof reference"
-                  className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
+                  className="flex-1 rounded-lg border border-line2 p-1 text-xs"
                 />
                 <Button
                   variant="warning"
@@ -214,7 +214,7 @@ export default function SparesPanel({
                 </Button>
               </div>
             )}
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted">
               Stores: <span className="font-medium">{r.stores_reference_status}</span>
               {r.stores_reference_id ? ` (${r.stores_reference_id})` : ""}
             </p>
@@ -226,13 +226,13 @@ export default function SparesPanel({
                     setStoresStatusDraft((prev) => ({ ...prev, [r.id]: e.target.value }))
                   }
                   placeholder="Stores status"
-                  className="w-32 rounded-md border border-slate-300 p-1 text-xs"
+                  className="w-32 rounded-lg border border-line2 p-1 text-xs"
                 />
                 <input
                   value={storesRefDraft[r.id] ?? ""}
                   onChange={(e) => setStoresRefDraft((prev) => ({ ...prev, [r.id]: e.target.value }))}
                   placeholder="Stores reference (optional)"
-                  className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
+                  className="flex-1 rounded-lg border border-line2 p-1 text-xs"
                 />
                 <Button
                   variant="secondary"
@@ -249,13 +249,13 @@ export default function SparesPanel({
       </div>
 
       {canRaise && (
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-          <p className="text-xs font-medium text-slate-700">Raise a spare request</p>
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          <p className="text-xs font-medium text-fg">Raise a spare request</p>
           <input
             value={spareName}
             onChange={(e) => setSpareName(e.target.value)}
             placeholder="Spare name"
-            className="rounded-md border border-slate-300 p-2 text-sm"
+            className="rounded-lg border border-line2 p-2 text-sm"
           />
           <div className="flex gap-2">
             <input
@@ -265,7 +265,7 @@ export default function SparesPanel({
               value={quantityRequested}
               onChange={(e) => setQuantityRequested(e.target.value)}
               placeholder="Quantity"
-              className="w-24 rounded-md border border-slate-300 p-2 text-sm"
+              className="w-24 rounded-lg border border-line2 p-2 text-sm"
             />
             <input
               type="number"
@@ -274,7 +274,7 @@ export default function SparesPanel({
               value={estimatedAmount}
               onChange={(e) => setEstimatedAmount(e.target.value)}
               placeholder="Estimated amount (₹, optional)"
-              className="flex-1 rounded-md border border-slate-300 p-2 text-sm"
+              className="flex-1 rounded-lg border border-line2 p-2 text-sm"
             />
           </div>
           <Button variant="secondary" className="self-start" onClick={raiseRequest} disabled={submitting}>
@@ -283,19 +283,19 @@ export default function SparesPanel({
         </div>
       )}
 
-      <div className="flex flex-col gap-1 border-t border-slate-100 pt-3">
+      <div className="flex flex-col gap-1 border-t border-line pt-3">
         {spareUsage.length === 0 && (
-          <p className="text-sm text-slate-500">No spare usage recorded yet.</p>
+          <p className="text-sm text-muted">No spare usage recorded yet.</p>
         )}
         {spareUsage.map((u) => (
-          <div key={u.id} className="rounded-md border border-slate-100 p-2 text-sm">
-            <p className="text-slate-800">
+          <div key={u.id} className="rounded-lg border border-line p-2 text-sm">
+            <p className="text-fg">
               Qty {u.quantity}
               {u.asset_ref ? ` on ${u.asset_ref}` : ""}
               {u.outcome ? ` — ${u.outcome}` : ""}
             </p>
-            <p className="text-xs text-slate-400">{new Date(u.used_at).toLocaleString()}</p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="text-xs text-muted2">{new Date(u.used_at).toLocaleString()}</p>
+            <p className="mt-1 text-xs text-muted">
               Stores: <span className="font-medium">{u.stores_reference_status}</span>
               {u.stores_reference_id ? ` (${u.stores_reference_id})` : ""}
             </p>
@@ -307,13 +307,13 @@ export default function SparesPanel({
                     setStoresStatusDraft((prev) => ({ ...prev, [u.id]: e.target.value }))
                   }
                   placeholder="Stores status"
-                  className="w-32 rounded-md border border-slate-300 p-1 text-xs"
+                  className="w-32 rounded-lg border border-line2 p-1 text-xs"
                 />
                 <input
                   value={storesRefDraft[u.id] ?? ""}
                   onChange={(e) => setStoresRefDraft((prev) => ({ ...prev, [u.id]: e.target.value }))}
                   placeholder="Stores reference (optional)"
-                  className="flex-1 rounded-md border border-slate-300 p-1 text-xs"
+                  className="flex-1 rounded-lg border border-line2 p-1 text-xs"
                 />
                 <Button
                   variant="secondary"
@@ -330,8 +330,8 @@ export default function SparesPanel({
       </div>
 
       {canRecordUsage && spareRequests.length === 0 && (
-        <div className="border-t border-slate-100 pt-3">
-          <p className="text-xs text-slate-500">
+        <div className="border-t border-line pt-3">
+          <p className="text-xs text-muted">
             No spare requests yet on this case — raise one above before recording usage. Every
             usage must reference the spare request it&apos;s for (§16.1 traceability, §3.3
             financial authority).
@@ -340,12 +340,12 @@ export default function SparesPanel({
       )}
 
       {canRecordUsage && spareRequests.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-          <p className="text-xs font-medium text-slate-700">Record spare usage</p>
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          <p className="text-xs font-medium text-fg">Record spare usage</p>
           <select
             value={usageSpareRequestId}
             onChange={(e) => setUsageSpareRequestId(e.target.value)}
-            className="rounded-md border border-slate-300 p-2 text-sm"
+            className="rounded-lg border border-line2 p-2 text-sm"
           >
             <option value="">(select the spare request this usage is for)</option>
             {spareRequests.map((r) => (
@@ -363,20 +363,20 @@ export default function SparesPanel({
               value={usageQuantity}
               onChange={(e) => setUsageQuantity(e.target.value)}
               placeholder="Quantity"
-              className="w-24 rounded-md border border-slate-300 p-2 text-sm"
+              className="w-24 rounded-lg border border-line2 p-2 text-sm"
             />
             <input
               value={usageAssetRef}
               onChange={(e) => setUsageAssetRef(e.target.value)}
               placeholder="Asset/machine ref (optional)"
-              className="flex-1 rounded-md border border-slate-300 p-2 text-sm"
+              className="flex-1 rounded-lg border border-line2 p-2 text-sm"
             />
           </div>
           <input
             value={usageOutcome}
             onChange={(e) => setUsageOutcome(e.target.value)}
             placeholder="Outcome (optional)"
-            className="rounded-md border border-slate-300 p-2 text-sm"
+            className="rounded-lg border border-line2 p-2 text-sm"
           />
           <Button variant="secondary" className="self-start" onClick={recordUsage} disabled={submitting}>
             Record usage

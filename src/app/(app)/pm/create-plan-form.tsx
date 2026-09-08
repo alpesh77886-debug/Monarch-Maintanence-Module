@@ -39,19 +39,19 @@ export default function CreatePlanForm({ isManager }: { isManager: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-medium text-slate-900">New PM plan</p>
+    <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
+      <p className="text-sm font-medium text-fg">New PM plan</p>
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="rounded-md border border-slate-300 p-2 text-sm"
+        className="rounded-lg border border-line2 p-2 text-sm"
       />
       <div className="flex gap-2">
         <select
           value={planType}
           onChange={(e) => setPlanType(e.target.value as "RECURRING" | "ONE_TIME")}
-          className="rounded-md border border-slate-300 p-2 text-sm"
+          className="rounded-lg border border-line2 p-2 text-sm"
         >
           <option value="RECURRING">Recurring</option>
           <option value="ONE_TIME" disabled={!isManager}>
@@ -62,7 +62,7 @@ export default function CreatePlanForm({ isManager }: { isManager: boolean }) {
           value={assetRef}
           onChange={(e) => setAssetRef(e.target.value)}
           placeholder="Asset ref (optional)"
-          className="flex-1 rounded-md border border-slate-300 p-2 text-sm"
+          className="flex-1 rounded-lg border border-line2 p-2 text-sm"
         />
       </div>
       {planType === "RECURRING" && (
@@ -72,10 +72,10 @@ export default function CreatePlanForm({ isManager }: { isManager: boolean }) {
           value={frequencyDays}
           onChange={(e) => setFrequencyDays(e.target.value)}
           placeholder="Frequency (days)"
-          className="rounded-md border border-slate-300 p-2 text-sm"
+          className="rounded-lg border border-line2 p-2 text-sm"
         />
       )}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <Button className="self-start" onClick={submit} disabled={submitting || !title.trim()}>
         Create plan
       </Button>

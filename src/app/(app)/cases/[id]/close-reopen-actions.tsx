@@ -51,7 +51,7 @@ export default function CloseReopenActions({
 
   return (
     <div className="flex flex-col gap-2">
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       {status === "MAINTENANCE_RELEASED" && (
         <Button className="self-start" onClick={close} disabled={submitting}>
           Close case

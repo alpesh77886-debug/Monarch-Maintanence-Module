@@ -54,18 +54,18 @@ export default function ProductionBoundaryPanel({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">
+    <section className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-fg">
         Production restart boundary
       </h2>
 
       {activeStop ? (
-        <div className="flex flex-col gap-2 rounded-md border border-red-300 bg-red-50 p-3">
-          <p className="text-sm font-semibold text-red-900">
+        <div className="flex flex-col gap-2 rounded-lg border border-bad/25 bg-bad/10 p-3">
+          <p className="text-sm font-semibold text-red-300">
             {activeStop.stop_type} STOP ACTIVE
           </p>
-          <p className="text-sm text-red-900">{activeStop.reason}</p>
-          <p className="text-xs text-red-800">
+          <p className="text-sm text-red-300">{activeStop.reason}</p>
+          <p className="text-xs text-red-300">
             Raised {new Date(activeStop.raised_at).toLocaleString()}
             {activeStop.machine_ref ? ` · ${activeStop.machine_ref}` : ""}
             {activeStop.line_ref ? ` · ${activeStop.line_ref}` : ""}
@@ -74,7 +74,7 @@ export default function ProductionBoundaryPanel({
             value={liftReason}
             onChange={(e) => setLiftReason(e.target.value)}
             placeholder="Reason for lifting the stop"
-            className="rounded-md border border-red-300 p-2 text-sm"
+            className="rounded-lg border border-bad/25 p-2 text-sm"
           />
           <Button
             variant="danger"
@@ -92,15 +92,15 @@ export default function ProductionBoundaryPanel({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 rounded-md border border-slate-100 p-2">
-          <p className="text-xs font-medium text-slate-700">
+        <div className="flex flex-col gap-2 rounded-lg border border-line p-2">
+          <p className="text-xs font-medium text-fg">
             Raise a Maintenance safety / technical stop
           </p>
           <div className="flex gap-2">
             <select
               value={stopType}
               onChange={(e) => setStopType(e.target.value as "SAFETY" | "TECHNICAL")}
-              className="rounded-md border border-slate-300 p-2 text-sm"
+              className="rounded-lg border border-line2 p-2 text-sm"
             >
               <option value="SAFETY">Safety</option>
               <option value="TECHNICAL">Technical</option>
@@ -109,20 +109,20 @@ export default function ProductionBoundaryPanel({
               value={machineRef}
               onChange={(e) => setMachineRef(e.target.value)}
               placeholder="Machine ref"
-              className="w-32 rounded-md border border-slate-300 p-2 text-sm"
+              className="w-32 rounded-lg border border-line2 p-2 text-sm"
             />
             <input
               value={lineRef}
               onChange={(e) => setLineRef(e.target.value)}
               placeholder="Line ref"
-              className="w-28 rounded-md border border-slate-300 p-2 text-sm"
+              className="w-28 rounded-lg border border-line2 p-2 text-sm"
             />
           </div>
           <input
             value={stopReason}
             onChange={(e) => setStopReason(e.target.value)}
             placeholder="Reason for the stop"
-            className="rounded-md border border-slate-300 p-2 text-sm"
+            className="rounded-lg border border-line2 p-2 text-sm"
           />
           <Button
             variant="danger"
@@ -152,11 +152,11 @@ export default function ProductionBoundaryPanel({
       )}
 
       {!released && (
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-          <p className="text-xs font-medium text-slate-700">
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          <p className="text-xs font-medium text-fg">
             Record: production started without Maintenance release (§13.1)
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             This records what happened. It does not clear the stop and is not a
             successful-restart event.
           </p>
@@ -164,7 +164,7 @@ export default function ProductionBoundaryPanel({
             value={breachReason}
             onChange={(e) => setBreachReason(e.target.value)}
             placeholder="Context — who started it, what was observed"
-            className="rounded-md border border-slate-300 p-2 text-sm"
+            className="rounded-lg border border-line2 p-2 text-sm"
           />
           <Button
             variant="warning"
@@ -188,15 +188,15 @@ export default function ProductionBoundaryPanel({
         </div>
       )}
 
-      <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-        <p className="text-xs font-medium text-slate-700">
+      <div className="flex flex-col gap-2 border-t border-line pt-3">
+        <p className="text-xs font-medium text-fg">
           Record: shift ended, production not restarted (§13.2)
         </p>
         <input
           value={notRestartedReason}
           onChange={(e) => setNotRestartedReason(e.target.value)}
           placeholder="Context — why it did not restart"
-          className="rounded-md border border-slate-300 p-2 text-sm"
+          className="rounded-lg border border-line2 p-2 text-sm"
         />
         <Button
           variant="secondary"
@@ -214,25 +214,25 @@ export default function ProductionBoundaryPanel({
         </Button>
       </div>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
 
       {boundaryEvents.length > 0 && (
-        <ul className="flex flex-col gap-1 border-t border-slate-100 pt-3">
+        <ul className="flex flex-col gap-1 border-t border-line pt-3">
           {boundaryEvents.map((e) => (
-            <li key={e.id} className="rounded-md border border-slate-100 p-2 text-sm">
+            <li key={e.id} className="rounded-lg border border-line p-2 text-sm">
               <p
                 className={
                   e.event_type === "PRODUCTION_STARTED_WITHOUT_MAINTENANCE_RELEASE"
-                    ? "font-medium text-red-800"
-                    : "font-medium text-slate-800"
+                    ? "font-medium text-red-300"
+                    : "font-medium text-fg"
                 }
               >
                 {e.event_type === "PRODUCTION_STARTED_WITHOUT_MAINTENANCE_RELEASE"
                   ? "Production started WITHOUT Maintenance release"
                   : "Production not restarted"}
               </p>
-              <p className="text-xs text-slate-600">{e.reason}</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted">{e.reason}</p>
+              <p className="text-xs text-muted2">
                 {new Date(e.recorded_at).toLocaleString()} · case was{" "}
                 {e.case_status_at_record}
                 {e.machine_ref ? ` · ${e.machine_ref}` : ""}
