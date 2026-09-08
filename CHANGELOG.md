@@ -3688,3 +3688,84 @@ red-team test. Full evidence in `LOOP_41_REPORT.md`.
 **Correction to Loop 40's record:** Loop 40 reported the refill problem as
 closed. It was not. A green CI run was not evidence the cleanup worked — the
 leaked rows were sitting in the database the whole time it was green.
+
+## Loop 42 — 2026-09-08
+
+**Summary:** Loop 41 fixed where the cleanup ran and what it was allowed to
+touch. Loop 42 asked what it never looks at. Two answers, and the second is a
+correction to my own Loop 40 report. Full evidence in `LOOP_42_REPORT.md`.
+
+**Requirements affected:** §21 (test data hygiene), §27/§0 rule 6 (append-only
+history — respected, see below), §28 (no fake green).
+
+**Findings:**
+- **F-42-1 — pm_plans and recurrence_rules accumulate forever.**
+  `cleanup_synthetic_cases` walks a CASE's dependents; neither table hangs off a
+  case, so it never saw them. Live: `pm_plans` 484 rows, **484 synthetic
+  (100%)**; `recurrence_rules` 183 rows, **183 synthetic (100%)**; ~5 plans and
+  ~3–6 rules added per CI run. Not just clutter — **182** of those plans are
+  RECURRING, active, approved, with `frequency_days` 14–30, approved
+  2026-09-06/07. `run_pm_scan` (hourly) will generate instances once they
+  mature, flag them OVERDUE, and send a `PM_OVERDUE` notification to every
+  active Manager. In 2–4 weeks a real manager starts receiving hundreds of
+  overdue alerts for preventive maintenance that does not exist.
+- **F-42-2 — 74% of the audit log dangles, and Loop 40's "zero orphans" claim
+  was wrong.** `cleanup_synthetic_cases` removed audit rows for
+  `target_table = 'maintenance.cases'` and nothing else, so every child row it
+  deleted left its audit entry behind. **4,175 of 5,659 audit rows (74%)** point
+  at ids that no longer exist — 1,134 for `spare_requests`, 657 for `waits`, 543
+  for `safety_stops`, 402 for `case_impact_records`, and so on.
+- **A defect in this loop's own work, caught on the first live call.** The audit
+  sweep was written against `audit_log.created_at`. That column does not exist —
+  the table timestamps with `occurred_at`. It failed loudly rather than silently
+  sweeping nothing, which is the right failure mode, but the column should have
+  been read from `information_schema` rather than assumed.
+
+**Material changes:**
+- `supabase/migrations/0042_maintenance_test_artifact_cleanup.sql` — adds
+  `cleanup_test_artifacts_since(p_since, p_run_tag)`. Staff-only, ≤24h window,
+  same run-tag charset and `strpos()` (non-pattern) matching as Loop 41. Removes
+  tagged synthetic `recurrence_rules` (refused if any `recurrence_flag`
+  references them), tagged synthetic `pm_plans` and their instances (a plan with
+  an instance linked to a surviving CASE is refused, so a case never silently
+  loses its PM linkage), and audit rows inside the window whose subject no
+  longer exists. Each `target_table` is checked against ITSELF by name; an
+  unrecognised table is skipped, never guessed at. EXECUTE revoked from `public`
+  and `anon`.
+- `tests/cleanup-run.ts` — the teardown now runs the artifact sweep AFTER the
+  case cleanup, because a run's audit rows only become sweepable once their
+  subjects are gone.
+- `tests/artifact-cleanup.test.ts` (new, 6 tests) — pins the refusal surface.
+
+**On append-only history:** §0 rule 6 / §27 govern REAL history. Every row this
+function can remove is inside a ≤24h window, names a `target_table` that exists,
+and has a `target_id` whose subject has ALREADY ceased to exist. It cannot touch
+an audit row whose subject survives — proven live with a three-way probe (live
+subject survived, dangling swept, unknown table skipped). A pointer to a deleted
+`[AUTOTEST` fixture is not business history.
+
+**Honest limits:**
+- The audit sweep is **window-scoped only, not run-tag scoped** — an audit row
+  carries no tag, and by the time it is sweepable its subject is gone. A
+  concurrent run could sweep another run's dangling audit rows. Safe rather than
+  merely tolerated: a row is swept only once its subject no longer exists, so
+  nothing a running test can still observe is removed.
+- The **historical backlog** (484 plans, 183 rules, 4,175 dangling audit rows)
+  is **NOT** deleted. The mechanism stops the backlog growing from the next CI
+  run onward; clearing what is already there is a bulk deletion outside any
+  window and is waiting on the Boss, alongside the still-unanswered question
+  about the 8 leaked e2e cases.
+
+**Checked and found nothing** (reported because "found nothing" is a result):
+all 48 business RPCs are reachable from `src/` — the only one without a call
+site, `mark_asset_known`, is a trigger function, not an RPC — and every
+component under `src/` is imported somewhere. `run_pm_scan` has no bug: 182
+eligible plans against 3 instances looked wrong but `should_generate_now` is 0,
+and all three cron jobs are healthy (394/394, 29/29, 24/24 succeeded, zero
+errors) per `cron.job_run_details`, not `cron.job`.
+
+**Correction to Loop 40's record:** "Zero orphans across every dependent table"
+was wrong about the database and right only about what it measured. The probe
+covered the eleven FK-linked dependents; `audit_log` deliberately has no foreign
+key — that absence is what keeps history append-only — so the one table that
+could dangle was the one table not checked.

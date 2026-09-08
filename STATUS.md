@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 41 complete (Gate 8 approved). A Boss-directed
+Current loop: Loop 42 complete (Gate 8 approved). A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
@@ -20,6 +20,18 @@ Current loop: Loop 41 complete (Gate 8 approved). A Boss-directed
   first version of that fix was itself wrong (it matched the tag with LIKE,
   where '_' is a wildcard, so 'RUN___' matched 'RUNBBB') and was caught by
   its own red-team test. See LOOP_41_REPORT.md.
+  Loop 42 then asked what the cleanup never LOOKS at, and found two more:
+  pm_plans (484 rows, 484 synthetic) and recurrence_rules (183/183) hang
+  off no case, so the case-walker never saw them - and 182 of those plans
+  are RECURRING/approved with 14-30 day frequencies, so once they mature
+  the hourly PM scan will fire hundreds of PM_OVERDUE alerts at a REAL
+  manager for maintenance that does not exist. Second: 4,175 of 5,659
+  audit rows (74%) dangle, because the cleanup removed audit rows only for
+  target_table='maintenance.cases'. THIS CORRECTS LOOP 40's "zero orphans"
+  claim - that probe covered the eleven FK-linked dependents, and
+  audit_log deliberately has no FK, so the one table that could dangle was
+  the one not checked. Mechanism built and proven; the historical backlog
+  is NOT yet deleted and waits on the Boss. See LOOP_42_REPORT.md.
   Boss-side items: QC identities ANSWERED (they will come from the Quality
   module at integration; qc_authority staying empty is now a decision, not
   a gap). Leaked-password protection deferred by the Boss to last. Two new
