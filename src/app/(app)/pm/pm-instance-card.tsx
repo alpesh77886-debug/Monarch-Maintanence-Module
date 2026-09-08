@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { PmInstance } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 const STATUS_STYLES: Record<string, string> = {
   SCHEDULED: "bg-bg2 text-fg",
@@ -103,9 +104,10 @@ export default function PmInstanceCard({
           {instance.status}
         </span>
       </div>
+      {/* formatIst avoids a server/client hydration mismatch — see src/lib/format.ts */}
       <p className="mt-1 text-xs text-muted">
-        Due {new Date(instance.due_at).toLocaleString()}
-        {instance.overdue_since ? ` · overdue since ${new Date(instance.overdue_since).toLocaleString()}` : ""}
+        Due {formatIst(instance.due_at)}
+        {instance.overdue_since ? ` · overdue since ${formatIst(instance.overdue_since)}` : ""}
       </p>
       {instance.case_id && (
         <p className="mt-1 text-xs">
