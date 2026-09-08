@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AcknowledgeForm from "./acknowledge-form";
+import AssessmentForm from "./assessment-form";
 import TakeOwnershipButton from "./take-ownership-button";
 import ObservationForm from "./observation-form";
 import AssignTechnicianForm from "./assign-technician-form";
@@ -166,6 +167,13 @@ export default async function CaseDetailPage({
   const canAcknowledge =
     !!isStaffRow && ["REPORTED", "NEEDS_INFORMATION"].includes(caseRow.status);
 
+  // Blueprint Gap Matrix G1 (Loop 54): ACKNOWLEDGED -> ASSESSED is a locked
+  // transition (IMPLEMENTATION_PACK.md §4, status_transitions) but had no UI
+  // trigger anywhere — assign_technician only auto-advances ASSESSED ->
+  // ASSIGNED, so a case assigned straight from ACKNOWLEDGED never reached
+  // ASSIGNED through that path. This is the missing step.
+  const canConfirmAssessment = !!isStaffRow && caseRow.status === "ACKNOWLEDGED";
+
   const isAssignedTechnician =
     !!user && (assignments ?? []).some((a) => a.technician_user_id === user.id && a.is_active);
   const canRecordIntervention = !!isStaffRow || isAssignedTechnician;
@@ -290,6 +298,11 @@ export default async function CaseDetailPage({
       {canAcknowledge && (
         <ActionSheetTrigger label="Acknowledge" sheetTitle="Acknowledge Case" variant="primary">
           <AcknowledgeForm caseId={caseRow.id} />
+        </ActionSheetTrigger>
+      )}
+      {canConfirmAssessment && (
+        <ActionSheetTrigger label="Confirm Assessment" sheetTitle="Confirm Assessment" variant="primary">
+          <AssessmentForm caseId={caseRow.id} />
         </ActionSheetTrigger>
       )}
       {/* Loop 39 (RISK-27): acknowledging assigns ownership, so a REPORTED
@@ -418,6 +431,8 @@ export default async function CaseDetailPage({
           {interventions?.map((i) => (
             <li key={i.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
               <p className="text-xs text-muted2">{new Date(i.started_at).toLocaleString()}</p>
+              {i.observed_symptom && <p><span className="font-medium">Observed symptom:</span> {i.observed_symptom}</p>}
+              {i.immediate_action && <p><span className="font-medium">Immediate action:</span> {i.immediate_action}</p>}
               <p><span className="font-medium">Action:</span> {i.action_taken}</p>
               {i.result && <p><span className="font-medium">Result:</span> {i.result}</p>}
               {i.failure_mode && <p><span className="font-medium">Failure mode:</span> {i.failure_mode}</p>}

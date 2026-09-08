@@ -23,6 +23,7 @@ export default function NewCasePage() {
   const [symptom, setSymptom] = useState("");
   const [area, setArea] = useState("");
   const [line, setLine] = useState("");
+  const [shift, setShift] = useState("");
   const [assetKnown, setAssetKnown] = useState(false);
   const [majorComplex, setMajorComplex] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export default function NewCasePage() {
         symptom,
         area: area || null,
         line: line || null,
+        shift: shift || null,
         asset_known: assetKnown,
         major_complex_flag: majorComplex,
         reporter_user_id: user.id,
@@ -112,6 +114,16 @@ export default function NewCasePage() {
         <input
           value={line}
           onChange={(e) => setLine(e.target.value)}
+          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+        />
+      </label>
+
+      <label className="text-sm font-medium text-fg">
+        Shift (optional)
+        <input
+          value={shift}
+          onChange={(e) => setShift(e.target.value)}
+          placeholder="A / B / C"
           className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </label>

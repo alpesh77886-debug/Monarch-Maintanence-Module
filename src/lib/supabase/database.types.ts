@@ -215,6 +215,8 @@ export interface Intervention {
   action_taken: string;
   result: string | null;
   failure_mode: string | null;
+  observed_symptom: string | null;
+  immediate_action: string | null;
 }
 
 export interface CaseWait {

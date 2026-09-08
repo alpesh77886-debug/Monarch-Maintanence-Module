@@ -4451,3 +4451,45 @@ worth recording as a now-known Next.js 16 convention.
 
 Full detail in `LOOP_53_REPORT.md`. This loop shipped no product code —
 `git status --short` was empty at the end of it.
+
+## Loop 54 — Blueprint Gap Matrix + 3 bounded fixes (G1/G2/G3)
+
+Boss uploaded a new Architecture Blueprint document and asked for a full
+gap matrix against the repo (screens, interactions, data/permissions,
+harness) before any implementation. Read all 35 sections and cross-checked
+against actual migration SQL, RPC bodies, RLS policies, and forms rather
+than memory — result in `BLUEPRINT_GAP_MATRIX.md`. The backend is already
+comprehensive (26 tables, ~60 RPCs, full locked transition graph) since
+this is Loop 54 of an already-53-loop build; most Blueprint sections
+confirmed MATCH. Flagged, not silently resolved: the Blueprint cites
+"Implementation Pack v0.3" while this repo's pack is v0.2 LOCKED — no
+content conflict found, but recorded for the Boss.
+
+Found 3 genuine gaps, all traceable to the current v0.2 pack itself:
+
+- **G1** (real bug): no UI path ever transitioned a case from ACKNOWLEDGED
+  to ASSESSED, so `assign_technician`'s existing auto-advance to ASSIGNED
+  (`if v_current = 'ASSESSED'`) never actually fired in normal use — a case
+  assigned straight after Acknowledge stayed stuck showing ACKNOWLEDGED
+  indefinitely. Put the fix shape to the Boss rather than guessing (per
+  "no silent architecture drift"); Boss chose a dedicated Confirm
+  Assessment screen over silently loosening the guard. Implemented as a
+  new `AssessmentForm`/`ActionSheetTrigger` that reuses the existing
+  generic `transition_case` RPC — zero new backend surface, notes map onto
+  the RPC's existing `p_reason` parameter.
+- **G2**: intake form had no `shift` field (column already existed). Put
+  the priority-at-intake question to the Boss; chose to add shift only and
+  leave priority-at-Acknowledge as is. Pure UI change.
+- **G3**: `maintenance.interventions` captured only 3 of LOCKED §9's 8
+  required diagnosis fields — `observed_symptom` and `immediate_action`
+  had no column anywhere. New migration `0048` adds both as nullable
+  columns (purely additive), `record_intervention` gets two new optional
+  trailing parameters with every existing guard unchanged, and
+  `intervention-form.tsx` gets two new optional fields ahead of the
+  existing ones, matching the pack's field ordering.
+
+`tsc --noEmit`/`eslint`/`next build` all clean. `npm test` blocked locally
+by RISK-05 as always (this sandbox can't reach the live Supabase project
+directly) — CI is the verification path, and all three changes were kept
+deliberately small/additive to minimize what CI needs to catch. Full detail
+in `LOOP_54_REPORT.md`.

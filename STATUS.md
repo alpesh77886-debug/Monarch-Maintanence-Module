@@ -1,6 +1,27 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 53 complete - Sarvam-mandated 8-category forensic
+Current loop: Loop 54 complete - Boss uploaded a new Architecture Blueprint
+  document and asked for a screen-by-screen/data/permission/harness gap
+  matrix against the repo before any implementation. Read all 35 Blueprint
+  sections, cross-checked against actual migration SQL/RPC bodies/RLS/forms
+  (not memory), wrote BLUEPRINT_GAP_MATRIX.md. Backend is already
+  comprehensive (26 tables, ~60 RPCs) - most sections MATCH. Flagged a
+  version-number discrepancy (Blueprint cites v0.3, repo pack is v0.2
+  LOCKED) without silently resolving it. Found 3 genuine gaps, all
+  traceable to the CURRENT v0.2 pack itself: G1 (real bug - no UI path ever
+  set status ASSESSED, so assign_technician's auto-advance to ASSIGNED
+  never fired from a normal Acknowledge->Assign flow), G2 (intake form
+  missing shift field), G3 (diagnosis form missing 2 of the LOCKED section
+  9's 8 required fields - observed_symptom, immediate_action - no column
+  existed). Put G1's fix shape and the priority-at-intake question to the
+  Boss rather than guessing; Boss chose a dedicated Confirm Assessment
+  screen for G1, and shift-only (no priority change) for G2. Implemented
+  all three: new migration 0048 (2 nullable columns on interventions,
+  additive only), new AssessmentForm reusing the existing transition_case
+  RPC (zero new backend surface), shift field added to intake. tsc/eslint/
+  build all clean; npm test blocked locally by RISK-05 as always, CI is the
+  verification path. See BLUEPRINT_GAP_MATRIX.md and LOOP_54_REPORT.md.
+Previously: Loop 53 complete - Sarvam-mandated 8-category forensic
   sweep on the Loop 51-52 restructure. Categories 1-6 (triggers/
   constraints, RPC guards, RLS/grants, client-side gating, duplicate-
   submit idempotency, error/rollback paths) confirmed clean by reasoning +
