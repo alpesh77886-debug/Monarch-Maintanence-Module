@@ -3910,3 +3910,62 @@ which carries no `[run=<tag>]` marker — so the tag-scoped teardown would have
 left the row behind permanently, precisely the leak Loop 41 closed. Changed to
 `testSymptom()`. The fix from three loops ago is only as good as every new call
 site remembering to use it.
+
+## Loop 45 — 2026-09-08
+
+**Summary:** Final loop of the 41-45 batch. Same enumerate-then-audit method as
+43 and 44, one layer further in: audit the policies that DO exist, side by side.
+RISK-30. Full evidence in `LOOP_45_REPORT.md`; batch report in
+`APPROVAL_REPORT_LOOP_41_45.md`.
+
+**Requirements affected:** §5.1 evidence intake, §26 data model, §29
+authorization/audit trail.
+
+**Findings:**
+- **RISK-30 — `evidence_insert` had no case predicate.** Its WITH CHECK was
+  `uploaded_by = auth.uid()` and nothing else: no staff check and, crucially, no
+  check that the caller had any relationship to the case. **The asymmetry was
+  the tell** — `observations`, `restorations` and `case_assets` all require
+  `is_staff() AND <actor> = auth.uid()`; `evidence` required neither staff nor a
+  case predicate.
+  Proven live as the seeded technician identity (a real auth user with no
+  `maintenance.staff` row, unassigned to the target case): cases visible to that
+  identity for MC-009600 = **0**; INSERT into `evidence` for MC-009600 =
+  **SUCCEEDED**; the row visible back to its own writer = **0**; the row visible
+  to Maintenance staff = **YES**, as ordinary attached evidence naming the
+  technician as uploader. A blind write into someone else's audit trail. Same
+  class as RISK-22. Probe row deleted immediately.
+
+**Checked and found nothing** (recorded because "found nothing" is a result):
+the only policy still `USING (true)` is `status_transitions_select`, created
+deliberately in Loop 43; both UPDATE policies are `USING (false)`; and there are
+**zero** DELETE policies in the schema.
+
+**Material changes:**
+- `supabase/migrations/0045_maintenance_evidence_insert_scope.sql` — adds
+  `maintenance.can_read_case(case_id)` to the WITH CHECK. **This is not a
+  reversal of a deliberate decision, it implements it.** `evidence-panel.tsx`
+  records the intent: §5.1 lists evidence as an intake field, so the reporter —
+  not just staff — must be able to attach it before any staff RPC touches the
+  case. That intent is right and is preserved; the defect was that the code said
+  something wider — intent "the reporter, on THEIR case", policy "anyone, on ANY
+  case". Exactly the shape of RISK-22. `can_read_case` is staff / that case's
+  reporter / an assigned technician — precisely the three parties the intent
+  names — so INSERT scope now matches SELECT scope. It is evaluated as the
+  CALLING user here, which is why Loop 44 deliberately kept its `authenticated`
+  EXECUTE grant.
+- `src/app/(app)/cases/[id]/evidence-panel.tsx` — the comment claiming the policy
+  was "already correct" was corrected rather than left to mislead the next
+  reader.
+- `tests/evidence-insert-scope.test.ts` (new, 4 tests).
+
+**Verified in four directions:** the original attack is refused; a **non-staff
+reporter can still attach evidence to their own case** (the §5.1 intake path — if
+this had failed the fix would have overreached and broken the intent); staff can
+still attach to a case they did not report; and impersonation (`uploaded_by` set
+to another user) is refused. All probe rows and the probe case removed.
+
+**Gate 9 logged as AWAITING BOSS.** Autonomous loop work is PAUSED per §19.9/
+§19.13. Two deletions await an explicit yes and have NOT been acted on: the 8
+leaked e2e cases, and the historical backlog of 484 pm_plans + 183
+recurrence_rules + 4,175 dangling audit rows.

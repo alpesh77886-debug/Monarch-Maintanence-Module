@@ -10,33 +10,46 @@
 | 6 (Loops 26–30) | [`APPROVAL_REPORT_LOOP_26_30.md`](./APPROVAL_REPORT_LOOP_26_30.md) | Approved — "approved loops 31 to 35" | 2026-09-07 |
 | 7 (Loops 31–35) | [`APPROVAL_REPORT_LOOP_31_35.md`](./APPROVAL_REPORT_LOOP_31_35.md) | Approved — "ye karlo iske baad you can proceed for 36 to 40 loop" (given alongside the forensic remediation brief) | 2026-09-07 |
 | 8 (Loops 36–40) | [`APPROVAL_REPORT_LOOP_36_40.md`](./APPROVAL_REPORT_LOOP_36_40.md) | Approved — "itna complete karne ke baad tum loop 41 se 45 start kar sakte ho...Mera approval hai" (given in advance, conditional on the RISK-25 + cleanup task completing first — it did, and merged as PR #41) | 2026-09-07 |
+| 9 (Loops 41–45) | [`APPROVAL_REPORT_LOOP_41_45.md`](./APPROVAL_REPORT_LOOP_41_45.md) | **AWAITING BOSS** | — |
 
-Current state: **GATE 8 (Loops 36-40) APPROVED — Loop 41 STARTED.**
+Current state: **GATE 9 (Loops 41-45) AWAITING BOSS.** Autonomous loop work
+is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13. Loop 46 will not start
+without explicit continuation language.
 
-The Boss's approval for Loops 41-45 was given *conditionally*: it attached to
-completing the RISK-25 + safe-cleanup brief first. That brief is complete and
-merged (PR #41, all checks green), so the condition is met and the approval is
-live. Gate 9 falls after Loop 45.
+Loops 41-45 found six defects, two of them the most serious in this project so
+far, and three of them in work reported as complete in the previous batch:
 
-Boss-side items, refreshed after the Loop 36-40 batch:
-
-| # | Item | State |
+| Loop | Finding | Severity |
 |---|---|---|
-| 1 | Real QC identities for `maintenance.qc_authority` | **ANSWERED, no code owed.** The QC login name will come from the Quality module at integration time. That module is still a standalone localStorage prototype not on shared Supabase auth, so integration must come first. An empty `qc_authority` is now a recorded decision, not a gap. |
-| 2 | Separate test and production databases | **STILL OPEN.** Mitigated by prefix tagging and a scoped teardown, not eliminated. One live project still backs both. |
-| 3 | Leaked-password protection (Supabase → Auth) | **DEFERRED BY THE BOSS** — "leaked Password wala kaam hum last me karenge". |
-| 4 | RISK-25 — should an INTERNAL wait escalate, and from when? | **CLOSED.** The Boss supplied the three permitted INTERNAL reasons and the escalation rule; implemented and live-verified in PR #41. |
+| 41 | Playwright had no teardown - 4 leaked cases per CI run | MEDIUM |
+| 41 | a run could delete a concurrent run's in-flight cases | HIGH |
+| 42 | pm_plans / recurrence_rules accumulate forever, with a fuse | MEDIUM |
+| 42 | 74% of the audit log dangles; Loop 40's "zero orphans" was wrong | MEDIUM |
+| 43 | **RISK-28 - the §4 LOCKED lifecycle graph was writable by anyone** | **CRITICAL** |
+| 44 | **RISK-29 - schema defaults grant every new object to `anon`** | **HIGH** |
+| 45 | RISK-30 - evidence attachable to any case by any signed-in user | HIGH |
 
-Two further items are the Boss's call and are NOT loop work:
+Two questions need you, and both are deletions I have NOT acted on because a
+deletion on an unanswered question is not reversible:
 
-  a. **103 open cases that a DUPLICATE case points at.** Removing them means
-     also deleting the linked resolved cases, which §16 forbids without
-     explicit instruction. They are why the retained-open count is 114 and
-     not 10. Needs an explicit "yes, delete these too."
-  b. **The Sarvam Maintenance Screen Architecture document.** §4/§5/§27 of the
-     brief ask for UX correction *against it*; it was never supplied and is not
-     in the repo, so that work is recorded as NOT TOUCHED rather than done.
+  A. Delete the 8 leaked e2e cases (prefix-proven synthetic, created before
+     Loop 41's fix)?
+  B. Delete the historical backlog - 484 pm_plans (484/484 synthetic), 183
+     recurrence_rules (183/183), and 4,175 dangling audit rows? The
+     time-sensitive part is the 182 RECURRING plans: in 2-4 weeks the hourly
+     PM scan starts firing PM_OVERDUE alerts at a real Manager for
+     maintenance that does not exist.
+
+Still open from earlier gates:
+  1. QC identities - ANSWERED (comes from the Quality module at integration).
+  2. Separate test and production databases - STILL OPEN, mitigated by run
+     tagging rather than removed.
+  3. Leaked-password protection - DEFERRED BY THE BOSS to last.
+  4. RISK-25 - CLOSED.
+  5. The 103 open cases a DUPLICATE case points at - needs an explicit yes.
+  6. The Sarvam Maintenance Screen Architecture document - never supplied, so
+     the §4/§5/§27 UX work stays recorded as NOT TOUCHED, not as done.
 
 Silence, "looks good", or an unrelated reply is NOT approval (`IMPLEMENTATION_PACK.md`
 §19.13). Explicit continuation language is required, e.g. "Approved, continue next 5
-loops" or "Approved — proceed with Loop 11 to 15."
+loops" or "Approved — proceed with Loop 46 to 50."

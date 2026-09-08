@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 44 complete (Gate 8 approved). A Boss-directed
+Current loop: Loops 41-45 COMPLETE. Gate 9 AWAITING BOSS. A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
@@ -69,9 +69,17 @@ Current loop: Loop 44 complete (Gate 8 approved). A Boss-directed
   a gap). Leaked-password protection deferred by the Boss to last. Two new
   questions: whether to also remove the 103 duplicate-primary cases, and
   the Sarvam Screen Architecture document needed to action the UX sections.
-Current gate: **GATE 8 (Loops 36-40) APPROVED.** Loop 41 is complete;
-  Gate 9 falls after Loop 45. See APPROVAL_GATE.md for the exact Boss
-  language and the condition it was attached to.
+Current gate: **GATE 9 (Loops 41-45) AWAITING BOSS.** Autonomous loop
+  work is PAUSED per IMPLEMENTATION_PACK.md §19.9/§19.13; Loop 46 will not
+  start without explicit continuation language. Six defects this batch, two
+  of them the most serious in this project so far (RISK-28 CRITICAL, RISK-29
+  HIGH), and three of them in work reported as complete in the previous
+  batch. Loop 45 added RISK-30: evidence could be attached to ANY case by
+  ANY signed-in user, including one who could not read that case - proven
+  live, then fixed by making INSERT scope match SELECT scope via
+  can_read_case(). Two deletions await a yes: the 8 leaked e2e cases, and
+  the backlog of 484 pm_plans + 183 recurrence_rules + 4,175 dangling audit
+  rows. See APPROVAL_REPORT_LOOP_41_45.md.
 
 Items that need the Boss and are NOT loop work — none has been guessed at:
   1. QC identities — ANSWERED. The QC login name comes from the Quality
