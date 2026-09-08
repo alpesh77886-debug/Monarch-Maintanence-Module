@@ -134,6 +134,7 @@ export default function HomeClient({
               <Link
                 key={tile.href}
                 href={tile.href}
+                aria-label={tile.title}
                 className={`group relative min-h-[105px] rounded-2xl border bg-card p-3.5 shadow-sm transition-transform active:scale-[0.98] ${
                   tile.tone === "alert"
                     ? "border-bad/25"
