@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { SpareRequest } from "@/lib/supabase/database.types";
+import { EmptyState } from "@/components/ui";
 
 // Loop 62 (Prompt §47 "Spare Consumption" module): a minimal real landing
 // page listing recent spare requests across cases, with a link into each
@@ -81,11 +82,7 @@ export default async function SparesPage() {
             </li>
           );
         })}
-        {rows.length === 0 && !error && (
-          <p className="rounded-xl border border-dashed border-line2 p-8 text-center text-sm text-muted">
-            No spare requests recorded yet.
-          </p>
-        )}
+        {rows.length === 0 && !error && <EmptyState title="No spare requests recorded yet." />}
       </ul>
     </div>
   );

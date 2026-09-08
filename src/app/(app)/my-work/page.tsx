@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { MaintenanceCase } from "@/lib/supabase/database.types";
-import { StatusBadge, Badge } from "@/components/ui";
+import { StatusBadge, Badge, EmptyState } from "@/components/ui";
 
 // Loop 62 (Prompt §47 "My Work" module): cases currently owned by the
 // signed-in user. Loop 63 adds age display, matching the dashboard's own
@@ -79,11 +79,7 @@ export default async function MyWorkPage() {
             </Link>
           </li>
         ))}
-        {rows.length === 0 && !error && (
-          <p className="rounded-xl border border-dashed border-line2 p-8 text-center text-sm text-muted">
-            No open cases owned by you right now.
-          </p>
-        )}
+        {rows.length === 0 && !error && <EmptyState title="No open cases owned by you right now." />}
       </ul>
     </div>
   );

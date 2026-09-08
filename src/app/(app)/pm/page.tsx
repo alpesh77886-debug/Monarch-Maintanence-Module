@@ -3,6 +3,7 @@ import CreatePlanForm from "./create-plan-form";
 import PmPlanCard from "./pm-plan-card";
 import PmInstanceCard from "./pm-instance-card";
 import type { PmPlan, PmInstance } from "@/lib/supabase/database.types";
+import { EmptyState } from "@/components/ui";
 
 // §17: PM plans/instances are staff-only to read (0002 RLS), so this whole
 // page is a staff surface — a non-staff signed-in user (a reporter,
@@ -20,11 +21,7 @@ export default async function PmPage() {
     .maybeSingle();
 
   if (!isStaffRow) {
-    return (
-      <p className="rounded-lg border border-dashed border-line2 p-6 text-center text-sm text-muted">
-        Preventive maintenance planning is visible to Maintenance staff only.
-      </p>
-    );
+    return <EmptyState title="Preventive maintenance planning is visible to Maintenance staff only." />;
   }
 
   const isManager = isStaffRow.role === "MAINTENANCE_MANAGER";
@@ -64,9 +61,7 @@ export default async function PmPage() {
           {(plans as PmPlan[] | null)?.map((p) => (
             <PmPlanCard key={p.id} plan={p} isManager={isManager} />
           ))}
-          {plans?.length === 0 && (
-            <p className="text-sm text-muted">No PM plans yet.</p>
-          )}
+          {plans?.length === 0 && <EmptyState title="No PM plans yet." />}
         </div>
       </section>
 
@@ -82,9 +77,10 @@ export default async function PmPage() {
             />
           ))}
           {instances?.length === 0 && (
-            <p className="text-sm text-muted">
-              No PM instances yet — approved recurring plans generate these automatically.
-            </p>
+            <EmptyState
+              title="No PM instances yet."
+              hint="Approved recurring plans generate these automatically."
+            />
           )}
         </div>
       </section>

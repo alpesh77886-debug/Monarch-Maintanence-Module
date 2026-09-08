@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { MaintenanceCase } from "@/lib/supabase/database.types";
-import { StatusBadge } from "@/components/ui";
+import { StatusBadge, EmptyState } from "@/components/ui";
 
 // Loop 62 (Prompt §47 "Emergency" module): cases with an active emergency
 // claim. There is no "EMERGENCY" priority tier in the locked schema —
@@ -92,11 +92,7 @@ export default async function EmergencyPage() {
             </Link>
           </li>
         ))}
-        {rows.length === 0 && !error && (
-          <p className="rounded-xl border border-dashed border-line2 p-8 text-center text-sm text-muted">
-            No active emergency claims right now.
-          </p>
-        )}
+        {rows.length === 0 && !error && <EmptyState title="No active emergency claims right now." />}
       </ul>
     </div>
   );
