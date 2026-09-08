@@ -27,9 +27,17 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
     "text-slate-600 hover:bg-slate-100 focus-visible:outline-slate-400 disabled:text-slate-300",
 };
 
+// Loop 48 (§30 mobile-first UX, §32 item 21). "md" is the default/primary
+// action size across the app — every "Save", "Acknowledge", "Submit" button
+// on the primary operating surface — so it gets the ~48px minimum touch
+// target §30 asks for (min-h-12 = 3rem = 48px). "sm" stays compact on
+// purpose: it is the deliberately smaller size for secondary/inline actions
+// (26 call sites — badges-with-actions, table-row buttons), not the primary
+// tap target the guideline is about, and enlarging it would make already-
+// dense rows (e.g. spares-panel's request list) worse, not better.
 const SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: "px-2.5 py-1.5 text-xs",
-  md: "px-4 py-2 text-sm",
+  md: "min-h-12 px-4 py-2 text-sm",
 };
 
 const BASE =
