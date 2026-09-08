@@ -48,7 +48,7 @@ export async function proxy(request: NextRequest) {
 
   if (user && isLoginRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/cases";
+    url.pathname = "/home";
     return NextResponse.redirect(url);
   }
 

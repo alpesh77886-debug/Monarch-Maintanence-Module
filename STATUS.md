@@ -1,6 +1,62 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: GATE 12 STOP (Loops 56-60 complete) - mandatory 5-loop
+Current loop: Loop 62 complete - built the new Module Hub post-login
+  landing page (Prompt Section 47, mockup Screen 002): src/app/home/
+  page.tsx + home-client.tsx, replacing the old direct-to-/cases
+  redirect. 2-column module tiles (Cases, Shift, PM, Spare Consumption,
+  My Work, Emergency) with real single-purpose-query badges (open
+  cases, my open cases, PM overdue, spare approvals pending, active
+  emergency claims - nothing fabricated), shift banner sourced from the
+  real is_available toggle, quick actions, hamburger-triggered side
+  drawer (Work/Preferences/Account). A signed-in non-staff identity
+  (the demo technician login) gets a reduced hub - Cases tile only,
+  mirroring AppNav's own staff gating - not a crash or a silently full
+  hub; fixed an e2e regression this caused (roles-and-notifications.spec.ts
+  expects zero "PM" links for a non-staff user) before it could reach CI.
+  Built 3 new minimal-but-real landing routes the hub links to since
+  none existed before: /spares, /emergency (reads the real
+  emergency_claimed/emergency_confirmed flags - there is no "EMERGENCY"
+  priority tier in the locked schema, so this does not invent one),
+  /my-work. Added a real, working light/dark theme toggle (Prompt
+  Section 47 "Theme Setting") - a data-theme attribute flips Loop 50's
+  already-centralized CSS custom properties, so every existing
+  bg-card/text-fg/... utility repaints for free, FOUC-safe via a
+  blocking init script. proxy.ts/page.tsx redirect targets changed from
+  /cases to /home; e2e/helpers.ts's signIn() updated to match.
+  Live-render verified via the Loop 53 throwaway-route+proxy-bypass
+  technique: initial hub, drawer open, both theme states screenshotted
+  at 390x844, zero console/hydration errors, light theme repaints
+  correctly. tsc/eslint/build all clean. Nav relabeling (AppNav's
+  bottom bar) is explicitly Loop 63's scope, not touched here.
+Previously: Loop 61 complete - Boss supplied a new 47-section Mobile UX
+  Reconstruction Prompt V2 plus an ENTERPRISE V3 screen-mockup HTML
+  reference, and approved Loops 61-70 to begin this work (a full
+  navigation/IA + Control Tower + Case Queue + Case Detail cockpit +
+  design-system reconstruction, NOT a cosmetic pass). Per the prompt's
+  own Section 5/25 (forensic inspection before code, small auditable
+  steps) - which also matches this project's own established
+  map-before-implement convention (Loop 54's Blueprint Gap Matrix) -
+  Loop 61 was pure forensic inspection + gap mapping, no code changed.
+  Confirmed real gaps against real evidence: no Module Hub/home route
+  exists (lands on /cases directly), no side drawer, Case Queue has no
+  search/filter/urgency-sort (86-line plain list), no /spares or
+  /emergency or /my-work routes exist at all, Case Detail lacks a
+  lifecycle-journey strip and single-dominant-next-action framing (Loop
+  51 already did the tabs/sheets restructure, so this is a delta not a
+  rebuild from zero), no standardized loading-skeleton/empty-state
+  component exists. See MOBILE_UX_RECONSTRUCTION_GAP_MAP.md for the full
+  evidence table, per-screen implementation plan, and an honest,
+  evidence-grounded loop-count estimate for the FULL 47-section
+  enterprise bar: roughly 18-26 additional loops (through approximately
+  Loop 80-87), not 70 - the approved 61-70 batch lands the highest-
+  leverage core journey (Module Hub, relabeled nav, Case Queue, Case
+  Detail's cockpit delta, shared component foundation) but not full
+  21-screen/full-accessibility/full-desktop propagation in one batch,
+  consistent with the prompt's own instruction not to spread effort
+  across every page before the core journey works. This estimate will be
+  refreshed with real evidence at Loop 65 and Loop 70, not treated as a
+  fixed promise.
+Previously: GATE 12 STOP (Loops 56-60 complete) - mandatory 5-loop
   checkpoint per Section 19.9/19.13. Autonomous loop work is PAUSED,
   AWAITING BOSS explicit continuation language before Loop 61. Loop 56
   found RISK-32 (CRITICAL - reopen_case only checks is_staff(), not the

@@ -60,6 +60,26 @@ html {
   color-scheme: dark;
 }
 
+/* Loop 62 (Prompt §47 drawer "Theme Setting"): an explicit, app-level
+   light/dark toggle — presentation only, no business-rule dependency.
+   Applied via a `data-theme` attribute (not `prefers-color-scheme`, since
+   this is a user choice, not an OS default) so every existing bg-card/
+   text-fg/... Tailwind utility repaints for free through the same token
+   chain Loop 50 already centralized. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f7fa;
+  --bg1: #ffffff;
+  --bg2: #eef1f5;
+  --card: #ffffff;
+  --card2: #f3f5f8;
+  --line: rgba(15, 23, 42, 0.1);
+  --line2: rgba(15, 23, 42, 0.16);
+  --fg: #0f172a;
+  --muted: #475569;
+  --muted2: #64748b;
+}
+
 body {
   background: var(--bg);
   color: var(--fg);
