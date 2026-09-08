@@ -15,6 +15,7 @@
 | 11 (Loops 51–55) | [`APPROVAL_REPORT_LOOP_51_55.md`](./APPROVAL_REPORT_LOOP_51_55.md) | Approved — "Continue...Loop 56 to 60" | 2026-09-08 |
 | 12 (Loops 56–60) | [`APPROVAL_REPORT_LOOP_56_60.md`](./APPROVAL_REPORT_LOOP_56_60.md) | Approved — the Boss supplied a new 47-section Mobile UX Reconstruction Prompt V2 + ENTERPRISE V3 mockup and said "loop start karo 61 se 70" — new forward loop-range instruction, treated as continuation per the same pattern as Gates 8/10 (RISK-32/RISK-33 remain untouched/still open, not re-litigated by this approval) | 2026-09-08 |
 | 13 (Loops 61–65) | [`APPROVAL_REPORT_LOOP_61_65.md`](./APPROVAL_REPORT_LOOP_61_65.md) | Approved — "start loop 66 to 70" | 2026-09-08 |
+| 14 (Loops 66–70) | [`APPROVAL_REPORT_LOOP_66_70.md`](./APPROVAL_REPORT_LOOP_66_70.md) | AWAITING BOSS | 2026-09-08 |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -200,3 +201,21 @@ Loop 68 forms-standardization sweep (§37), Loop 69 action-sheet
 accessibility audit (focus trap/backdrop dismissal/Escape, §11), Loop 70
 desktop/tablet responsive enhancement pass + the mandatory Gate 14 stop
 report. Per §19.9 the same mandatory stop applies again at Loop 70.
+
+**GATE 14 (Loops 66-70) — AWAITING BOSS.** All five loops landed and
+merged (PRs #65-#69): Create Case's progressive-flow rebuild (Loop 66),
+new Skeleton/EmptyState design-system primitives swept across 5 landing
+pages (Loop 67), a new FormField primitive that fixed 18 files' worth of
+placeholder-only-label violations across 24 forms (Loop 68), a real
+Tab-key focus trap in the action-sheet primitive after verifying its own
+prior comment's accessibility claim was false (Loop 69), and a
+desktop/tablet responsive pass correcting a premature nav-rail breakpoint
+and mobile-width-capped containers (Loop 70). One real CI regression this
+batch (Loop 68's placeholder-based e2e locators, fixed same-PR before
+merge) plus two confirmed live-Supabase-DB flakes (re-run once each,
+came back clean) — full detail in `APPROVAL_REPORT_LOOP_66_70.md`.
+RISK-32/RISK-33 remain untouched and `OPEN`. Two concrete candidates for
+the next batch are flagged in that report (§16's harder desktop-layout
+half, and §17's mobile-header cleanup) — the Boss decides what's next.
+Per §19.9 the same mandatory stop will apply again after the next 5
+loops, whatever they turn out to be.
