@@ -4154,3 +4154,62 @@ longer trusts an unauthenticated caller for anything.
 **What this does NOT resolve:** the shared test/production Supabase project
 question and the public-repository fact are both reported for the Boss's
 decision, not acted on — not something to invent an answer to.
+
+## Loop 48 — 2026-09-08
+
+**Summary:** Third loop of the Boss-approved "Type A" scope; the mobile-first
+UX pass (§30, §32 item 21), and the first loop to receive the Sarvam
+Type-A handoff mid-work (treated strictly as non-binding guidance per the
+Boss's instruction — DR-01 through DR-05 stay PROPOSED, not implemented as
+new business rules). Full evidence in `LOOP_48_REPORT.md`.
+
+**Correction to a prior overstatement:** the earlier percent-complete
+breakdown described mobile UX as "only 4/36 client components use
+responsive Tailwind classes" — technically true but the wrong metric.
+Tailwind v4 is mobile-first: unprefixed classes already apply at every
+viewport, so a component with zero `sm:`/`md:`/`lg:` prefixes is not
+necessarily desktop-only. Re-checked actual rendered structure instead:
+cases queue is already cards (not a table), bottom tab nav already exists,
+`/cases/new`/PM/recurrence-rules pages are already single-column, case
+detail inputs already use `text-base` (prevents iOS zoom-on-focus). The
+one `<table>` in the app (`dashboard/page.tsx`'s staff breakdown) is
+already wrapped in `overflow-x-auto` — a valid scroll-container pattern,
+not an uncollapsed dense grid. No genuine structural mobile defect found
+in any of it — reported to the Boss as a correction rather than left
+standing.
+
+**The one real, verified gap — fixed:** `src/components/ui.tsx`'s shared
+`Button`/`LinkButton` `"md"` size (the default, used for every primary
+"Save"/"Acknowledge"/"Submit" action app-wide) rendered under the ~48px
+minimum touch-target §30 asks for (and the Sarvam handoff's §C repeats
+independently). Added `min-h-12` (48px) to `"md"` only — `"sm"`
+deliberately untouched, it's the compact size for 26 secondary/inline call
+sites (badges-with-actions, dense table-row buttons) where enlarging would
+hurt, not help. One line changed in one shared component; every caller
+app-wide picks it up automatically.
+
+**Test:** `tests/button-touch-target.test.ts` (new, 3 tests) — asserts
+`"md"` carries `min-h-12`, `"sm"` deliberately does not, and the rule
+applies to every button variant, not just `primary`. This project's
+`tests/` directory is Supabase-RPC integration tests only (no
+component-render infra); `buttonClass()` returns a plain string so it
+fits the existing `.ts`-only pattern without adding new tooling. Verified:
+`Test Files 1 passed (1)`, `Tests 3 passed (3)`.
+
+**Type-A forensic sweep** (handoff-required, all 8 categories: triggers,
+constraints, RPC/state-transition guards, RLS/grants, client-side state
+gating, duplicate-submit/idempotency, error/rollback paths, mobile
+responsive behaviour) — swept explicitly rather than assumed safe for a
+"just CSS" change; no follow-on defect in any category, the change is as
+contained as it looks.
+
+**What this loop does NOT claim:** not a Sarvam-compliance claim — DR-01
+(bottom tab bar)/DR-03 (cards) already existing is a fact about prior
+work, not evidence the rest of the Sarvam architecture (contextual
+bottom-sheet forms, the full Case Detail local-nav set, the permission
+matrix) is implemented. The full mismatch-list exercise waits for the
+Boss's promised `MONARCH_Maintenance_Screen_Architecture.html`.
+
+`tsc --noEmit`/`eslint`/`next build` all clean, including the anchored
+`"use client"` re-scan (unaffected — `ui.tsx` has no `"use client"`
+directive at all).

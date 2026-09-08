@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 46 IN PROGRESS. Gate 9 APPROVED, SCOPED to Type A. A Boss-directed
+Current loop: Loop 48 complete. Gate 9 APPROVED, SCOPED to Type A. A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
@@ -112,6 +112,26 @@ Current gate: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was
   same-day two days earlier and absent from the source tree since. Both
   resolved in Sentry with the root-cause chain recorded. No code change
   this loop. See LOOP_47_REPORT.md.
+  Loop 48 (mobile-first UX pass, §30/§32 item 21) received the Sarvam Type-A
+  handoff mid-loop and treated it strictly as non-binding guidance per the
+  Boss's instruction - DR-01..05 stay PROPOSED, not implemented as new
+  business rules. Corrected an earlier overstatement: "4/36 components use
+  responsive classes" measured the wrong thing, since Tailwind v4 is
+  mobile-first and unprefixed classes already apply everywhere - rechecked
+  actual structure and found cases queue already cards, bottom tab nav
+  already exists, /cases/new and PM/recurrence-rules pages already
+  single-column, the one <table> in the app already wrapped in
+  overflow-x-auto. No structural mobile defect found. The one real gap:
+  the shared Button "md" size (the default, used for every primary
+  Save/Acknowledge/Submit action app-wide) was under the ~48px minimum
+  touch target §30 and the handoff's §C both ask for - fixed with one
+  min-h-12 line in the shared component, "sm" deliberately left compact
+  for its 26 secondary/inline call sites. New test
+  (button-touch-target.test.ts, 3/3 passing) guards both the fix and the
+  deliberate sm exception. Type-A forensic sweep (all 8 handoff categories)
+  run explicitly - no follow-on defect. Not claimed as Sarvam compliance;
+  that verification waits for the Boss's promised full HTML. See
+  LOOP_48_REPORT.md.
 
 Items that need the Boss and are NOT loop work — none has been guessed at:
   1. QC identities — ANSWERED. The QC login name comes from the Quality
