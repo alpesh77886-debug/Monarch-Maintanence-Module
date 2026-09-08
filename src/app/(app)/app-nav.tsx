@@ -48,7 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/dashboard",
-    label: "Shift",
+    label: "Control",
     icon: (active) => (
       <Svg active={active}>
         <path d="M4 20V10l8-6 8 6v10" />
@@ -67,23 +67,22 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: "/recurrence-rules",
-    label: "Recurrence",
+    href: "/spares",
+    label: "Spares",
     icon: (active) => (
       <Svg active={active}>
-        <path d="M4 12a8 8 0 0 1 14-5.3L20 8" />
-        <path d="M20 4v4h-4" />
-        <path d="M20 12a8 8 0 0 1-14 5.3L4 16" />
-        <path d="M4 20v-4h4" />
+        <rect x="7" y="7" width="10" height="10" rx="1.5" transform="rotate(45 12 12)" />
       </Svg>
     ),
   },
   {
-    href: "/kpi",
-    label: "KPIs",
+    href: "/more",
+    label: "More",
     icon: (active) => (
       <Svg active={active}>
-        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+        <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
       </Svg>
     ),
   },
