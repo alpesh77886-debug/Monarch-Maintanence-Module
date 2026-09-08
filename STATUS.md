@@ -1,6 +1,23 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 64 complete - rebuilt cases/page.tsx from a plain
+Current loop: GATE 13 STOP (Loops 61-65 complete) - mandatory 5-loop
+  checkpoint per Section 19.9/19.13. Autonomous loop work is PAUSED,
+  AWAITING BOSS explicit continuation language before Loop 66 - even
+  though the Boss pre-approved the full 61-70 range, the hard-stop-
+  and-report requirement is independent of that pre-approval per this
+  project's own non-negotiable governance rule. Loop 65 added the
+  final two pieces of the core mobile UX journey this batch targeted:
+  case-lifecycle-strip.tsx (a compact, read-only view of the locked
+  transition graph - display only, never a second source of truth,
+  branch/exception statuses shown as a distinct callout rather than
+  forced onto the linear happy path) and a "NEXT ACTION" eyebrow label
+  above the sticky primary-action bar (shown only for a real lifecycle-
+  advancing action, not Hand Over alone). Live-render verified across
+  6 real statuses via DOM query (not just a screenshot, since the strip
+  scrolls past mobile viewport width). See APPROVAL_REPORT_LOOP_61_65.md
+  for the full batch summary and honest progress-vs-estimate check
+  against Loop 61's 18-26-additional-loop projection.
+Previously: Loop 64 complete - rebuilt cases/page.tsx from a plain
   .map() list into a work queue (Prompt section 8, mockup Screen 003):
   search box (plain GET form, no client JS, filters in JS after fetch
   rather than a PostgREST .or() string - a symptom can legitimately

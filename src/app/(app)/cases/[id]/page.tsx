@@ -29,6 +29,7 @@ import AssetPanel from "./asset-panel";
 import RestorationHistoryPanel from "./restoration-history-panel";
 import Link from "next/link";
 import { Badge, Card, StatusBadge } from "@/components/ui";
+import CaseLifecycleStrip from "./case-lifecycle-strip";
 import ActionSheetTrigger from "@/components/sheet";
 import CaseDetailTabs from "@/components/tabs";
 import type {
@@ -335,6 +336,14 @@ export default async function CaseDetailPage({
   const hasPrimaryAction =
     canAcknowledge || canTakeOwnership || canMarkDuplicate || canCloseFalseComplaint || (isStaffRow && !caseIsTerminal);
 
+  // Loop 65 (Prompt §22 "Next Action Engine"): distinguishes an actual
+  // lifecycle-advancing action from Hand Over, which is a utility action
+  // available broadly rather than "the next step" — the eyebrow label only
+  // appears when there is a real next step, not just a way to pass the case
+  // along unchanged.
+  const hasLifecycleNextAction =
+    canAcknowledge || canConfirmAssessment || canTakeOwnership || canMarkDuplicate || canCloseFalseComplaint;
+
   const overviewTab = (
     <div className="flex flex-col gap-4">
       {escalationBanner}
@@ -587,7 +596,18 @@ export default async function CaseDetailPage({
         </Card>
       </div>
 
-      {hasPrimaryAction && primaryActions}
+      <CaseLifecycleStrip status={caseRow.status} />
+
+      {hasPrimaryAction && (
+        <div>
+          {hasLifecycleNextAction && (
+            <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-brand">
+              Next action
+            </p>
+          )}
+          {primaryActions}
+        </div>
+      )}
 
       <CaseDetailTabs
         tabs={{

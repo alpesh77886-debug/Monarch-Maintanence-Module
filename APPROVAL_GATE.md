@@ -13,7 +13,8 @@
 | 9 (Loops 41–45) | [`APPROVAL_REPORT_LOOP_41_45.md`](./APPROVAL_REPORT_LOOP_41_45.md) | Approved — SCOPED to "Type A" only (technical debt Claude can execute without Boss input): "Type A start karo", after the Boss was shown a Type A/Type B split of remaining work | — |
 | 10 (Loops 46–50) | [`APPROVAL_REPORT_LOOP_46_50.md`](./APPROVAL_REPORT_LOOP_46_50.md) | Approved — "loop 51 se loop 55 tak complete karo...mujhe design complete ka msg chahiye" | — |
 | 11 (Loops 51–55) | [`APPROVAL_REPORT_LOOP_51_55.md`](./APPROVAL_REPORT_LOOP_51_55.md) | Approved — "Continue...Loop 56 to 60" | 2026-09-08 |
-| 12 (Loops 56–60) | [`APPROVAL_REPORT_LOOP_56_60.md`](./APPROVAL_REPORT_LOOP_56_60.md) | AWAITING BOSS | 2026-09-08 |
+| 12 (Loops 56–60) | [`APPROVAL_REPORT_LOOP_56_60.md`](./APPROVAL_REPORT_LOOP_56_60.md) | Approved — the Boss supplied a new 47-section Mobile UX Reconstruction Prompt V2 + ENTERPRISE V3 mockup and said "loop start karo 61 se 70" — new forward loop-range instruction, treated as continuation per the same pattern as Gates 8/10 (RISK-32/RISK-33 remain untouched/still open, not re-litigated by this approval) | 2026-09-08 |
+| 13 (Loops 61–65) | [`APPROVAL_REPORT_LOOP_61_65.md`](./APPROVAL_REPORT_LOOP_61_65.md) | AWAITING BOSS | 2026-09-08 |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -148,3 +149,39 @@ detail in `APPROVAL_REPORT_LOOP_56_60.md`. RISK-32 and RISK-33 remain
 decision on the reopen and complainant-disagreement mechanisms before
 Loop 61 can act on them. Per §19.9 the same mandatory stop applies again
 at Loop 65 once the next batch is approved.
+
+**GATE 12 (Loops 56-60) — RESOLVED.** The Boss supplied a new 47-section
+Mobile UX Reconstruction Prompt V2 plus an ENTERPRISE V3 screen-mockup
+HTML reference (a full navigation/IA + Control Tower + Case Queue + Case
+Detail cockpit + design-system reconstruction, explicitly not a cosmetic
+pass) and said **"loop start karo 61 se 70"** — a forward loop-range
+instruction covering both this batch's remaining loops and the entire
+next batch at once, treated as continuation per the same pattern Gates
+8/10 already established (a new instruction naming the next loop range
+counts as approval, even without addressing every open item — RISK-32/
+RISK-33 stay untouched and still `OPEN`, not re-litigated by this
+approval). Also asked to be told, at the end, how many more loops the
+full reconstruction will take.
+
+**GATE 13 (Loops 61-65) — AWAITING BOSS.** Per §19.9 the mandatory hard
+stop applies again here even though the Boss's "loop start karo 61 se 70"
+already covers this loop range in advance — the stop-and-report
+requirement is independent of any prior batch approval, per this
+project's own non-negotiable rule. Loop 61 was pure forensic gap-mapping
+(no code) against the new prompt/mockup, producing an honest,
+evidence-grounded estimate of ~18-26 additional loops for the full
+47-section enterprise bar — not the 10 loops approved, which was always
+expected to land only the core mobile journey per the prompt's own
+"don't spread effort across every page" sequencing rule. Loops 62-65 then
+built that core journey: Module Hub + working theme toggle (Loop 62,
+CI caught and this session fixed 2 real regressions before merge — a
+leftover hardcoded login redirect, and a tile's accessible name not
+matching what an e2e test needed, also a genuine accessibility fix),
+bottom-nav relabel + a new /more page (Loop 63), Case Queue rebuild with
+search/filters/urgency-sort/FAB (Loop 64), and a Case Detail lifecycle
+strip + "Next Action" framing (Loop 65). Full detail, including the
+Loop-61-estimate progress check, in `APPROVAL_REPORT_LOOP_61_65.md`.
+RISK-32/RISK-33 remain untouched and `OPEN` — this batch never touched
+lifecycle authority or business rules, per the prompt's own explicit
+"DO NOT REBUILD THE BACKEND" constraint. Per §19.9 the same mandatory
+stop applies again at Loop 70, if Loops 66-70 are approved to proceed.
