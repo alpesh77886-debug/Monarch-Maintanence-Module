@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseImpactRecord } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §25.1 group 3 — Production Impact (minutes + kg).
 //
@@ -112,44 +112,42 @@ export default function ImpactPanel({
           </p>
         )}
         <div className="flex gap-2">
-          <label className="flex-1 text-xs text-muted">
-            Downtime (minutes)
+          <FormField label="Downtime (minutes)" className="flex-1">
             <input
               type="number"
               min="0"
               step="any"
               value={downtime}
               onChange={(e) => setDowntime(e.target.value)}
-              placeholder="leave blank if unknown"
-              className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+              className="w-full rounded-lg border border-line2 p-1.5 text-sm"
             />
-          </label>
-          <label className="flex-1 text-xs text-muted">
-            Output loss (kg)
+          </FormField>
+          <FormField label="Output loss (kg)" className="flex-1">
             <input
               type="number"
               min="0"
               step="any"
               value={outputLoss}
               onChange={(e) => setOutputLoss(e.target.value)}
-              placeholder="leave blank if unknown"
-              className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+              className="w-full rounded-lg border border-line2 p-1.5 text-sm"
             />
-          </label>
+          </FormField>
         </div>
         <p className="text-xs text-muted">
           Leave a box blank if the figure is not known. A blank is recorded as
           &ldquo;not recorded&rdquo; — it is not treated as zero.
         </p>
-        <label className="text-xs text-muted">
-          Source / basis (required)
+        <FormField
+          label="Source / basis"
+          required
+          hint="e.g. line stoppage log, shift production report."
+        >
           <input
             value={basis}
             onChange={(e) => setBasis(e.target.value)}
-            placeholder="e.g. line stoppage log, shift production report"
-            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
-        </label>
+        </FormField>
         {error && <p className="text-sm text-red-300">{error}</p>}
         <Button size="sm" type="submit" className="self-start" disabled={submitting}>
           {correcting ? "Record correction" : "Record impact"}

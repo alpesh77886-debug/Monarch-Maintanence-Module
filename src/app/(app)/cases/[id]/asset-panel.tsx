@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseAsset } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §5.1: "Exact asset may be unknown at creation. Never silently map an
 // unknown asset. A case may later be linked to one or more assets/machines."
@@ -83,24 +83,20 @@ export default function AssetPanel({
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-2">
-        <label className="text-xs text-muted">
-          Asset / machine name
+        <FormField label="Asset / machine name" required hint="e.g. Conveyor Motor 7.">
           <input
             value={assetName}
             onChange={(e) => setAssetName(e.target.value)}
-            placeholder="e.g. Conveyor Motor 7"
-            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
-        </label>
-        <label className="text-xs text-muted">
-          Asset reference (optional)
+        </FormField>
+        <FormField label="Asset reference" hint="Asset tag / ID, if known.">
           <input
             value={assetRef}
             onChange={(e) => setAssetRef(e.target.value)}
-            placeholder="asset tag / ID if known"
-            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
-        </label>
+        </FormField>
         {error && <p className="text-sm text-red-300">{error}</p>}
         <Button size="sm" type="submit" className="self-start" disabled={submitting || !assetName.trim()}>
           Link asset

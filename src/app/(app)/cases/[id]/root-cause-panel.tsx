@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseRootCause } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §9 item 6 + §9.1 — validated root cause.
 //
@@ -87,24 +87,24 @@ export default function RootCausePanel({
             </button>
           </p>
         )}
-        <label className="text-xs text-muted">
-          Root cause
+        <FormField label="Root cause" required hint="What actually caused the failure.">
           <input
             value={rootCause}
             onChange={(e) => setRootCause(e.target.value)}
-            placeholder="what actually caused the failure"
-            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
-        </label>
-        <label className="text-xs text-muted">
-          Basis (required) — how this was validated
+        </FormField>
+        <FormField
+          label="Basis"
+          required
+          hint="How this was validated — e.g. component sectioned and inspected, vendor failure report."
+        >
           <input
             value={basis}
             onChange={(e) => setBasis(e.target.value)}
-            placeholder="e.g. component sectioned and inspected, vendor failure report"
-            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
-        </label>
+        </FormField>
         {error && <p className="text-sm text-red-300">{error}</p>}
         <Button
           size="sm"

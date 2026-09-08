@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseEvidence } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §5.1 / §26 — evidence attachment/reference.
 //
@@ -120,24 +120,20 @@ export default function EvidencePanel({
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-2">
-        <label className="text-xs text-muted">
-          Evidence reference
+        <FormField label="Evidence reference" required hint="A link, photo reference, or report number.">
           <input
             value={fileRef}
             onChange={(e) => setFileRef(e.target.value)}
-            placeholder="a link, photo reference, or report number"
-            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
-        </label>
-        <label className="text-xs text-muted">
-          Description (optional)
+        </FormField>
+        <FormField label="Description" hint="What this shows.">
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="what this shows"
-            className="mt-0.5 w-full rounded-lg border border-line2 p-1.5 text-sm"
+            className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
-        </label>
+        </FormField>
         {error && <p className="text-sm text-red-300">{error}</p>}
         <Button size="sm" type="submit" className="self-start" disabled={submitting || !fileRef.trim()}>
           Attach evidence

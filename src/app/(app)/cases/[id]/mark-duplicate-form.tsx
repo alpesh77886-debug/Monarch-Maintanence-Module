@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §4.6: duplicate case handling — links to a primary case, primary is left
 // untouched, actor/time/reason recorded. See mark_duplicate_case (0011).
@@ -50,19 +50,21 @@ export default function MarkDuplicateForm({ caseId }: { caseId: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
       <p className="text-sm font-medium text-fg">Mark as duplicate</p>
-      <input
-        value={primaryCaseNumber}
-        onChange={(e) => setPrimaryCaseNumber(e.target.value)}
-        placeholder="Primary case number (e.g. MC-000123)"
-        className="rounded-lg border border-line2 p-2 text-sm"
-      />
-      <textarea
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason"
-        className="rounded-lg border border-line2 p-2 text-sm"
-        rows={2}
-      />
+      <FormField label="Primary case number" required hint="e.g. MC-000123">
+        <input
+          value={primaryCaseNumber}
+          onChange={(e) => setPrimaryCaseNumber(e.target.value)}
+          className="rounded-lg border border-line2 p-2 text-sm w-full"
+        />
+      </FormField>
+      <FormField label="Reason" required>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="rounded-lg border border-line2 p-2 text-sm w-full"
+          rows={2}
+        />
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button
         variant="secondary"

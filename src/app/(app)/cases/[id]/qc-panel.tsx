@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Clearance } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 export default function QcPanel({
   caseId,
@@ -108,14 +108,15 @@ export default function QcPanel({
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <textarea
-              required
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Rejection reason (required)"
-              rows={2}
-              className="rounded-lg border border-brand/40 px-3 py-2 text-base"
-            />
+            <FormField label="Rejection reason" required labelClassName="text-brand">
+              <textarea
+                required
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={2}
+                className="w-full rounded-lg border border-brand/40 px-3 py-2 text-base"
+              />
+            </FormField>
             <div className="flex gap-2">
               <Button onClick={() => decide("REJECTED")} disabled={submitting || !reason.trim()}>
                 Confirm rejection

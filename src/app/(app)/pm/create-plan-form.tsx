@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §17.1/§17.2: any staff may propose a RECURRING plan (needs Manager
 // approval before it generates instances); only Manager may create a
@@ -41,39 +41,44 @@ export default function CreatePlanForm({ isManager }: { isManager: boolean }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
       <p className="text-sm font-medium text-fg">New PM plan</p>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title"
-        className="rounded-lg border border-line2 p-2 text-sm"
-      />
-      <div className="flex gap-2">
-        <select
-          value={planType}
-          onChange={(e) => setPlanType(e.target.value as "RECURRING" | "ONE_TIME")}
-          className="rounded-lg border border-line2 p-2 text-sm"
-        >
-          <option value="RECURRING">Recurring</option>
-          <option value="ONE_TIME" disabled={!isManager}>
-            One-time / special{!isManager ? " (Manager only)" : ""}
-          </option>
-        </select>
+      <FormField label="Title" required>
         <input
-          value={assetRef}
-          onChange={(e) => setAssetRef(e.target.value)}
-          placeholder="Asset ref (optional)"
-          className="flex-1 rounded-lg border border-line2 p-2 text-sm"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full rounded-lg border border-line2 p-2 text-sm"
         />
+      </FormField>
+      <div className="flex gap-2">
+        <FormField label="Plan type">
+          <select
+            value={planType}
+            onChange={(e) => setPlanType(e.target.value as "RECURRING" | "ONE_TIME")}
+            className="w-full rounded-lg border border-line2 p-2 text-sm"
+          >
+            <option value="RECURRING">Recurring</option>
+            <option value="ONE_TIME" disabled={!isManager}>
+              One-time / special{!isManager ? " (Manager only)" : ""}
+            </option>
+          </select>
+        </FormField>
+        <FormField label="Asset ref" className="flex-1">
+          <input
+            value={assetRef}
+            onChange={(e) => setAssetRef(e.target.value)}
+            className="w-full rounded-lg border border-line2 p-2 text-sm"
+          />
+        </FormField>
       </div>
       {planType === "RECURRING" && (
-        <input
-          type="number"
-          min="1"
-          value={frequencyDays}
-          onChange={(e) => setFrequencyDays(e.target.value)}
-          placeholder="Frequency (days)"
-          className="rounded-lg border border-line2 p-2 text-sm"
-        />
+        <FormField label="Frequency (days)" required>
+          <input
+            type="number"
+            min="1"
+            value={frequencyDays}
+            onChange={(e) => setFrequencyDays(e.target.value)}
+            className="w-full rounded-lg border border-line2 p-2 text-sm"
+          />
+        </FormField>
       )}
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button className="self-start" onClick={submit} disabled={submitting || !title.trim()}>

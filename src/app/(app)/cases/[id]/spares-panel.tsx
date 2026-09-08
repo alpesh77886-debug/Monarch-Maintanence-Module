@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { SpareRequest, SpareUsage } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §16: Maintenance records usage, Stores remains the stock-truth authority
 // (never a second inventory ledger). §3.3: the ₹12,000 Manager-approval
@@ -197,6 +197,7 @@ export default function SparesPanel({
             {isManager && r.requires_manager_approval && !r.approved_at && (
               <div className="mt-2 flex gap-2">
                 <input
+                  aria-label="Approval proof reference"
                   value={approvalProofByRequest[r.id] ?? ""}
                   onChange={(e) =>
                     setApprovalProofByRequest((prev) => ({ ...prev, [r.id]: e.target.value }))
@@ -221,6 +222,7 @@ export default function SparesPanel({
             {isStaff && (
               <div className="mt-1 flex gap-2">
                 <input
+                  aria-label="Stores status"
                   value={storesStatusDraft[r.id] ?? ""}
                   onChange={(e) =>
                     setStoresStatusDraft((prev) => ({ ...prev, [r.id]: e.target.value }))
@@ -229,6 +231,7 @@ export default function SparesPanel({
                   className="w-32 rounded-lg border border-line2 p-1 text-xs"
                 />
                 <input
+                  aria-label="Stores reference"
                   value={storesRefDraft[r.id] ?? ""}
                   onChange={(e) => setStoresRefDraft((prev) => ({ ...prev, [r.id]: e.target.value }))}
                   placeholder="Stores reference (optional)"
@@ -251,31 +254,34 @@ export default function SparesPanel({
       {canRaise && (
         <div className="flex flex-col gap-2 border-t border-line pt-3">
           <p className="text-xs font-medium text-fg">Raise a spare request</p>
-          <input
-            value={spareName}
-            onChange={(e) => setSpareName(e.target.value)}
-            placeholder="Spare name"
-            className="rounded-lg border border-line2 p-2 text-sm"
-          />
+          <FormField label="Spare name" required>
+            <input
+              value={spareName}
+              onChange={(e) => setSpareName(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-2 text-sm"
+            />
+          </FormField>
           <div className="flex gap-2">
-            <input
-              type="number"
-              min="0.01"
-              step="any"
-              value={quantityRequested}
-              onChange={(e) => setQuantityRequested(e.target.value)}
-              placeholder="Quantity"
-              className="w-24 rounded-lg border border-line2 p-2 text-sm"
-            />
-            <input
-              type="number"
-              min="0"
-              step="any"
-              value={estimatedAmount}
-              onChange={(e) => setEstimatedAmount(e.target.value)}
-              placeholder="Estimated amount (₹, optional)"
-              className="flex-1 rounded-lg border border-line2 p-2 text-sm"
-            />
+            <FormField label="Quantity" required className="w-24">
+              <input
+                type="number"
+                min="0.01"
+                step="any"
+                value={quantityRequested}
+                onChange={(e) => setQuantityRequested(e.target.value)}
+                className="w-full rounded-lg border border-line2 p-2 text-sm"
+              />
+            </FormField>
+            <FormField label="Estimated amount" hint="₹, if known." className="flex-1">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={estimatedAmount}
+                onChange={(e) => setEstimatedAmount(e.target.value)}
+                className="w-full rounded-lg border border-line2 p-2 text-sm"
+              />
+            </FormField>
           </div>
           <Button variant="secondary" className="self-start" onClick={raiseRequest} disabled={submitting}>
             Raise request
@@ -302,6 +308,7 @@ export default function SparesPanel({
             {isStaff && (
               <div className="mt-1 flex gap-2">
                 <input
+                  aria-label="Stores status"
                   value={storesStatusDraft[u.id] ?? ""}
                   onChange={(e) =>
                     setStoresStatusDraft((prev) => ({ ...prev, [u.id]: e.target.value }))
@@ -310,6 +317,7 @@ export default function SparesPanel({
                   className="w-32 rounded-lg border border-line2 p-1 text-xs"
                 />
                 <input
+                  aria-label="Stores reference"
                   value={storesRefDraft[u.id] ?? ""}
                   onChange={(e) => setStoresRefDraft((prev) => ({ ...prev, [u.id]: e.target.value }))}
                   placeholder="Stores reference (optional)"
@@ -342,42 +350,47 @@ export default function SparesPanel({
       {canRecordUsage && spareRequests.length > 0 && (
         <div className="flex flex-col gap-2 border-t border-line pt-3">
           <p className="text-xs font-medium text-fg">Record spare usage</p>
-          <select
-            value={usageSpareRequestId}
-            onChange={(e) => setUsageSpareRequestId(e.target.value)}
-            className="rounded-lg border border-line2 p-2 text-sm"
-          >
-            <option value="">(select the spare request this usage is for)</option>
-            {spareRequests.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.spare_name}
-                {r.requires_manager_approval && !r.approved_at ? " (needs approval)" : ""}
-              </option>
-            ))}
-          </select>
+          <FormField label="Spare request" required>
+            <select
+              value={usageSpareRequestId}
+              onChange={(e) => setUsageSpareRequestId(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-2 text-sm"
+            >
+              <option value="">(select the spare request this usage is for)</option>
+              {spareRequests.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.spare_name}
+                  {r.requires_manager_approval && !r.approved_at ? " (needs approval)" : ""}
+                </option>
+              ))}
+            </select>
+          </FormField>
           <div className="flex gap-2">
-            <input
-              type="number"
-              min="0.01"
-              step="any"
-              value={usageQuantity}
-              onChange={(e) => setUsageQuantity(e.target.value)}
-              placeholder="Quantity"
-              className="w-24 rounded-lg border border-line2 p-2 text-sm"
-            />
-            <input
-              value={usageAssetRef}
-              onChange={(e) => setUsageAssetRef(e.target.value)}
-              placeholder="Asset/machine ref (optional)"
-              className="flex-1 rounded-lg border border-line2 p-2 text-sm"
-            />
+            <FormField label="Quantity" required className="w-24">
+              <input
+                type="number"
+                min="0.01"
+                step="any"
+                value={usageQuantity}
+                onChange={(e) => setUsageQuantity(e.target.value)}
+                className="w-full rounded-lg border border-line2 p-2 text-sm"
+              />
+            </FormField>
+            <FormField label="Asset/machine ref" className="flex-1">
+              <input
+                value={usageAssetRef}
+                onChange={(e) => setUsageAssetRef(e.target.value)}
+                className="w-full rounded-lg border border-line2 p-2 text-sm"
+              />
+            </FormField>
           </div>
-          <input
-            value={usageOutcome}
-            onChange={(e) => setUsageOutcome(e.target.value)}
-            placeholder="Outcome (optional)"
-            className="rounded-lg border border-line2 p-2 text-sm"
-          />
+          <FormField label="Outcome">
+            <input
+              value={usageOutcome}
+              onChange={(e) => setUsageOutcome(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-2 text-sm"
+            />
+          </FormField>
           <Button variant="secondary" className="self-start" onClick={recordUsage} disabled={submitting}>
             Record usage
           </Button>

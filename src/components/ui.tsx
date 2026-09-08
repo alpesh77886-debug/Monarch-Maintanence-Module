@@ -250,3 +250,47 @@ export function EmptyState({
     </div>
   );
 }
+
+// Loop 68 (Prompt §37 "Forms design standard" — Title -> Why/Context ->
+// Field -> Helper -> Validation -> Primary Action -> Secondary/Cancel): the
+// one field wrapper every form composes, so "a real <label> above the
+// control, a visible required indicator, and helper text below the
+// control" stops being something each form re-implements (or, in a
+// consistent number of forms across the app, skips — several fields had no
+// <label> at all, only a placeholder standing in as the field's only
+// identifier, which §37 explicitly forbids: "no placeholder-only labels").
+// `labelClassName` exists only because a handful of forms render on a
+// tinted brand/warn/teal background and need a matching label tint
+// (text-sky-300/text-amber-300/text-teal-300) rather than the default
+// text-fg — the structure is identical either way.
+export function FormField({
+  label,
+  required = false,
+  hint,
+  labelClassName = "text-fg",
+  className = "",
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  labelClassName?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={`block text-sm font-medium ${labelClassName} ${className}`.trim()}>
+      <span>
+        {label}
+        {required && (
+          <span className="text-bad" aria-hidden="true">
+            {" "}
+            *
+          </span>
+        )}
+      </span>
+      <div className="mt-1">{children}</div>
+      {hint && <span className="mt-1 block text-xs text-muted2">{hint}</span>}
+    </label>
+  );
+}

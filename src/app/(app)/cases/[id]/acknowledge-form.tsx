@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Priority } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 export default function AcknowledgeForm({ caseId }: { caseId: string }) {
   const router = useRouter();
@@ -41,26 +41,24 @@ export default function AcknowledgeForm({ caseId }: { caseId: string }) {
       className="flex flex-col gap-3 rounded-xl border border-brand/25 bg-brand/10 p-4"
     >
       <p className="text-sm font-medium text-sky-300">Acknowledge this case</p>
-      <label className="text-sm text-sky-300">
-        Priority
+      <FormField label="Priority" labelClassName="text-sky-300">
         <select
           value={priority}
           onChange={(e) => setPriority(e.target.value as Priority)}
-          className="mt-1 block w-full rounded-lg border border-brand/25 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-brand/25 px-3 py-2 text-base"
         >
           <option value="LOW">LOW</option>
           <option value="MEDIUM">MEDIUM</option>
           <option value="HIGH">HIGH</option>
         </select>
-      </label>
-      <label className="text-sm text-sky-300">
-        Initial assessment (optional)
+      </FormField>
+      <FormField label="Initial assessment" labelClassName="text-sky-300">
         <input
           value={assessment}
           onChange={(e) => setAssessment(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-brand/25 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-brand/25 px-3 py-2 text-base"
         />
-      </label>
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button type="submit" disabled={submitting}>
         {submitting ? "Acknowledging…" : "Acknowledge & take ownership"}

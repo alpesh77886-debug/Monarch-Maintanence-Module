@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Intervention } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §8: "Each entry records ... intervention/step reference ... observation
 // ... action ... result ... current condition ... pending next action ...
@@ -98,12 +98,11 @@ export default function ObservationForm({
       className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
     >
       {interventions.length > 0 && (
-        <label className="text-sm text-fg">
-          Related intervention (optional)
+        <FormField label="Related intervention">
           <select
             value={interventionId}
             onChange={(e) => setInterventionId(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+            className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
           >
             <option value="">(not linked to a specific intervention)</option>
             {interventions.map((i) => (
@@ -112,75 +111,67 @@ export default function ObservationForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
       )}
-      <label className="text-sm text-fg">
-        Observation
+      <FormField label="Observation">
         <textarea
           value={observation}
           onChange={(e) => setObservation(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Action taken
+      </FormField>
+      <FormField label="Action taken">
         <textarea
           value={action}
           onChange={(e) => setAction(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Result
+      </FormField>
+      <FormField label="Result">
         <textarea
           value={result}
           onChange={(e) => setResult(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Current condition
+      </FormField>
+      <FormField label="Current condition">
         <input
           value={currentCondition}
           onChange={(e) => setCurrentCondition(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Pending action
+      </FormField>
+      <FormField label="Pending action">
         <input
           value={pendingAction}
           onChange={(e) => setPendingAction(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Blocker
+      </FormField>
+      <FormField label="Blocker">
         <input
           value={blocker}
           onChange={(e) => setBlocker(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Next step
+      </FormField>
+      <FormField label="Next step">
         <input
           value={nextStep}
           onChange={(e) => setNextStep(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Evidence reference (optional)
+      </FormField>
+      <FormField label="Evidence reference">
         <input
           value={evidenceRef}
           onChange={(e) => setEvidenceRef(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>

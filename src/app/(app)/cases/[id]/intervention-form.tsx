@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 export default function InterventionForm({
   caseId,
@@ -67,48 +67,43 @@ export default function InterventionForm({
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
     >
-      <label className="text-sm text-fg">
-        Observed symptom
+      <FormField label="Observed symptom">
         <input
           value={observedSymptom}
           onChange={(e) => setObservedSymptom(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Immediate action / containment
+      </FormField>
+      <FormField label="Immediate action / containment">
         <input
           value={immediateAction}
           onChange={(e) => setImmediateAction(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Action taken
+      </FormField>
+      <FormField label="Action taken" required>
         <textarea
           required
           value={actionTaken}
           onChange={(e) => setActionTaken(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Result
+      </FormField>
+      <FormField label="Result">
         <input
           value={result}
           onChange={(e) => setResult(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
-      <label className="text-sm text-fg">
-        Failure mode (if identified)
+      </FormField>
+      <FormField label="Failure mode" hint="If identified.">
         <input
           value={failureMode}
           onChange={(e) => setFailureMode(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>

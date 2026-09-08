@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { StaffMember } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §22.1: manual handover is the preferred path. §5.6: ownership history is
 // preserved and case age does not reset — both are enforced in
@@ -54,24 +54,27 @@ export default function HandoverForm({
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4 shadow-sm">
       <p className="text-sm font-medium text-fg">Hand over this case</p>
-      <select
-        value={toUserId}
-        onChange={(e) => setToUserId(e.target.value)}
-        className="rounded-lg border border-line2 p-2 text-sm"
-      >
-        {candidates.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.full_name} ({s.role === "MAINTENANCE_MANAGER" ? "Manager" : "Executive"})
-            {s.is_available ? "" : " — off shift"}
-          </option>
-        ))}
-      </select>
-      <input
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        placeholder="Handover reason"
-        className="rounded-lg border border-line2 p-2 text-sm"
-      />
+      <FormField label="Hand over to">
+        <select
+          value={toUserId}
+          onChange={(e) => setToUserId(e.target.value)}
+          className="rounded-lg border border-line2 p-2 text-sm w-full"
+        >
+          {candidates.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.full_name} ({s.role === "MAINTENANCE_MANAGER" ? "Manager" : "Executive"})
+              {s.is_available ? "" : " — off shift"}
+            </option>
+          ))}
+        </select>
+      </FormField>
+      <FormField label="Handover reason" required>
+        <input
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="rounded-lg border border-line2 p-2 text-sm w-full"
+        />
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <Button variant="secondary" className="self-start" onClick={submit} disabled={submitting || !toUserId}>
         Hand over

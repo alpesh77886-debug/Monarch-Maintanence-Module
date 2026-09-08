@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 export default function AssignTechnicianForm({ caseId }: { caseId: string }) {
   const router = useRouter();
@@ -64,17 +64,15 @@ export default function AssignTechnicianForm({ caseId }: { caseId: string }) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm"
     >
-      <label className="text-sm text-fg">
-        Technician email
+      <FormField label="Technician email" required hint="They must have signed in at least once.">
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-line2 px-3 py-2 text-base"
-          placeholder="technician@monarch.test"
+          className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
-      </label>
+      </FormField>
       {error && <p className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>

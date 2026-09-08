@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Priority } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §5.4: "Executive can change priority. Manager has final override."
 //
@@ -86,12 +86,13 @@ export default function PriorityPanel({
           </div>
           {choosing && (
             <div className="flex flex-col gap-1">
-              <input
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder={`Reason for changing to ${choosing} (required)`}
-                className="rounded-lg border border-line2 p-1.5 text-sm"
-              />
+              <FormField label={`Reason for changing to ${choosing}`} required>
+                <input
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+                />
+              </FormField>
               <div className="flex gap-2">
                 <Button
                   size="sm"

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { PmInstance } from "@/lib/supabase/database.types";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 import { formatIst } from "@/lib/format";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -125,13 +125,14 @@ export default function PmInstanceCard({
       {canAct && (
         <div className="mt-2 flex flex-col gap-2 border-t border-line pt-2">
           {!instance.case_id && (
-            <div className="flex gap-2">
-              <input
-                value={caseNumber}
-                onChange={(e) => setCaseNumber(e.target.value)}
-                placeholder="Case number to link"
-                className="flex-1 rounded-lg border border-line2 p-1 text-xs"
-              />
+            <div className="flex gap-2 items-end">
+              <FormField label="Case number to link" required className="flex-1">
+                <input
+                  value={caseNumber}
+                  onChange={(e) => setCaseNumber(e.target.value)}
+                  className="w-full rounded-lg border border-line2 p-1 text-xs"
+                />
+              </FormField>
               <Button
                 variant="secondary"
                 size="sm"
@@ -142,19 +143,22 @@ export default function PmInstanceCard({
               </Button>
             </div>
           )}
-          <div className="flex gap-2">
-            <input
-              type="datetime-local"
-              value={newDueAt}
-              onChange={(e) => setNewDueAt(e.target.value)}
-              className="rounded-lg border border-line2 p-1 text-xs"
-            />
-            <input
-              value={rescheduleReason}
-              onChange={(e) => setRescheduleReason(e.target.value)}
-              placeholder="Reschedule reason"
-              className="flex-1 rounded-lg border border-line2 p-1 text-xs"
-            />
+          <div className="flex gap-2 items-end">
+            <FormField label="New due date" required>
+              <input
+                type="datetime-local"
+                value={newDueAt}
+                onChange={(e) => setNewDueAt(e.target.value)}
+                className="rounded-lg border border-line2 p-1 text-xs"
+              />
+            </FormField>
+            <FormField label="Reschedule reason" required className="flex-1">
+              <input
+                value={rescheduleReason}
+                onChange={(e) => setRescheduleReason(e.target.value)}
+                className="w-full rounded-lg border border-line2 p-1 text-xs"
+              />
+            </FormField>
             <Button variant="secondary" size="sm" onClick={reschedule} disabled={submitting}>
               Reschedule
             </Button>

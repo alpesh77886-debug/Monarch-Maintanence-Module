@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui";
+import { Button, FormField } from "@/components/ui";
 
 // §14.2 PTW seam. Deliberately thin: this records "PTW Required = Yes/No"
 // and a linked proof reference — it does not decide WHO may issue, perform,
@@ -94,12 +94,13 @@ export default function PtwPanel({
 
       {status === "DIAGNOSING" && (
         <div className="flex flex-col gap-1">
-          <input
-            value={requireReason}
-            onChange={(e) => setRequireReason(e.target.value)}
-            placeholder="Basis for this PTW determination (required)"
-            className="rounded-lg border border-line2 p-1.5 text-sm"
-          />
+          <FormField label="Basis for this PTW determination" required>
+            <input
+              value={requireReason}
+              onChange={(e) => setRequireReason(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+            />
+          </FormField>
           <div className="flex gap-2">
             <Button
               variant="secondary"
@@ -125,12 +126,13 @@ export default function PtwPanel({
 
       {ptwRequired && !ptwProofRef && (
         <div className="flex flex-col gap-1">
-          <input
-            value={proofRef}
-            onChange={(e) => setProofRef(e.target.value)}
-            placeholder="Permit / proof reference"
-            className="rounded-lg border border-line2 p-1.5 text-sm"
-          />
+          <FormField label="Permit / proof reference" required>
+            <input
+              value={proofRef}
+              onChange={(e) => setProofRef(e.target.value)}
+              className="w-full rounded-lg border border-line2 p-1.5 text-sm"
+            />
+          </FormField>
           <Button
             size="sm"
             type="button"
