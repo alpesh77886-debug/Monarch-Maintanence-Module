@@ -1,6 +1,23 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: GATE 13 STOP (Loops 61-65 complete) - mandatory 5-loop
+Current loop: Loop 66 complete - Boss said "start loop 66 to 70",
+  closing Gate 13. Rebuilt cases/new/page.tsx from one flat form into a
+  4-step progressive flow (Prompt section 13): What happened? (case
+  type + symptom) -> Where? (area/line/shift) -> Anything else?
+  (asset-known/major-complex) -> Review -> Submit. Every field
+  unchanged, same plain .insert() (no RPC existed here), client-side
+  validation only gates step progression (10-char symptom minimum).
+  Deliberately did NOT add a priority step even though the prompt's own
+  template suggests one - Loop 54's G2 fix was a direct Boss decision
+  that priority stays set at Acknowledge, not intake, and adding one
+  here would silently reverse a locked decision. Also did not add an
+  evidence-capture step - that stays an existing, unchanged Case Detail
+  action. Updated e2e/helpers.ts's reportCase() to walk the new 4-step
+  flow instead of reaching for a "Submit case" button that no longer
+  exists on load. Live-render verified all 4 steps + the validation
+  gate via the Loop 53 throwaway-route technique. tsc/eslint/build
+  clean.
+Previously: GATE 13 STOP (Loops 61-65 complete) - mandatory 5-loop
   checkpoint per Section 19.9/19.13. Autonomous loop work is PAUSED,
   AWAITING BOSS explicit continuation language before Loop 66 - even
   though the Boss pre-approved the full 61-70 range, the hard-stop-
