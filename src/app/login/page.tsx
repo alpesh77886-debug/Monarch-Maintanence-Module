@@ -27,7 +27,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/cases");
+    router.replace("/home");
     router.refresh();
   }
 
