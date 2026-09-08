@@ -1,6 +1,17 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 57 complete - two follow-up sweeps from Loop 56's
+Current loop: Loop 58 complete - refreshed the V1 completion snapshot
+  against IMPLEMENTATION_PACK.md section 32's 25-item acceptance checklist
+  (same kind of check Gate 9 gave the Boss), accounting for Loop 54's
+  G1/G2/G3 fixes and Loop 56's RISK-32/RISK-33 findings. Result: 23/25
+  items fully compliant; 2 items (#9 technical restoration/verification,
+  #13 reopen/duplicate/false-complaint) share a root cause - a locked
+  multi-party/joint-decision rule that's either unimplemented (RISK-33,
+  complainant disagreement) or incompletely enforced (RISK-32, reopen
+  authority) - both already flagged to the Boss, both awaiting a design
+  decision, neither guessed at. Pure reporting loop, no code changes. See
+  LOOP_58_REPORT.md.
+Previously: Loop 57 complete - two follow-up sweeps from Loop 56's
   findings, pure verification, no code changes. (1) Swept
   IMPLEMENTATION_PACK.md for every multi-actor/joint-authority phrase to
   check whether RISK-32 (reopen) has siblings - found none; the one other
