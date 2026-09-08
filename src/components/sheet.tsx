@@ -20,8 +20,20 @@
 // this wrapper), returns to the same screen on close (it's an overlay, not
 // a navigation), explicit cancel/dismiss (header × button + backdrop
 // click + Escape), focus management (autofocus into the panel on open,
-// focus returns to the trigger on close), keyboard accessibility (Escape
-// closes, focus stays trapped via a single tabbable panel root).
+// focus returns to the trigger on close).
+//
+// Loop 69 (§11 "Action sheet quality bar" — "Do not claim 'full
+// accessibility' unless it is actually implemented. Verify keyboard focus
+// behavior rather than relying on comments."): this file's own prior
+// comment claimed "focus stays trapped via a single tabbable panel root".
+// That was not true — verified with a real Playwright keyboard test
+// against a throwaway preview (Tab from the sheet's last field landed on a
+// BUTTON behind the backdrop, five tabs deep). This component does not
+// render in a portal, so nothing stopped Tab/Shift+Tab from walking past
+// the dialog into the rest of the page's DOM order. The keydown handler
+// below now actually traps Tab: it queries the panel's focusable
+// descendants on every Tab press and wraps focus at both ends, rather
+// than letting the browser's native tab order carry it out of the dialog.
 // Deliberately NOT implemented: per-form unsaved-change detection — the
 // forms this wraps are short (2-4 fields) and each already shows its own
 // inline validation state; adding generic dirty-tracking would mean
@@ -60,7 +72,41 @@ function Sheet({
     panelRef.current?.focus();
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) {
+        // No focusable descendant — keep focus pinned on the panel root
+        // itself rather than letting Tab escape to the page behind it.
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last || !panel.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
     document.addEventListener("keydown", onKeyDown);
     const { overflow } = document.body.style;

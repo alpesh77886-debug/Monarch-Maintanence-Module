@@ -1,6 +1,32 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: PR #67 CI fix - Loop 68's forms sweep removed the
+Current loop: Loop 69 complete - action-sheet accessibility audit
+  (Prompt §11 "Action Sheet Quality Bar", explicit warning: "Do not
+  claim 'full accessibility' unless it is actually implemented. Verify
+  keyboard focus behavior rather than relying on comments."). Audited
+  src/components/sheet.tsx (the one ActionSheetTrigger primitive, used
+  5x in cases/[id]/page.tsx - Acknowledge/Confirm Assessment/Mark
+  Duplicate/Close False Complaint/Hand Over). Its own prior comment
+  claimed "focus stays trapped via a single tabbable panel root" - that
+  claim was FALSE, and only found false because it was verified rather
+  than trusted: built a throwaway preview page with a sheet containing
+  3 focusable fields plus background buttons before/after it in the
+  DOM, then ran a real Playwright keyboard script. Result: 5 Tabs from
+  sheet-open landed on a BUTTON behind the backdrop - the sheet isn't
+  portaled, so nothing stopped native Tab order from walking past the
+  dialog into the rest of the page. Fixed with a real Tab-trap in the
+  existing Escape keydown handler: on every Tab/Shift+Tab press it
+  queries the panel's focusable descendants live and wraps focus at
+  both ends, rather than relying on DOM position. Re-ran the identical
+  keyboard script after the fix: 10 Tabs cycle only among the sheet's
+  own controls (close button -> field A -> field B -> submit -> close
+  button -> ...), Shift+Tab reverses correctly, Escape still closes and
+  returns focus to the trigger - confirmed empirically, not asserted.
+  Corrected the file's own comment to state what was verified rather
+  than what was previously (wrongly) claimed. Backdrop-dismissal/
+  Escape/internal-scrolling/no-nested-modals were already real and
+  needed no change. tsc/eslint/build clean; only sheet.tsx touched.
+Previously: PR #67 CI fix - Loop 68's forms sweep removed the
   placeholder attribute from several fields (moving that text into a
   real <label>), and 3 e2e tests were still locating those fields by
   their old placeholder string (input[placeholder="Title"] etc.) - this
