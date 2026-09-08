@@ -4213,3 +4213,56 @@ Boss's promised `MONARCH_Maintenance_Screen_Architecture.html`.
 `tsc --noEmit`/`eslint`/`next build` all clean, including the anchored
 `"use client"` re-scan (unaffected — `ui.tsx` has no `"use client"`
 directive at all).
+
+## Loop 49 — 2026-09-08
+
+**Summary:** Boss supplied the full Sarvam Screen Architecture HTML and
+answered the remaining Type B items. Two pieces of work, both docs/data
+only — zero application code changed this loop.
+
+**DB cleanup (items 4 & 6, Boss: "delete kardo agar harmless hai"):**
+Deleted the 103 DUPLICATE-blocked cases and their 103 primaries (206
+total — the earlier cleanup's own automated exclusion for
+duplicate-pointed cases meant they could never self-clean; fixed by
+passing both halves of each pair to the existing guarded
+`cleanup_synthetic_cases` in one call, which already handles the
+delete-children-before-parents ordering). Then the remaining 114
+historical-backlog synthetic cases, then 8 more leaked artifacts using
+an older `[AUTOTEST-L27]`/`[AUTOTEST-R25]` tag convention from Loop 27
+and a RISK-25 test that my first manual check mis-classified as
+non-synthetic (too-narrow pattern match — caught and corrected before
+reporting, not after). Every deletion re-verified its own preconditions
+(provably synthetic, zero pm_instance/duplicate/recurrence_flag
+references) before calling the same already-audited function used in
+the original Loop 45/46 backlog cleanup — nothing new was written, no
+guard was forced. Final state: zero cases, zero pm_plans, zero
+recurrence_rules, zero orphans across 8 dependent tables + audit_log;
+only the 2 demo staff rows and 4 auth identities remain untouched. See
+`DB_CLEANUP_FOLLOWUP_REPORT.md`.
+
+**Sarvam forensic verification pass:** The promised mismatch list per
+the Type-A handoff's completion protocol — not a compliance claim.
+Checked every claim against `IMPLEMENTATION_PACK.md` directly (not
+Sarvam's own restatement of it), after finding the Sarvam file's own
+source-note cites two different pack versions (v0.2 and v0.3) in the
+same sentence — flagged, not silently resolved. Three real findings:
+(1) the case-intake form omits `shift` and `priority`, both explicitly
+listed in Pack §5.1 — traced to a Loop 27/RISK-19 security-lockdown
+migration whose own comment shows it codified an already-missing field
+rather than deciding to omit it; (2) 2 of the 8 Pack §9 diagnosis
+concepts (`observed_symptom`, `immediate_action`) have no distinct
+capture point anywhere on the case; (3) Case Detail's status badge is
+hardcoded to a single blue tone regardless of the case's actual
+lifecycle state (`cases/[id]/page.tsx:216`) — found independently while
+checking DR-05, a real usability bug on the app's primary working
+surface, not a Sarvam citation. Everything else in the file (DR-01
+through DR-05 — bottom tab bar contents, bottom-sheet vs inline forms,
+sticky footer action, badge-colour unification) is Sarvam's own
+explicitly PROPOSED, non-binding visual layer, reported as a descriptive
+difference, not a defect — six click-mapped RPCs (Take Ownership,
+Confirm Emergency, Technical-Restoration-FAIL, Send to QC, Maintenance
+Release, Mark Duplicate) were independently verified correct against
+their actual migration SQL. Findings flagged for the Boss's
+prioritization, not fixed unprompted — matching the completion
+protocol's own instruction not to silently change the locked contract.
+See `SARVAM_VERIFICATION_REPORT.md`.

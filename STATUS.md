@@ -1,11 +1,37 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 48 complete. All three Boss-approved Type A items
-  (A1 triggers/constraints sweep, A2 Vercel/Sentry audit, A3 mobile-first
-  UX pass) are now delivered and merged (PRs #48/#49/#50). NOT continuing
-  to Loop 49-50 by inventing filler work now that the approved scope is
-  exhausted - see TYPE_A_COMPLETION_REPORT.md. AWAITING BOSS for either
-  new scope, a Type B decision, or the promised Sarvam HTML.
+Current loop: Loop 49 complete. Boss supplied the full Sarvam Screen
+  Architecture HTML and answered the remaining Type B questions (items
+  1/2/3 LOTO/recurrence-threshold/permission-matrix stay PENDING per
+  Boss's own instruction; item 4 stale test data - delete if harmless;
+  item 5 leaked-password - still last; item 6 the 103 duplicate-blocked
+  cases - delete if harmless; item 7 GitHub repo stays public). Two
+  pieces of work this loop, both docs/data only, zero code changed:
+  (a) DB_CLEANUP_FOLLOWUP_REPORT.md - deleted the 103 DUPLICATE-blocked
+  cases + their 103 primaries (206 total, all provably synthetic, zero
+  orphans) plus 114 remaining historical-backlog synthetic cases plus 8
+  more leaked test artifacts using an OLDER tag convention my first pass
+  miscounted as non-synthetic ([AUTOTEST-L27]/[AUTOTEST-R25] from Loop 27
+  and a RISK-25 test - the guarded function's own pattern correctly
+  caught them, my manual pre-check pattern was too narrow, caught and
+  corrected before reporting). Database now has ZERO cases/pm_plans/
+  recurrence_rules - a genuinely clean slate, only the 2 demo staff + 4
+  auth identities remain. (b) SARVAM_VERIFICATION_REPORT.md - the
+  promised forensic mismatch pass against the full HTML. Flagged (not
+  fixed) three real findings, checked against IMPLEMENTATION_PACK.md
+  directly rather than Sarvam's restatement of it: intake form missing
+  shift/priority fields Pack section5.1 explicitly requires (traced to a
+  security-lockdown migration from Loop 27/RISK-19 that codified an
+  already-missing field rather than deciding to omit it); 2 of the 8
+  section9 diagnosis concepts (observed_symptom, immediate_action) have
+  no distinct capture point; Case Detail's status badge is hardcoded
+  blue regardless of actual state (a real usability bug, found
+  independently, not a Sarvam citation). Everything else in the Sarvam
+  file (DR-01..05) is explicitly PROPOSED/non-binding per the handoff and
+  reported as a visual/organizational difference only, not a defect. Also
+  flagged a version-number discrepancy inside Sarvam's own source-note
+  (cites both v0.2 and v0.3) rather than silently resolving it. See both
+  reports for full evidence.
 Gate 9 APPROVED, SCOPED to Type A. A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
