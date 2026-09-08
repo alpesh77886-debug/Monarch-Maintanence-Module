@@ -91,9 +91,16 @@ export function e2eSymptom(label: string): string {
   return `[AUTOTEST-E2E]${runMarker()} ${label} (${new Date().toISOString()})`;
 }
 
+// Loop 66: /cases/new became a 4-step progressive flow (What happened? /
+// Where? / Anything else? / Review) instead of one flat form — this walks
+// through it exactly as a real user would (fill symptom, Next x3, Submit),
+// rather than trying to reach into a later step directly.
 export async function reportCase(page: Page, symptom: string): Promise<string> {
   await page.goto("/cases/new");
   await page.locator("textarea").fill(symptom);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: "Submit case" }).click();
   await expect(page).toHaveURL(/\/cases\/[0-9a-f-]{36}$/, { timeout: 20_000 });
   const caseId = page.url().split("/").pop()!;
