@@ -1,6 +1,6 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 43 complete (Gate 8 approved). A Boss-directed
+Current loop: Loop 44 complete (Gate 8 approved). A Boss-directed
   surgical task then closed RISK-25 and cleaned the synthetic test data —
   see CLEANUP_AND_RISK25_REPORT.md. RISK-25 RESOLVED: three enforced
   INTERNAL waiting reasons (reporting-manager approval pending / PO release
@@ -48,6 +48,22 @@ Current loop: Loop 43 complete (Gate 8 approved). A Boss-directed
   transition still succeeds, an illegal one still raises
   INVALID_TRANSITION. 5 tests including a canary on the edge count. See
   LOOP_43_REPORT.md.
+  Loop 44 then asked WHY that one missed RLS was fatal, and found the
+  default behind it (RISK-29): pg_default_acl grants every NEW object in
+  this schema to anon automatically - tables get full DML, functions get
+  EXECUTE, sequences get rwU. So RLS was the only thing standing between
+  an unauthenticated caller and every table, and any future table would
+  carry the same loaded default. Three live leaks proven as anon with no
+  JWT: the manager roster via case_notification_recipients, an
+  is-this-an-emergency oracle, and next_case_number burning MC numbers
+  (two were burned proving it - that gap is real and recorded). Fixed in
+  0044 by revoking the schema DEFAULT PRIVILEGES for anon plus all
+  existing grants and schema USAGE. authenticated deliberately untouched:
+  can_read_case, case_is_confirmed_emergency and next_case_number are
+  evaluated as the CALLING user in policies and a column default, checked
+  against pg_policy first. Two sweeps found nothing and are recorded as
+  such - every function already pins search_path, and no
+  INVOKER/DEFINER mismatch exists. See LOOP_44_REPORT.md.
   Boss-side items: QC identities ANSWERED (they will come from the Quality
   module at integration; qc_authority staying empty is now a decision, not
   a gap). Leaked-password protection deferred by the Boss to last. Two new

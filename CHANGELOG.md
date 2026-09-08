@@ -3841,3 +3841,72 @@ Enumerate the objects first, then audit the ones that exist. Loops 41 and 42
 learned the same lesson about cleanup (the case-walker never saw tables that do
 not hang off a case); this is that lesson again in the authorization layer, where
 it costs more.
+
+## Loop 44 — 2026-09-08
+
+**Summary:** Loop 43 fixed one table whose RLS was never enabled. Loop 44 asked
+why that one mistake was fatal, and fixed the default that made it so. RISK-29.
+Full evidence in `LOOP_44_REPORT.md`.
+
+**Requirements affected:** §29 authorization, §42, schema-wide privileges.
+
+**Findings:**
+- **RISK-29 — `pg_default_acl` granted every new object to `anon`.** Tables got
+  `arwdDxtm` (SELECT/INSERT/UPDATE/DELETE/TRUNCATE), functions `X`, sequences
+  `rwU`. So RLS was the ONLY thing between an unauthenticated caller and every
+  table in the schema, and any future table would carry the same loaded default.
+  **This is why RISK-28 was fatal rather than untidy:** `status_transitions`
+  handed `anon` full DML the moment it was created, and nobody enabled RLS.
+- Three leaks proven live as `anon` with **no JWT**:
+  * `case_notification_recipients(null)` returned **every active Manager's user
+    id** — SECURITY DEFINER, so it bypassed the `staff` table's RLS. Those ids
+    are the input to `assign_technician`, `handover_case`, `raise_capa`.
+  * `case_is_confirmed_emergency(<real case id>)` returned **TRUE** — an oracle
+    for an unauthenticated caller. Tested against a real emergency case, not
+    just a non-existent id, which returns `false` and would have been a
+    misleadingly reassuring test.
+  * `next_case_number()` **advanced the sequence**, letting an unauthenticated
+    caller burn MC numbers and leave permanent gaps in an audit-visible
+    identifier series. Two numbers, MC-010550 and MC-010551, were burned proving
+    this; that gap is real and is recorded rather than quietly ignored.
+
+**Checked and found nothing** (recorded because "found nothing" is a result):
+**every** function in the schema already pins `search_path` — zero missing — and
+no SECURITY INVOKER/DEFINER mismatch was found. The finding came from the third
+sweep, which roles hold EXECUTE, and then from asking why they held it.
+
+**Material changes:**
+- `supabase/migrations/0044_maintenance_anon_privilege_lockdown.sql` — revokes
+  the schema's DEFAULT PRIVILEGES for `anon` on tables, functions and sequences
+  so new objects stop inheriting the grant; revokes the same on all existing
+  objects; and revokes `usage on schema maintenance` from `anon`. Fixing the
+  default matters more than fixing the three functions — patching the instances
+  would have left the next table equally exposed.
+- `tests/anon-privilege-lockdown.test.ts` (new, 7 tests) using a genuinely
+  signed-out client holding the anon key, which is what an attacker has since
+  that key ships in the browser bundle.
+
+**`anon` needing nothing was verified, not assumed:** every `.from(`/`.rpc(` call
+in `src/` lives under `src/app/(app)/`, the login page calls only
+`auth.signInWithPassword`, and the single API route touches no data.
+
+**Deliberately NOT revoked — `authenticated`.** Three helpers are evaluated as
+the CALLING user, so revoking them there would break authorization rather than
+tighten it: `can_read_case` (evidence/safety_stops/production_boundary SELECT
+policies), `case_is_confirmed_emergency` (`case_assignments_insert` WITH CHECK),
+and `next_case_number` (the DEFAULT on `cases.case_number`). Checked against
+`pg_policy` and the column default BEFORE writing the migration, because this
+repo has already made that exact mistake once — tightening `cases_select` broke
+`case_assignments_insert`, whose EXISTS was evaluated as the inserting user.
+
+**Verified after:** all three anon probes now return `permission denied for
+schema maintenance`; and the authenticated path is intact end-to-end — staff read
+465 cases and the 26-edge graph, a case INSERT succeeds and receives MC-010665
+from the default, and `acknowledge_case` still drives REPORTED → ACKNOWLEDGED.
+
+**A mistake in this loop's own test, caught before pushing:** the new test file
+first built its case symptom by hand as `[AUTOTEST] anon lockdown regression`,
+which carries no `[run=<tag>]` marker — so the tag-scoped teardown would have
+left the row behind permanently, precisely the leak Loop 41 closed. Changed to
+`testSymptom()`. The fix from three loops ago is only as good as every new call
+site remembering to use it.
