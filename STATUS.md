@@ -1,6 +1,68 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 50 complete. **GATE 10 (Loops 46-50) — MANDATORY STOP,
+Current loop: Loop 54 complete - Boss uploaded a new Architecture Blueprint
+  document and asked for a screen-by-screen/data/permission/harness gap
+  matrix against the repo before any implementation. Read all 35 Blueprint
+  sections, cross-checked against actual migration SQL/RPC bodies/RLS/forms
+  (not memory), wrote BLUEPRINT_GAP_MATRIX.md. Backend is already
+  comprehensive (26 tables, ~60 RPCs) - most sections MATCH. Flagged a
+  version-number discrepancy (Blueprint cites v0.3, repo pack is v0.2
+  LOCKED) without silently resolving it. Found 3 genuine gaps, all
+  traceable to the CURRENT v0.2 pack itself: G1 (real bug - no UI path ever
+  set status ASSESSED, so assign_technician's auto-advance to ASSIGNED
+  never fired from a normal Acknowledge->Assign flow), G2 (intake form
+  missing shift field), G3 (diagnosis form missing 2 of the LOCKED section
+  9's 8 required fields - observed_symptom, immediate_action - no column
+  existed). Put G1's fix shape and the priority-at-intake question to the
+  Boss rather than guessing; Boss chose a dedicated Confirm Assessment
+  screen for G1, and shift-only (no priority change) for G2. Implemented
+  all three: new migration 0048 (2 nullable columns on interventions,
+  additive only), new AssessmentForm reusing the existing transition_case
+  RPC (zero new backend surface), shift field added to intake. tsc/eslint/
+  build all clean; npm test blocked locally by RISK-05 as always, CI is the
+  verification path. See BLUEPRINT_GAP_MATRIX.md and LOOP_54_REPORT.md.
+Previously: Loop 53 complete - Sarvam-mandated 8-category forensic
+  sweep on the Loop 51-52 restructure. Categories 1-6 (triggers/
+  constraints, RPC guards, RLS/grants, client-side gating, duplicate-
+  submit idempotency, error/rollback paths) confirmed clean by reasoning +
+  grep; one honest non-blocking finding recorded (a sheet doesn't
+  explicitly close on successful submit - abrupt unmount when its gating
+  boolean flips false, pre-existing behaviour from before Loop 51, left
+  for Boss to weigh). Category 7 (mobile responsive) got actual live-
+  render confirmation this time: local-only never-committed proxy.ts
+  bypass (reverted, confirmed via empty git status) + Playwright
+  screenshots of a dummy-data preview route at mobile/desktop widths -
+  confirmed sheet/tabs/sticky-bar render correctly, bottom-sheet vs
+  centered-modal breakpoint switch works, Escape closes + returns focus
+  to the trigger (measured, not assumed). Shipped no product code - this
+  was a pure verification loop. See LOOP_53_REPORT.md.
+Previously: Loop 52 complete - sticky mobile primary action (Sarvam
+  DR-04) pulled out of Overview tab, reachable from any tab now; KPI page
+  Group sections wrapped in a card shell. Sticky-bar positioning could not
+  be live-verified (RISK-05) - flagged as elevated-risk, not claimed as
+  done-and-confirmed. See LOOP_52_REPORT.md.
+Previously: Loop 51 in progress (Boss: "loop 51 se loop 55 tak complete
+  karo...mujhe design complete ka msg chahiye" - explicit continuation past
+  Gate 10). Case Detail (cases/[id]/page.tsx) restructured from one
+  550-line unconditional-scroll page into Sarvam's own proposed local-nav
+  model: persistent header + 10 tabs (Overview/Journal/Interventions/
+  Assignments/Spares/Restorations/QC/Waiting/Audit/Evidence). The 4 forms
+  that previously rendered as a permanent inline coloured box (Acknowledge,
+  Mark Duplicate, Close False Complaint, Hand Over - the ones with no
+  existing collapse toggle, unlike Assign/Intervention/Waiting/Observation/
+  Restoration which already had one) now open as a bottom sheet, matching
+  Sarvam's DR-02 and the Boss's own already-shipped Quality-app disposition
+  wizard. Every panel kept its exact existing props/logic/RPC - this loop
+  relocated JSX, it did not rewrite any form's internals. New:
+  components/sheet.tsx (ActionSheetTrigger) and components/tabs.tsx
+  (CaseDetailTabs). One live boundary bug caught before shipping: the
+  first sheet.tsx had 2 non-default exports in a "use client" file
+  consumed by a server component - exactly the Loop 16 lesson, invisible
+  to tsc/eslint/build by design, caught by deliberately checking the new
+  files against that specific known failure mode and fixed to a single
+  default export (matching app-nav.tsx's own convention). A repo-wide
+  re-scan for the same shape came back clean. See LOOP_51_REPORT.md.
+Previously: Loop 50 complete. **GATE 10 (Loops 46-50) — MANDATORY STOP,
   AWAITING BOSS** per §19.9/§19.13. See APPROVAL_REPORT_LOOP_46_50.md.
   Loop 50: Boss flagged the live app as looking like "a basic webpage" and
   supplied two reference apps (AOS, Quality) as the concrete bar for "top

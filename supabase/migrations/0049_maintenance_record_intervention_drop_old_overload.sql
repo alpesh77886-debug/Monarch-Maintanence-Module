@@ -1,0 +1,25 @@
+-- Loop 54 follow-up — CI (lint-and-build) caught a real bug in migration
+-- 0048, not a flake: `create or replace function
+-- maintenance.record_intervention(...)` with two new trailing parameters
+-- did NOT replace the existing 5-parameter function, because Postgres
+-- resolves CREATE OR REPLACE by matching the full argument-type signature,
+-- and the new signature (7 args) differs from the old one (5 args). The
+-- result was two overloaded `record_intervention` functions living side by
+-- side in the schema, confirmed live:
+--   record_intervention(uuid, text, text, text, uuid)                          -- old
+--   record_intervention(uuid, text, text, text, uuid, text, text)              -- new (0048)
+--
+-- PostgREST cannot disambiguate an RPC call by name alone when multiple
+-- overloads exist and the supplied named parameters are compatible with
+-- more than one candidate (both signatures accept a 5-parameter call, since
+-- the two new parameters are optional) — every call started failing with
+-- PGRST203 "Could not choose the best candidate function", caught by the
+-- Vitest suite in CI, not live-verified locally (RISK-05 blocks that from
+-- this sandbox).
+--
+-- Fix: drop the old 5-parameter overload explicitly. The 7-parameter
+-- version from 0048 is the only one that should exist — it is a strict
+-- superset (the two new parameters are optional, default null), so no
+-- caller loses functionality.
+
+drop function if exists maintenance.record_intervention(uuid, text, text, text, uuid);

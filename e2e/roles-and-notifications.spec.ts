@@ -64,6 +64,9 @@ test("acknowledging a case notifies the reporter, and only the reporter (§23)",
   const execPage = await execContext.newPage();
   await signIn(execPage, "executive");
   await execPage.goto(`/cases/${caseId}`);
+  // Since Loop 51, Acknowledge opens as a bottom sheet from the sticky
+  // primary-action trigger rather than rendering inline.
+  await execPage.getByRole("button", { name: "Acknowledge", exact: true }).click();
   await expect(execPage.getByText("Acknowledge this case")).toBeVisible();
   await execPage.getByRole("button", { name: "Acknowledge & take ownership" }).click();
   await expect(execPage.getByText("Status: ACKNOWLEDGED")).toBeVisible({ timeout: 20_000 });
@@ -98,6 +101,9 @@ test("spare request over ₹12,000 shows as needing Manager approval (§3.3)", a
   const symptom = e2eSymptom("spare approval gate");
   await reportCase(page, symptom);
 
+  // Since Loop 51 the spare-request form lives in the Spares tab, not the
+  // default Overview tab.
+  await page.getByRole("tab", { name: "Spares" }).click();
   await page.locator('input[placeholder="Spare name"]').fill("Gearbox assembly");
   await page.locator('input[placeholder="Quantity"]').first().fill("1");
   await page.locator('input[placeholder="Estimated amount (₹, optional)"]').fill("25000");
