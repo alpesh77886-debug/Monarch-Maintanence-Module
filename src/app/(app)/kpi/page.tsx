@@ -424,11 +424,15 @@ export default async function KpiPage() {
   );
 }
 
+// Loop 52 (§30 visual layer): wrapped in a Card shell (border + shadow),
+// matching the reference apps' convention of grouping related metrics
+// inside one bordered block rather than a floating heading over a bare
+// grid — purely a container change, no metric/business logic touched.
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section>
+    <section className="rounded-xl border border-line2 bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.3),0_4px_16px_rgba(0,0,0,0.2)]">
       <h2 className="text-sm font-semibold text-fg">{title}</h2>
-      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">{children}</div>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">{children}</div>
     </section>
   );
 }
@@ -444,7 +448,7 @@ function Metric({
 }) {
   const noData = value === "no data";
   return (
-    <div className="rounded-lg border border-line bg-card p-3">
+    <div className="rounded-lg border border-line bg-bg2 p-3">
       <p className="text-xs text-muted">{label}</p>
       <p
         className={`text-lg font-semibold ${
