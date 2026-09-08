@@ -4535,3 +4535,57 @@ be closed directly, no such transition-graph edge exists) and NS-019
 assertion (NS-009: `emergency_confirmed` explicitly checked false between
 claim and confirm, not just implied). All additive, `tsc --noEmit`/`eslint`
 clean, no RPC/migration/business-logic change.
+
+## Interstitial — 2026-09-08 (between Loop 59 and Loop 60)
+
+**Summary:** Boss-reported live bug on the `/pm` screen, fixed.
+
+**Requirements affected:** §30 (mobile-first UI), no business-logic or
+schema change.
+
+**Report (Hinglish, verbatim):** "PM wali screen broken lag rahi hai...
+jab bhi click karte hai to niche ke 5 options 4 ho jate hai aur screen
+mobile application nahi rehti aisa fill hota hai." (The PM screen looks
+broken — whenever something is clicked, the 5 bottom-nav options become
+4, and the screen stops looking like a mobile app, filling up instead.)
+
+**Investigation:** Read `app-nav.tsx` first — `NAV_ITEMS` is a static
+5-entry array with no conditional logic, so the nav itself was ruled out
+before touching anything. Built a throwaway, dummy-data preview route
+mirroring `/pm`'s real component tree (`AppNav` + `CreatePlanForm` +
+`PmPlanCard` + `PmInstanceCard`) with a local-only, uncommitted 2-line
+`src/proxy.ts` bypass (same technique as Loop 53), and drove it with
+Playwright at a 390×844 mobile viewport. The first screenshot, taken
+before any interaction, already showed the Next.js dev "N — 1 Issue"
+overlay rendered directly on top of the fixed bottom nav bar, covering
+the Cases icon — visually exactly the "5 becomes 4" symptom. The dev log
+named the issue: a React hydration mismatch.
+
+**Root cause:** `pm-plan-card.tsx` (`approved_at`) and
+`pm-instance-card.tsx` (`due_at`, `overdue_since`) formatted dates with a
+bare `.toLocaleString()`. That call resolves the runtime's own
+locale/timezone, which differs between the Next.js server (container,
+UTC) and the client browser (plant floor, IST) — so the SSR'd HTML and
+the client's first render disagree, React flags a hydration error, and
+its recovery discards and re-renders the affected subtree client-side.
+On `/pm`, which renders everything unconditionally with no tabs (unlike
+the Case Detail page after Loop 51's restructure), this was immediately
+visible on load.
+
+**Fix:** New `src/lib/format.ts` — `formatIst()` pins `locale: "en-IN"`
+and `timeZone: "Asia/Kolkata"` so the formatted string is identical
+wherever it's computed, regardless of server/client environment. Used at
+both call sites; no other behavior changed. Re-ran the same repro after
+the fix: no hydration error in the console or dev log, all 5 nav icons
+render cleanly at every step. `tsc --noEmit`, `eslint`, and `next build`
+all clean. Throwaway route deleted and the local `proxy.ts` bypass
+reverted before commit (`git status --short` empty).
+
+**Scope note:** the same bare-`toLocaleString()` pattern exists in 15
+other files repo-wide (grepped, not yet individually confirmed to be
+user-visible) — not touched in this fix, since only `/pm` was reported
+broken and reproduced, and a page like Case Detail hides most of its
+date-bearing content behind tabs/sheets that delay first paint past
+hydration, which likely masks the same latent issue there. Candidate for
+a dedicated follow-up sweep if the Boss wants one; not folded into this
+bounded fix unprompted.

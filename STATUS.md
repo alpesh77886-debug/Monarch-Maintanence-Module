@@ -1,6 +1,37 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 58 complete - refreshed the V1 completion snapshot
+Current loop: Interstitial fix (between Loop 59 and Loop 60) - the Boss
+  reported the /pm screen live, in Hinglish: bottom nav's 5 options
+  became 4 on click, and the screen stopped looking like a mobile app.
+  AppNav itself is a static 5-item array (confirmed by reading it first,
+  before touching anything) - root cause was a React hydration mismatch:
+  pm-plan-card.tsx and pm-instance-card.tsx formatted approved_at/due_at/
+  overdue_since with a bare toLocaleString(), which renders differently
+  on the server (container, UTC) than the client browser (plant floor,
+  IST). React discards and re-renders the mismatched subtree on
+  hydration, which visibly broke the page on load. Reproduced locally
+  with a throwaway dummy-data route mirroring /pm's real component tree
+  (deleted before commit, plus the local-only proxy.ts bypass reverted -
+  confirmed via `git status --short`) - the Next.js dev "N - 1 Issue"
+  overlay rendered directly on top of the fixed bottom nav, covering the
+  Cases icon, visually matching the Boss's report exactly. Fixed with a
+  new src/lib/format.ts (formatIst(): fixed "en-IN" locale + "Asia/
+  Kolkata" timeZone so the string is identical wherever computed) used
+  at both call sites. Re-ran the same repro after the fix: no hydration
+  error, all 5 nav icons render cleanly. tsc/eslint/next build all clean.
+  Same latent toLocaleString() pattern exists in 15 other files
+  repo-wide (grepped) but wasn't fixed here - out of scope for this
+  bounded fix, since only /pm was reported broken and reproduced; worth
+  a dedicated follow-up loop if the Boss wants it swept everywhere.
+Previously: Loop 59 complete - dependency security audit. npm audit:
+  zero vulnerabilities across all 640 dependencies. Bumped the two
+  Supabase packages (ssr, supabase-js) to their latest patch releases -
+  the most security-relevant deps (auth/data client). Left the three
+  major-version-jump packages (typescript, eslint, @types/node) alone
+  deliberately - unattended major bumps are a real risk, not a
+  verification-loop task. tsc/eslint/build all clean after the bump. See
+  LOOP_59_REPORT.md.
+Previously: Loop 58 complete - refreshed the V1 completion snapshot
   against IMPLEMENTATION_PACK.md section 32's 25-item acceptance checklist
   (same kind of check Gate 9 gave the Boss), accounting for Loop 54's
   G1/G2/G3 fixes and Loop 56's RISK-32/RISK-33 findings. Result: 23/25

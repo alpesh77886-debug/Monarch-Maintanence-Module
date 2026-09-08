@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { PmPlan } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §17.3: Manager approves the schedule/plan.
 export default function PmPlanCard({ plan, isManager }: { plan: PmPlan; isManager: boolean }) {
@@ -40,7 +41,8 @@ export default function PmPlanCard({ plan, isManager }: { plan: PmPlan; isManage
       <p className="mt-1 text-xs">
         {plan.approved_at ? (
           <span className="font-medium text-emerald-300">
-            Approved {new Date(plan.approved_at).toLocaleString()}
+            {/* formatIst avoids a server/client hydration mismatch — see src/lib/format.ts */}
+            Approved {formatIst(plan.approved_at)}
           </span>
         ) : (
           <span className="font-medium text-amber-300">Awaiting Manager approval</span>
