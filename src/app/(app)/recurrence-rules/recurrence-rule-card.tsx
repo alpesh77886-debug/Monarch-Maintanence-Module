@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { RecurrenceRule } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // Loop 23: `set_recurrence_rule_active` toggle — Manager-only, and the RPC
 // itself requires a reason for either direction, so this never silently
@@ -63,7 +64,7 @@ export default function RecurrenceRuleCard({
         {rule.window_days} days
       </p>
       <p className="mt-1 text-xs text-muted">
-        Set by {createdByName} on {new Date(rule.created_at).toLocaleDateString()}
+        Set by {createdByName} on {formatIst(rule.created_at)}
       </p>
       <p className="mt-1 text-fg">{rule.approval_note}</p>
       {error && <p role="alert" className="mt-1 text-sm text-red-300">{error}</p>}

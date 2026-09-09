@@ -269,14 +269,14 @@ export default async function KpiPage() {
           <Metric
             label="Downtime recorded (total)"
             value={
-              downtimeValues.length ? `${downtimeTotal.toLocaleString()} min` : "no data"
+              downtimeValues.length ? `${downtimeTotal.toLocaleString("en-IN")} min` : "no data"
             }
             coverage={`recorded on ${downtimeValues.length} of ${total} cases`}
           />
           <Metric
             label="Downtime per case (median)"
             value={
-              downtimeValues.length ? `${median(downtimeValues)!.toLocaleString()} min` : "no data"
+              downtimeValues.length ? `${median(downtimeValues)!.toLocaleString("en-IN")} min` : "no data"
             }
             coverage={`from ${downtimeValues.length} recorded ${
               downtimeValues.length === 1 ? "case" : "cases"
@@ -285,7 +285,7 @@ export default async function KpiPage() {
           <Metric
             label="Output loss recorded (total)"
             value={
-              outputLossValues.length ? `${outputLossTotal.toLocaleString()} kg` : "no data"
+              outputLossValues.length ? `${outputLossTotal.toLocaleString("en-IN")} kg` : "no data"
             }
             coverage={`recorded on ${outputLossValues.length} of ${total} cases`}
           />

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseImpactRecord } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §25.1 group 3 — Production Impact (minutes + kg).
 //
@@ -191,7 +192,7 @@ export default function ImpactPanel({
                   <p className="mt-0.5">Basis: {r.basis}</p>
                   <p className="mt-0.5 text-muted2">
                     {nameById[r.recorded_by] ?? "unknown"} ·{" "}
-                    {new Date(r.recorded_at).toLocaleString()}
+                    {formatIst(r.recorded_at)}
                   </p>
                   {!isSuperseded && (
                     <button

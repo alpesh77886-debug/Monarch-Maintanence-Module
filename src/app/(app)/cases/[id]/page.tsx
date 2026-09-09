@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { formatIst } from "@/lib/format";
 import AcknowledgeForm from "./acknowledge-form";
 import AssessmentForm from "./assessment-form";
 import TakeOwnershipButton from "./take-ownership-button";
@@ -259,18 +260,18 @@ export default async function CaseDetailPage({
           <li>
             Confirmed emergency since{" "}
             {caseRow.emergency_confirmed_at
-              ? new Date(caseRow.emergency_confirmed_at).toLocaleString()
+              ? formatIst(caseRow.emergency_confirmed_at)
               : "—"}
             {caseRow.emergency_escalated_at
-              ? ` · escalated ${new Date(caseRow.emergency_escalated_at).toLocaleString()}`
+              ? ` · escalated ${formatIst(caseRow.emergency_escalated_at)}`
               : " · 1h escalation clock running"}
           </li>
         )}
         {activeWait?.resume_ready_at && (
           <li>
-            Resume-ready since {new Date(activeWait.resume_ready_at).toLocaleString()}
+            Resume-ready since {formatIst(activeWait.resume_ready_at)}
             {activeWait.last_escalated_at
-              ? ` · escalated ${new Date(activeWait.last_escalated_at).toLocaleString()}`
+              ? ` · escalated ${formatIst(activeWait.last_escalated_at)}`
               : ""}
           </li>
         )}
@@ -432,7 +433,7 @@ export default async function CaseDetailPage({
             const linkedIntervention = interventions?.find((i) => i.id === o.intervention_id);
             return (
               <li key={o.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
-                <p className="text-xs text-muted2">{new Date(o.created_at).toLocaleString()}</p>
+                <p className="text-xs text-muted2">{formatIst(o.created_at)}</p>
                 {linkedIntervention && (
                   <p className="text-xs text-muted">
                     <span className="font-medium">Intervention:</span> {linkedIntervention.action_taken}
@@ -465,7 +466,7 @@ export default async function CaseDetailPage({
         <ol className="mt-2 flex flex-col gap-2">
           {interventions?.map((i) => (
             <li key={i.id} className="rounded-lg border border-line bg-bg2 p-2.5 text-sm">
-              <p className="text-xs text-muted2">{new Date(i.started_at).toLocaleString()}</p>
+              <p className="text-xs text-muted2">{formatIst(i.started_at)}</p>
               {i.observed_symptom && <p><span className="font-medium">Observed symptom:</span> {i.observed_symptom}</p>}
               {i.immediate_action && <p><span className="font-medium">Immediate action:</span> {i.immediate_action}</p>}
               <p><span className="font-medium">Action:</span> {i.action_taken}</p>
@@ -510,8 +511,8 @@ export default async function CaseDetailPage({
               <span className="font-medium">{staffById.get(o.owner_user_id)?.full_name ?? o.owner_user_id}</span>
               <span className="text-xs text-muted">
                 {" "}
-                — from {new Date(o.started_at).toLocaleString()}
-                {o.ended_at ? ` to ${new Date(o.ended_at).toLocaleString()}` : " (current)"}
+                — from {formatIst(o.started_at)}
+                {o.ended_at ? ` to ${formatIst(o.ended_at)}` : " (current)"}
               </span>
               {o.transfer_reason && <p className="text-xs text-muted">Reason: {o.transfer_reason}</p>}
             </li>
@@ -571,7 +572,7 @@ export default async function CaseDetailPage({
       <ol className="mt-2 flex flex-col gap-1 text-xs text-muted">
         {events?.map((e) => (
           <li key={e.id}>
-            {new Date(e.occurred_at).toLocaleString()} — {e.event_type}
+            {formatIst(e.occurred_at)} — {e.event_type}
             {e.previous_status && e.new_status ? ` (${e.previous_status} → ${e.new_status})` : ""}
             {e.reason ? `: ${e.reason}` : ""}
           </li>

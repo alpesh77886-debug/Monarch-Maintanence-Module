@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Intervention } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §8: "Each entry records ... intervention/step reference ... observation
 // ... action ... result ... current condition ... pending next action ...
@@ -107,7 +108,7 @@ export default function ObservationForm({
             <option value="">(not linked to a specific intervention)</option>
             {interventions.map((i) => (
               <option key={i.id} value={i.id}>
-                {new Date(i.started_at).toLocaleString()} — {i.action_taken}
+                {formatIst(i.started_at)} — {i.action_taken}
               </option>
             ))}
           </select>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseAsset } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §5.1: "Exact asset may be unknown at creation. Never silently map an
 // unknown asset. A case may later be linked to one or more assets/machines."
@@ -76,7 +77,7 @@ export default function AssetPanel({
             <li key={a.id} className="rounded-lg border border-line p-2 text-sm">
               <p className="font-medium text-fg">{a.asset_name}</p>
               {a.asset_ref && <p className="text-xs text-muted">Ref: {a.asset_ref}</p>}
-              <p className="text-xs text-muted2">{new Date(a.linked_at).toLocaleString()}</p>
+              <p className="text-xs text-muted2">{formatIst(a.linked_at)}</p>
             </li>
           ))}
         </ul>

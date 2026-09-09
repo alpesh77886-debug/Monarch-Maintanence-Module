@@ -1,6 +1,24 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 86 complete - Boss reported (with screenshots) that
+Current loop: Loop 87 complete - two related gaps found while
+  investigating Loop 86's navigation bug. (1) Loop 82's role="alert"
+  sweep matched only the single-line `{error && <p ...>{error}</p>}`
+  pattern - 6 files used a multi-line variant (`{error && (` / `<p ...>`
+  on the next line) that skipped the exact-match sed entirely: login,
+  cases (queue), cases/new, my-work, emergency, spares. Same real gap
+  as every other Loop 82 instance - added role="alert" to all six. (2)
+  cases/new/page.tsx (Create Case progressive-flow, Loop 66) only ever
+  rendered a "Back" button once `step > 0` - at step 0, where every
+  entry lands, there was no way to leave the form except the header/
+  AppNav, the same class of gap Loop 86 just fixed for Home -> section
+  nav, one level deeper. Added the identical Link pattern Case Detail
+  already uses - cases/new now starts with the same "<- All cases"
+  back-link. tsc/eslint/build clean; role="alert" additions are the
+  same mechanically-verified pattern from Loop 82; the back-link was
+  live-rendered via the Loop 53 throwaway-route technique (re-exporting
+  the real NewCasePage component) confirming correct text and
+  href="/cases". PR #86 merged clean, CI green first try.
+Previously: Loop 86 complete - Boss reported (with screenshots) that
   after navigating Home -> a section (e.g. Cases), there was no way
   back - "back wala button jo hota hai vo nahi hai." Investigated before
   fixing: built two throwaway routes replicating the real structural

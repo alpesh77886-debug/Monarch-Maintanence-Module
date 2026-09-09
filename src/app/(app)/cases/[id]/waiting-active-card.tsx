@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseWait } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 export default function WaitingActiveCard({ wait }: { wait: CaseWait }) {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function WaitingActiveCard({ wait }: { wait: CaseWait }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-warn/25 bg-warn/10 p-3">
       <p className="text-sm font-medium text-amber-300">
-        WAITING ({wait.reason_type}) since {new Date(wait.entered_at).toLocaleString()}
+        WAITING ({wait.reason_type}) since {formatIst(wait.entered_at)}
       </p>
       <p className="text-sm text-amber-300">{wait.reason_text}</p>
       {wait.dependency_ref && (
@@ -40,7 +41,7 @@ export default function WaitingActiveCard({ wait }: { wait: CaseWait }) {
       )}
       {wait.resume_ready_at && (
         <p className="text-xs font-medium text-emerald-300">
-          Resume-ready since {new Date(wait.resume_ready_at).toLocaleString()}
+          Resume-ready since {formatIst(wait.resume_ready_at)}
         </p>
       )}
       {error && <p role="alert" className="text-sm text-red-300">{error}</p>}

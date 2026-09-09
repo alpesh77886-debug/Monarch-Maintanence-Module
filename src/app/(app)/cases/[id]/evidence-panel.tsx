@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseEvidence } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §5.1 / §26 — evidence attachment/reference.
 //
@@ -112,7 +113,7 @@ export default function EvidencePanel({
                 <p className="mt-0.5 text-muted">{e.description}</p>
               )}
               <p className="mt-0.5 text-xs text-muted2">
-                {nameById[e.uploaded_by] ?? "unknown"} · {new Date(e.created_at).toLocaleString()}
+                {nameById[e.uploaded_by] ?? "unknown"} · {formatIst(e.created_at)}
               </p>
             </li>
           ))}

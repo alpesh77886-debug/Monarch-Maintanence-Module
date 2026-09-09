@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §6: emergency is TWO-STEP — reporter/staff claim, then Executive/Manager
 // confirm. Only confirm_emergency starts the 1h clock (§7.3); there is no
@@ -71,7 +72,7 @@ export default function EmergencyPanel({
         </p>
         <p className="text-xs text-red-300">
           Confirmed at{" "}
-          {emergencyConfirmedAt ? new Date(emergencyConfirmedAt).toLocaleString() : "—"} — 1h
+          {emergencyConfirmedAt ? formatIst(emergencyConfirmedAt) : "—"} — 1h
           escalation clock is running.
         </p>
         {emergencyClaimReason && (

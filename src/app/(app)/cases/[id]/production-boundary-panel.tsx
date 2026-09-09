@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { SafetyStop, ProductionBoundaryEvent } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §13 production restart boundary. Nothing in this panel authorises or blocks
 // a line start — Maintenance must not become Production's line-start
@@ -66,7 +67,7 @@ export default function ProductionBoundaryPanel({
           </p>
           <p className="text-sm text-red-300">{activeStop.reason}</p>
           <p className="text-xs text-red-300">
-            Raised {new Date(activeStop.raised_at).toLocaleString()}
+            Raised {formatIst(activeStop.raised_at)}
             {activeStop.machine_ref ? ` · ${activeStop.machine_ref}` : ""}
             {activeStop.line_ref ? ` · ${activeStop.line_ref}` : ""}
           </p>
@@ -241,7 +242,7 @@ export default function ProductionBoundaryPanel({
               </p>
               <p className="text-xs text-muted">{e.reason}</p>
               <p className="text-xs text-muted2">
-                {new Date(e.recorded_at).toLocaleString()} · case was{" "}
+                {formatIst(e.recorded_at)} · case was{" "}
                 {e.case_status_at_record}
                 {e.machine_ref ? ` · ${e.machine_ref}` : ""}
                 {e.line_ref ? ` · ${e.line_ref}` : ""}
