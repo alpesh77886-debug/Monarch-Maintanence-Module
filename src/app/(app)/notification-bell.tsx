@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { AppNotification } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §23: notifications are event-driven, not spam-driven — this is a plain
 // unread list, not a live/push feed. Read state is set only via
@@ -96,7 +97,7 @@ export default function NotificationBell({
                 <p className="text-fg">{n.message}</p>
                 <div className="mt-1 flex items-center justify-between">
                   <p className="text-xs text-muted2">
-                    {new Date(n.created_at).toLocaleString()}
+                    {formatIst(n.created_at)}
                   </p>
                   <div className="flex items-center gap-2">
                     {n.case_id && (

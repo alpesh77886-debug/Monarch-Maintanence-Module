@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Clearance } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 export default function QcPanel({
   caseId,
@@ -80,7 +81,7 @@ export default function QcPanel({
       return (
         <div className="flex flex-col gap-1 rounded-lg border border-brand/30 bg-brand/10 p-3">
           <p className="text-sm font-medium text-brand">
-            Sent to QC {new Date(pendingClearance.sent_to_qc_at).toLocaleString()} — awaiting QC decision
+            Sent to QC {formatIst(pendingClearance.sent_to_qc_at)} — awaiting QC decision
           </p>
           <p className="text-xs text-brand">
             QC clearance is decided by QC, not by Maintenance. This case stays in
@@ -94,7 +95,7 @@ export default function QcPanel({
     return (
       <div className="flex flex-col gap-3 rounded-lg border border-brand/30 bg-brand/10 p-3">
         <p className="text-sm font-medium text-brand">
-          Sent to QC {new Date(pendingClearance.sent_to_qc_at).toLocaleString()} — awaiting decision
+          Sent to QC {formatIst(pendingClearance.sent_to_qc_at)} — awaiting decision
         </p>
         {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
         {!rejecting ? (

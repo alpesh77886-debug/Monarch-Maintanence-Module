@@ -1,4 +1,5 @@
 import type { Restoration } from "@/lib/supabase/database.types";
+import { formatIst } from "@/lib/format";
 
 // Loop 22: §10 — nothing on this page ever showed a case's restoration
 // history before now, TEMPORARY restorations least of all (the only prior
@@ -48,7 +49,7 @@ export default function RestorationHistoryPanel({
                 </span>
               )}
               <span className="text-xs text-muted2">
-                {new Date(r.recorded_at).toLocaleString()}
+                {formatIst(r.recorded_at)}
               </span>
             </div>
             {r.details && <p className="mt-1 text-fg">{r.details}</p>}

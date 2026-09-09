@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { SpareRequest, SpareUsage } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §16: Maintenance records usage, Stores remains the stock-truth authority
 // (never a second inventory ledger). §3.3: the ₹12,000 Manager-approval
@@ -185,12 +186,12 @@ export default function SparesPanel({
             </p>
             <p className="text-xs text-muted">
               Requested by {r.initiated_role.toLowerCase()} ·{" "}
-              {new Date(r.requested_at).toLocaleString()}
+              {formatIst(r.requested_at)}
             </p>
             {r.requires_manager_approval && (
               <p className="mt-1 text-xs font-medium text-amber-300">
                 {r.approved_at
-                  ? `Manager-approved ${new Date(r.approved_at).toLocaleString()} (proof: ${r.approval_proof_ref})`
+                  ? `Manager-approved ${formatIst(r.approved_at)} (proof: ${r.approval_proof_ref})`
                   : "Exceeds ₹12,000 — awaiting Manager approval"}
               </p>
             )}
@@ -300,7 +301,7 @@ export default function SparesPanel({
               {u.asset_ref ? ` on ${u.asset_ref}` : ""}
               {u.outcome ? ` — ${u.outcome}` : ""}
             </p>
-            <p className="text-xs text-muted2">{new Date(u.used_at).toLocaleString()}</p>
+            <p className="text-xs text-muted2">{formatIst(u.used_at)}</p>
             <p className="mt-1 text-xs text-muted">
               Stores: <span className="font-medium">{u.stores_reference_status}</span>
               {u.stores_reference_id ? ` (${u.stores_reference_id})` : ""}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseRootCause } from "@/lib/supabase/database.types";
 import { Button, FormField } from "@/components/ui";
+import { formatIst } from "@/lib/format";
 
 // §9 item 6 + §9.1 — validated root cause.
 //
@@ -137,7 +138,7 @@ export default function RootCausePanel({
                   </div>
                   <p className="mt-0.5">Basis: {r.basis}</p>
                   <p className="mt-0.5 text-muted2">
-                    {nameById[r.recorded_by] ?? "unknown"} · {new Date(r.recorded_at).toLocaleString()}
+                    {nameById[r.recorded_by] ?? "unknown"} · {formatIst(r.recorded_at)}
                   </p>
                   {!isSuperseded && (
                     <button
