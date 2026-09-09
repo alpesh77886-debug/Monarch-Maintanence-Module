@@ -16,6 +16,7 @@
 | 12 (Loops 56–60) | [`APPROVAL_REPORT_LOOP_56_60.md`](./APPROVAL_REPORT_LOOP_56_60.md) | Approved — the Boss supplied a new 47-section Mobile UX Reconstruction Prompt V2 + ENTERPRISE V3 mockup and said "loop start karo 61 se 70" — new forward loop-range instruction, treated as continuation per the same pattern as Gates 8/10 (RISK-32/RISK-33 remain untouched/still open, not re-litigated by this approval) | 2026-09-08 |
 | 13 (Loops 61–65) | [`APPROVAL_REPORT_LOOP_61_65.md`](./APPROVAL_REPORT_LOOP_61_65.md) | Approved — "start loop 66 to 70" | 2026-09-08 |
 | 14 (Loops 66–70) | [`APPROVAL_REPORT_LOOP_66_70.md`](./APPROVAL_REPORT_LOOP_66_70.md) | Approved — "loop start karo 71 se 75" | 2026-09-09 |
+| 15 (Loops 71–75) | [`APPROVAL_REPORT_LOOP_71_75.md`](./APPROVAL_REPORT_LOOP_71_75.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -229,3 +230,32 @@ Notifications/Sign-out off the mobile header into More), Loops 72-75
 Queue, Case Detail, PM, Spares), with Loop 75 also carrying the mandatory
 Gate 15 stop report. Per §19.9 the same mandatory stop applies again at
 Loop 75.
+
+**GATE 15 (Loops 71-75) — AWAITING BOSS.** All five loops landed and
+merged (PRs #71/#72/#73/#75/#76 — #74 was a docs-only STATUS.md detour
+after PR #73, and the Loop 75 code commit ended up sharing PR #76 with
+Loop 74's STATUS.md entry since GitHub refuses a second PR from the same
+head branch while one is still open): §17 mobile-header cleanup moving
+Availability/Sign-out into a staff-only /more Account section while
+leaving non-staff users' header untouched (Loop 71), then §16's harder
+desktop-layout half across all four flagged surfaces — Case Queue's
+flat list became a real `lg:grid-cols-2 xl:grid-cols-3` grid, catching
+and fixing a real stale-breakpoint bug in the Report-case FAB along the
+way (Loop 72); Case Detail's identity/lifecycle/actions became a sticky
+`lg:`+ side column next to the 10-tab switcher (Loop 73); PM's Plans and
+Instances became a 2-column grid (Loop 74); Spares got the same grid
+treatment as Case Queue (Loop 75). Every loop's `tsc`/`eslint`/`build`
+came back clean and every layout claim was verified by live-rendering
+the real page via the Loop 53 throwaway-route + `proxy.ts`-bypass
+technique with Playwright screenshots at 390/800/1440px, both reverted
+before each commit. Three live-Supabase-project flakes hit this batch's
+PRs (PR #74 hit a new symptom of the same root cause — a
+`cleanup_test_cases_since` FK-violation race — and PR #75/#76 both hit
+the familiar `CASE_NOT_FOUND` read-after-write variant); all three were
+confirmed, not assumed, by one re-run each, and all merged clean on the
+second run. RISK-32/RISK-33 remain untouched and `OPEN` — this entire
+batch stayed presentation-layer only, per the Prompt's own "DO NOT
+REBUILD THE BACKEND" constraint. Full detail, including what §16
+coverage still does NOT claim, in `APPROVAL_REPORT_LOOP_71_75.md`. Per
+§19.9 the same mandatory stop will apply again after the next 5 loops,
+whatever they turn out to be.
