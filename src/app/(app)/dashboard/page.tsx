@@ -158,61 +158,69 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {unassigned.length > 0 && (
+      {/* Loop 76 (§16 "Responsive Model" harder half, §30 mobile-first
+          sweep): Unassigned and Oldest Open are two independent case-lists
+          stacked one above the other at every viewport until now - at lg:+
+          they run side by side instead, matching the pattern already used
+          for Plans/Instances (Loop 74). Below lg: (mobile+tablet), the
+          order and stacking are unchanged. */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+        {unassigned.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-amber-300">
+              Unassigned — waiting for a Maintenance owner
+            </h2>
+            <ul className="mt-2 flex flex-col gap-1">
+              {unassigned.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/cases/${c.id}`}
+                    className="block rounded-lg border border-warn/25 bg-warn/10 p-2 text-sm"
+                  >
+                    <span className="font-mono text-xs text-amber-300">{c.case_number}</span>{" "}
+                    <span className="text-fg">{c.symptom}</span>
+                    <span className="ml-1 text-xs text-muted">
+                      · {c.status} · age {formatAge(c.created_at)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section>
-          <h2 className="text-sm font-semibold text-amber-300">
-            Unassigned — waiting for a Maintenance owner
-          </h2>
+          <h2 className="text-sm font-semibold text-fg">Oldest open cases</h2>
+          <p className="mt-1 text-xs text-muted">
+            Sorted by age. Age is shown as-is — no case-level SLA is defined in the
+            approved design, so nothing here is labelled &ldquo;overdue&rdquo;.
+          </p>
           <ul className="mt-2 flex flex-col gap-1">
-            {unassigned.map((c) => (
+            {oldestOpen.map((c) => (
               <li key={c.id}>
                 <Link
                   href={`/cases/${c.id}`}
-                  className="block rounded-lg border border-warn/25 bg-warn/10 p-2 text-sm"
+                  className="block rounded-lg border border-line bg-card p-2 text-sm"
                 >
-                  <span className="font-mono text-xs text-amber-300">{c.case_number}</span>{" "}
-                  <span className="text-fg">{c.symptom}</span>
-                  <span className="ml-1 text-xs text-muted">
-                    · {c.status} · age {formatAge(c.created_at)}
-                  </span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-muted">{c.case_number}</span>
+                    <span className="text-xs text-muted">age {formatAge(c.created_at)}</span>
+                  </div>
+                  <p className="text-fg">{c.symptom}</p>
+                  <p className="text-xs text-muted">
+                    {c.status}
+                    {c.priority ? ` · ${c.priority}` : ""} ·{" "}
+                    {c.current_owner_user_id
+                      ? (nameById.get(c.current_owner_user_id) ?? "unknown owner")
+                      : "unassigned"}
+                  </p>
                 </Link>
               </li>
             ))}
+            {open.length === 0 && <p className="text-sm text-muted">No open cases.</p>}
           </ul>
         </section>
-      )}
-
-      <section>
-        <h2 className="text-sm font-semibold text-fg">Oldest open cases</h2>
-        <p className="mt-1 text-xs text-muted">
-          Sorted by age. Age is shown as-is — no case-level SLA is defined in the
-          approved design, so nothing here is labelled &ldquo;overdue&rdquo;.
-        </p>
-        <ul className="mt-2 flex flex-col gap-1">
-          {oldestOpen.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/cases/${c.id}`}
-                className="block rounded-lg border border-line bg-card p-2 text-sm"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs text-muted">{c.case_number}</span>
-                  <span className="text-xs text-muted">age {formatAge(c.created_at)}</span>
-                </div>
-                <p className="text-fg">{c.symptom}</p>
-                <p className="text-xs text-muted">
-                  {c.status}
-                  {c.priority ? ` · ${c.priority}` : ""} ·{" "}
-                  {c.current_owner_user_id
-                    ? (nameById.get(c.current_owner_user_id) ?? "unknown owner")
-                    : "unassigned"}
-                </p>
-              </Link>
-            </li>
-          ))}
-          {open.length === 0 && <p className="text-sm text-muted">No open cases.</p>}
-        </ul>
-      </section>
+      </div>
     </div>
   );
 }
