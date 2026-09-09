@@ -121,6 +121,7 @@ export default function AppNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors ${
                 active ? "text-brand" : "text-muted"
               }`}
@@ -142,6 +143,7 @@ export default function AppNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 active
                   ? "bg-gradient-to-br from-brand/[0.22] to-brand2/[0.14] text-fg shadow-[0_0_12px_rgba(59,130,246,0.15)] border border-brand/25"
