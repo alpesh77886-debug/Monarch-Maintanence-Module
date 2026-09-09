@@ -1,6 +1,28 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 73 complete - Case Detail desktop side-panel layout
+Current loop: Loop 74 complete - PM desktop two-column layout (§16
+  harder half). Plans and Instances were two independent lists stacked
+  one above the other at every viewport - at lg:+ they now run side by
+  side in a 2-column grid (lg:items-start so one column doesn't
+  stretch to match the other's height); CreatePlanForm stays full-
+  width above the grid. Below lg: (mobile+tablet), unchanged - still
+  two stacked <section>s in the original order, matching the Loop 70/
+  72/73 precedent of only introducing lg:/xl: structure. Pure JSX/
+  className restructuring: no query, gating boolean, or RPC call
+  touched - PmPlanCard/PmInstanceCard internals untouched. Verified
+  via the Loop 53 throwaway-route + proxy.ts bypass technique (dummy-
+  data preview route, both reverted before commit, confirmed via git
+  status) - Playwright screenshots at 390/800/1440px confirm mobile/
+  tablet stay single-column and desktop shows the 2-column grid with
+  independent column heights. tsc/eslint/build clean; only pm/page.tsx
+  touched. Two flakes hit this loop's PRs, both against the shared
+  live Supabase test project and both unrelated to the diff (docs-only
+  STATUS.md PR #74 hit a NEW symptom of the same root cause - a
+  cleanup_test_cases_since FK-violation race instead of the usual
+  CASE_NOT_FOUND read-after-write lag; PR #75 itself hit the familiar
+  CASE_NOT_FOUND variant in production-boundary.test.ts) - both
+  confirmed via one re-run each, both merged clean on the second run.
+Previously: Loop 73 complete - Case Detail desktop side-panel layout
   (§16 harder half). The identity Card + CaseLifecycleStrip + primary
   actions now form a persistent left column at lg:+ (grid-cols-
   [320px_1fr], sticky at top-[4.5rem] to clear the app header) instead
