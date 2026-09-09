@@ -33,6 +33,9 @@ export default function NotificationBell({
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls="notification-panel"
         className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-bg2"
       >
         <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.7}>
@@ -51,6 +54,7 @@ export default function NotificationBell({
       </button>
       {open && (
         <div
+          id="notification-panel"
           data-testid="notification-panel"
           className="absolute right-0 z-20 mt-2 w-80 rounded-xl border border-line bg-card p-2 shadow-lg"
         >

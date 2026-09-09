@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui";
@@ -16,6 +16,65 @@ export default function SignOutButton() {
   const [reason, setReason] = useState("End of shift");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  // Loop 83: this confirm dialog duplicated Sheet's (Loop 69/51)
+  // fixed-overlay markup but none of its accessibility work — no
+  // role="dialog", no focus trap, no Escape-to-close, no focus-return.
+  // Same trap logic as Sheet's, kept local rather than exported from
+  // sheet.tsx to avoid touching that file's single-default-export
+  // convention (Loop 16 boundary lesson).
+  useEffect(() => {
+    if (openCaseCount === null) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpenCaseCount(null);
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last || !panel.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = overflow;
+      previouslyFocused.current?.focus?.();
+    };
+  }, [openCaseCount]);
 
   async function signOutNow() {
     const supabase = createClient();
@@ -85,9 +144,20 @@ export default function SignOutButton() {
       </Button>
 
       {openCaseCount !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-line bg-card p-5 shadow-xl">
-            <h2 className="text-base font-semibold text-fg">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/50 p-4 backdrop-blur-sm"
+          onClick={() => setOpenCaseCount(null)}
+        >
+          <div
+            ref={panelRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sign-out-dialog-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-line bg-card p-5 shadow-xl outline-none"
+          >
+            <h2 id="sign-out-dialog-title" className="text-base font-semibold text-fg">
               You still own {openCaseCount} open case{openCaseCount === 1 ? "" : "s"}
             </h2>
             <p className="mt-1 text-sm text-muted">
