@@ -58,7 +58,11 @@ export default async function EmergencyPage() {
         </p>
       )}
 
-      <ul className="flex flex-col gap-2">
+      {/* Loop 79 (§16 "Responsive Model" harder half, §30 mobile-first
+          sweep): same grid treatment as Case Queue/Spares/Recurrence -
+          tablet stays single-column, desktop gets 2-3 columns. This screen
+          previously had zero responsive Tailwind classes. */}
+      <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
         {rows.map((c) => (
           <li key={c.id}>
             <Link
@@ -92,7 +96,9 @@ export default async function EmergencyPage() {
             </Link>
           </li>
         ))}
-        {rows.length === 0 && !error && <EmptyState title="No active emergency claims right now." />}
+        {rows.length === 0 && !error && (
+          <EmptyState title="No active emergency claims right now." className="col-span-full" />
+        )}
       </ul>
     </div>
   );
