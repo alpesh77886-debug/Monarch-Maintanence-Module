@@ -48,7 +48,11 @@ export default async function MyWorkPage() {
         </p>
       )}
 
-      <ul className="flex flex-col gap-2">
+      {/* Loop 79 (§16 "Responsive Model" harder half, §30 mobile-first
+          sweep): same grid treatment as Case Queue/Spares/Recurrence -
+          tablet stays single-column, desktop gets 2-3 columns. This screen
+          previously had zero responsive Tailwind classes. */}
+      <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
         {rows.map((c) => (
           <li key={c.id}>
             <Link
@@ -79,7 +83,9 @@ export default async function MyWorkPage() {
             </Link>
           </li>
         ))}
-        {rows.length === 0 && !error && <EmptyState title="No open cases owned by you right now." />}
+        {rows.length === 0 && !error && (
+          <EmptyState title="No open cases owned by you right now." className="col-span-full" />
+        )}
       </ul>
     </div>
   );

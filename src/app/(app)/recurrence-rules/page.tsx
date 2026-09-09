@@ -64,7 +64,11 @@ export default async function RecurrenceRulesPage() {
 
       <section>
         <h2 className="text-sm font-semibold text-fg">Configured tiers</h2>
-        <div className="mt-2 flex flex-col gap-2">
+        {/* Loop 78 (§16 "Responsive Model" harder half, §30 mobile-first
+            sweep): same grid treatment as Case Queue/Spares - tablet stays
+            single-column per §16's own "breathing room" tablet bullets,
+            desktop gets 2-3 columns instead of one long mobile-width list. */}
+        <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
           {(rules as RecurrenceRule[] | null)?.map((r) => (
             <RecurrenceRuleCard
               key={r.id}
@@ -74,7 +78,7 @@ export default async function RecurrenceRulesPage() {
             />
           ))}
           {rules?.length === 0 && (
-            <p className="text-sm text-muted">
+            <p className="col-span-full text-sm text-muted">
               No recurrence rule configured yet — detection stays dormant until
               one is (PENDING-04).
             </p>

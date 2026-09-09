@@ -237,189 +237,200 @@ export default async function KpiPage() {
         />
       </section>
 
-      <Group title="Restoration & execution">
-        <Metric
-          label="Time to acknowledge (median)"
-          value={fmtHours(median(ackHours))}
-          coverage={`${ackHours.length} of ${total} cases`}
-        />
-        <Metric
-          label="Time to technical restoration (median)"
-          value={fmtHours(median(restoreHours))}
-          coverage={`${restoreHours.length} of ${total} cases`}
-        />
-        <Metric
-          label="Time to closure (median)"
-          value={fmtHours(median(closeHours))}
-          coverage={`${closeHours.length} of ${total} cases`}
-        />
-      </Group>
+      {/* Loop 77 (§16 "Responsive Model" harder half, §30 mobile-first
+          sweep): 8 independent report Groups stacked one above the other at
+          every viewport until now - at lg:+ they run in a 2-column grid
+          instead, so a desktop screen shows several reports at once rather
+          than one long scroll. lg:items-start lets each Group keep its own
+          height (they range from 2 to 8 metrics) instead of stretching to
+          match its row partner. Below lg: (mobile+tablet), unchanged - same
+          single-column stacked order as before. Each Group's own internal
+          Metric grid (sm:grid-cols-2) is untouched. */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+        <Group title="Restoration & execution">
+          <Metric
+            label="Time to acknowledge (median)"
+            value={fmtHours(median(ackHours))}
+            coverage={`${ackHours.length} of ${total} cases`}
+          />
+          <Metric
+            label="Time to technical restoration (median)"
+            value={fmtHours(median(restoreHours))}
+            coverage={`${restoreHours.length} of ${total} cases`}
+          />
+          <Metric
+            label="Time to closure (median)"
+            value={fmtHours(median(closeHours))}
+            coverage={`${closeHours.length} of ${total} cases`}
+          />
+        </Group>
 
-      <Group title="Production impact">
-        <Metric
-          label="Downtime recorded (total)"
-          value={
-            downtimeValues.length ? `${downtimeTotal.toLocaleString()} min` : "no data"
-          }
-          coverage={`recorded on ${downtimeValues.length} of ${total} cases`}
-        />
-        <Metric
-          label="Downtime per case (median)"
-          value={
-            downtimeValues.length ? `${median(downtimeValues)!.toLocaleString()} min` : "no data"
-          }
-          coverage={`from ${downtimeValues.length} recorded ${
-            downtimeValues.length === 1 ? "case" : "cases"
-          }`}
-        />
-        <Metric
-          label="Output loss recorded (total)"
-          value={
-            outputLossValues.length ? `${outputLossTotal.toLocaleString()} kg` : "no data"
-          }
-          coverage={`recorded on ${outputLossValues.length} of ${total} cases`}
-        />
-        <p className="col-span-full text-xs text-muted">
-          Cases with no recorded figure are excluded from these totals — they are
-          not counted as zero. A total is only as complete as its coverage line.
-        </p>
-      </Group>
+        <Group title="Production impact">
+          <Metric
+            label="Downtime recorded (total)"
+            value={
+              downtimeValues.length ? `${downtimeTotal.toLocaleString()} min` : "no data"
+            }
+            coverage={`recorded on ${downtimeValues.length} of ${total} cases`}
+          />
+          <Metric
+            label="Downtime per case (median)"
+            value={
+              downtimeValues.length ? `${median(downtimeValues)!.toLocaleString()} min` : "no data"
+            }
+            coverage={`from ${downtimeValues.length} recorded ${
+              downtimeValues.length === 1 ? "case" : "cases"
+            }`}
+          />
+          <Metric
+            label="Output loss recorded (total)"
+            value={
+              outputLossValues.length ? `${outputLossTotal.toLocaleString()} kg` : "no data"
+            }
+            coverage={`recorded on ${outputLossValues.length} of ${total} cases`}
+          />
+          <p className="col-span-full text-xs text-muted">
+            Cases with no recorded figure are excluded from these totals — they are
+            not counted as zero. A total is only as complete as its coverage line.
+          </p>
+        </Group>
 
-      <Group title="Waiting / dependency">
-        <Metric
-          label="Wait duration (median)"
-          value={fmtHours(median(resolvedWaitHours))}
-          coverage={`${resolvedWaitHours.length} resolved ${
-            resolvedWaitHours.length === 1 ? "wait" : "waits"
-          }`}
-        />
-        <Metric
-          label="Currently waiting"
-          value={String(activeWaits.length)}
-          coverage={`${waits.length} waits recorded in total`}
-        />
-        <Metric
-          label="Waits that hit escalation"
-          value={String(escalatedWaits.length)}
-          coverage="§7.2 24h timer"
-        />
-      </Group>
+        <Group title="Waiting / dependency">
+          <Metric
+            label="Wait duration (median)"
+            value={fmtHours(median(resolvedWaitHours))}
+            coverage={`${resolvedWaitHours.length} resolved ${
+              resolvedWaitHours.length === 1 ? "wait" : "waits"
+            }`}
+          />
+          <Metric
+            label="Currently waiting"
+            value={String(activeWaits.length)}
+            coverage={`${waits.length} waits recorded in total`}
+          />
+          <Metric
+            label="Waits that hit escalation"
+            value={String(escalatedWaits.length)}
+            coverage="§7.2 24h timer"
+          />
+        </Group>
 
-      <Group title="Preventive maintenance">
-        <Metric label="PM overdue" value={String(pmOverdue)} coverage={`${pm.length} instances`} />
-        <Metric label="PM completed" value={String(pmCompleted)} coverage={`${pm.length} instances`} />
-      </Group>
+        <Group title="Preventive maintenance">
+          <Metric label="PM overdue" value={String(pmOverdue)} coverage={`${pm.length} instances`} />
+          <Metric label="PM completed" value={String(pmCompleted)} coverage={`${pm.length} instances`} />
+        </Group>
 
-      <Group title="Ownership / workload">
-        <Metric label="Open cases" value={String(open.length)} coverage={`${total} cases total`} />
-        <Metric
-          label="Unowned open cases"
-          value={String(open.filter((c) => !c.current_owner_user_id).length)}
-          coverage="no current Maintenance owner"
-        />
-      </Group>
+        <Group title="Ownership / workload">
+          <Metric label="Open cases" value={String(open.length)} coverage={`${total} cases total`} />
+          <Metric
+            label="Unowned open cases"
+            value={String(open.filter((c) => !c.current_owner_user_id).length)}
+            coverage="no current Maintenance owner"
+          />
+        </Group>
 
-      <Group title="Quality / closure">
-        <Metric
-          label="Cases reopened at least once"
-          value={String(reopenedCaseIds.size)}
-          coverage={`${total} cases`}
-        />
-        <Metric
-          label="Cases with a temporary restoration (§10)"
-          value={String(casesWithTemporaryRestoration)}
-          coverage={`${temporaryRestorations.length} temporary restoration${
-            temporaryRestorations.length === 1 ? "" : "s"
-          } recorded, each generating a permanent-repair follow-up`}
-        />
-        <Metric
-          label="Confirmed emergencies"
-          value={String(cases.filter((c) => c.emergency_confirmed).length)}
-          coverage={`${total} cases`}
-        />
-        <Metric
-          label="Production started without release (§13.1)"
-          value={String(boundaryBreaches)}
-          coverage={`${total} cases`}
-        />
-        <Metric
-          label="Production not restarted (§13.2)"
-          value={String(notRestarted)}
-          coverage={`${total} cases`}
-        />
-      </Group>
+        <Group title="Quality / closure">
+          <Metric
+            label="Cases reopened at least once"
+            value={String(reopenedCaseIds.size)}
+            coverage={`${total} cases`}
+          />
+          <Metric
+            label="Cases with a temporary restoration (§10)"
+            value={String(casesWithTemporaryRestoration)}
+            coverage={`${temporaryRestorations.length} temporary restoration${
+              temporaryRestorations.length === 1 ? "" : "s"
+            } recorded, each generating a permanent-repair follow-up`}
+          />
+          <Metric
+            label="Confirmed emergencies"
+            value={String(cases.filter((c) => c.emergency_confirmed).length)}
+            coverage={`${total} cases`}
+          />
+          <Metric
+            label="Production started without release (§13.1)"
+            value={String(boundaryBreaches)}
+            coverage={`${total} cases`}
+          />
+          <Metric
+            label="Production not restarted (§13.2)"
+            value={String(notRestarted)}
+            coverage={`${total} cases`}
+          />
+        </Group>
 
-      <Group title="Financial impact">
-        <Metric
-          label="Spare estimates on record"
-          value={pricedSpares.length ? `₹${estimateTotal.toLocaleString("en-IN")}` : "no data"}
-          coverage={`${pricedSpares.length} of ${spares.length} requests carry an amount`}
-        />
-        <Metric
-          label="Requests with no amount"
-          value={String(unpricedSpares)}
-          coverage="excluded from the total above"
-        />
-        <Metric
-          label="Awaiting Manager approval (> ₹12,000)"
-          value={String(awaitingApproval)}
-          coverage="§3.3 authority boundary"
-        />
-        <p className="col-span-full rounded-lg bg-warn/10 p-2 text-xs text-amber-300">
-          These are <strong>Maintenance-entered estimates</strong>, not an
-          authoritative costing. §25.2 requires financial impact to come from an
-          authoritative source, and §24 lists fabricating financial impact as
-          never-automate — so this module does not present a ₹ cost-of-
-          maintenance figure. Requests with no amount are counted separately
-          above rather than being added in as ₹0.
-        </p>
-      </Group>
+        <Group title="Financial impact">
+          <Metric
+            label="Spare estimates on record"
+            value={pricedSpares.length ? `₹${estimateTotal.toLocaleString("en-IN")}` : "no data"}
+            coverage={`${pricedSpares.length} of ${spares.length} requests carry an amount`}
+          />
+          <Metric
+            label="Requests with no amount"
+            value={String(unpricedSpares)}
+            coverage="excluded from the total above"
+          />
+          <Metric
+            label="Awaiting Manager approval (> ₹12,000)"
+            value={String(awaitingApproval)}
+            coverage="§3.3 authority boundary"
+          />
+          <p className="col-span-full rounded-lg bg-warn/10 p-2 text-xs text-amber-300">
+            These are <strong>Maintenance-entered estimates</strong>, not an
+            authoritative costing. §25.2 requires financial impact to come from an
+            authoritative source, and §24 lists fabricating financial impact as
+            never-automate — so this module does not present a ₹ cost-of-
+            maintenance figure. Requests with no amount are counted separately
+            above rather than being added in as ₹0.
+          </p>
+        </Group>
 
-      <Group title="Recurrence & CAPA (§18 / §19)">
-        <Metric
-          label="Recurrence flags — suspected"
-          value={String(recurrenceSuspected)}
-          coverage="awaiting Executive/Manager confirmation"
-        />
-        <Metric
-          label="Recurrence flags — confirmed"
-          value={String(recurrenceConfirmed)}
-          coverage="§18"
-        />
-        <Metric
-          label="Recurrence flags — dismissed"
-          value={String(recurrenceDismissed)}
-          coverage="§18"
-        />
-        <Metric
-          label="Active recurrence rules"
-          value={String(activeRecurrenceRules)}
-          coverage="PENDING-04 — 0 until the Boss supplies a threshold"
-        />
-        <Metric label="CAPA — open" value={String(capaOpen)} coverage="§19" />
-        <Metric
-          label="CAPA — verified effective"
-          value={String(capaEffective)}
-          coverage="Manager-verified"
-        />
-        <Metric
-          label="CAPA — verified NOT effective"
-          value={String(capaNotEffective)}
-          coverage="a real result, not a missing answer"
-        />
-        <Metric
-          label="CAPA — system-suggested"
-          value={String(capaSystemSuggested)}
-          coverage="labelled as suggested, never auto-certified"
-        />
-        <p className="col-span-full text-xs text-muted">
-          The mechanism has existed since Loop 15. These are real counts, not
-          placeholders — a 0 here means the detector ran (or would run) and
-          found nothing, not that the feature is unbuilt. Detection stays
-          dormant with {activeRecurrenceRules} active recurrence rule
-          {activeRecurrenceRules === 1 ? "" : "s"} configured, per PENDING-04.
-        </p>
-      </Group>
+        <Group title="Recurrence & CAPA (§18 / §19)">
+          <Metric
+            label="Recurrence flags — suspected"
+            value={String(recurrenceSuspected)}
+            coverage="awaiting Executive/Manager confirmation"
+          />
+          <Metric
+            label="Recurrence flags — confirmed"
+            value={String(recurrenceConfirmed)}
+            coverage="§18"
+          />
+          <Metric
+            label="Recurrence flags — dismissed"
+            value={String(recurrenceDismissed)}
+            coverage="§18"
+          />
+          <Metric
+            label="Active recurrence rules"
+            value={String(activeRecurrenceRules)}
+            coverage="PENDING-04 — 0 until the Boss supplies a threshold"
+          />
+          <Metric label="CAPA — open" value={String(capaOpen)} coverage="§19" />
+          <Metric
+            label="CAPA — verified effective"
+            value={String(capaEffective)}
+            coverage="Manager-verified"
+          />
+          <Metric
+            label="CAPA — verified NOT effective"
+            value={String(capaNotEffective)}
+            coverage="a real result, not a missing answer"
+          />
+          <Metric
+            label="CAPA — system-suggested"
+            value={String(capaSystemSuggested)}
+            coverage="labelled as suggested, never auto-certified"
+          />
+          <p className="col-span-full text-xs text-muted">
+            The mechanism has existed since Loop 15. These are real counts, not
+            placeholders — a 0 here means the detector ran (or would run) and
+            found nothing, not that the feature is unbuilt. Detection stays
+            dormant with {activeRecurrenceRules} active recurrence rule
+            {activeRecurrenceRules === 1 ? "" : "s"} configured, per PENDING-04.
+          </p>
+        </Group>
+      </div>
     </div>
   );
 }
