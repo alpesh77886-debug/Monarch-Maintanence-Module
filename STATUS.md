@@ -1,6 +1,36 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 82 complete - accessibility pass, 3 gaps found via
+Current loop: Loop 83 complete - accessibility pass continuation, 4 more
+  gaps found: (1) app-nav.tsx's mobile bottom bar + desktop rail marked
+  the active route with color/stroke-weight only - added
+  aria-current="page" on both (isActive()'s own logic untouched, only how
+  the existing `active` boolean now also drives aria); (2)
+  availability-toggle.tsx's On/Off-shift button is a real toggle pattern
+  but had no aria-pressed - added aria-pressed={isAvailable}; (3)
+  notification-bell.tsx's dropdown trigger had no aria-expanded/
+  aria-haspopup/aria-controls at all - added all three, wired to a new
+  id="notification-panel" on the panel; (4) the bigger one -
+  sign-out-button.tsx's "you still own N open cases" confirm dialog
+  duplicated Sheet's (Loop 51/69) fixed-overlay markup but had NONE of
+  Sheet's accessibility work - no role="dialog"/aria-modal/
+  aria-labelledby, no focus trap, no Escape-to-close, no autofocus, no
+  focus-return. Ported Sheet's already-verified trap logic in verbatim
+  (kept local, not exported from sheet.tsx, to leave that file's
+  single-default-export convention from the Loop 16 boundary lesson
+  untouched). tsc/eslint/build clean. Live-rendered via the Loop 53
+  throwaway-route technique: AvailabilityToggle/NotificationBell/AppNav
+  rendered directly (no auth needed for their own props); the dialog's
+  identical trap code exercised standalone in the same preview
+  (SignOutButton itself can't be driven open without a live Supabase
+  session per RISK-05's sandbox block) - confirmed aria-pressed/
+  aria-expanded toggle correctly on click, dialog gets role/aria-modal/
+  labelledby, initial focus lands on the panel, Tab cycles
+  first-field -> confirm -> cancel -> wraps to first-field, Shift+Tab
+  from first-field wraps to cancel, Escape closes, focus returns to the
+  opening button. PR #82 opened clean (no same-branch conflict this
+  time, since #81 had already merged) - CI green first try, merged via
+  merge_method "merge".
+Previously: Loop 82 complete - accessibility pass, 3 gaps found via
   grep-based investigation (skip-link/aria-describedby/role= grep sweeps):
   (1) (app)/layout.tsx got a skip-to-content link (sr-only, revealed on
   focus) plus id="main-content" on <main> - WCAG 2.4.1 "Bypass Blocks",
