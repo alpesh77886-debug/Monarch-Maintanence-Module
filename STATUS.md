@@ -1,6 +1,30 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 80 complete - final sweep + LAST loop of the
+Current loop: Loop 81 complete - real fix for Case Detail's sticky
+  primary-action bar, the gap Loop 80 disclosed but didn't fix. CSS
+  `position: sticky` is bounded by its own immediate parent's box, not
+  any taller ancestor - since Loop 73 nested the bar inside the short
+  sidePanel, it stopped staying reachable throughout a tab's scroll on
+  mobile/tablet. Switched to `position: fixed`, which anchors to the
+  viewport regardless of ancestor height, sidestepping the problem
+  entirely. `fixed` needed its own explicit width/centering (it drops
+  out of flow), so the bar is now two nested divs: an outer one owning
+  position + width/centering (matching (app)/layout.tsx's own <main>
+  container exactly) and an inner one owning the visual card styling,
+  as before. Also hid the "Next action" eyebrow label below lg: - it
+  used to sit directly above the button in normal flow, but the button
+  now floats away to a fixed position, so a label with nothing visibly
+  under it would read as broken; it's back at lg:+ where the button is
+  in normal flow again. Verified with REAL dedicated verification this
+  time (per Gate 16's own instruction): a scroll-position script
+  checking getBoundingClientRect() at 6 depths from 0 to 9000px against
+  a 3-tab, 4000px-per-tab filler (vs. Loop 80's 1400px single check) -
+  the button stayed in-viewport at every depth tested, on both mobile
+  and tablet; desktop confirmed position:static in normal flow,
+  unchanged. tsc/eslint/build clean; only cases/[id]/page.tsx touched.
+  PR #80 merged clean (Gate 16 resolution + this fix combined into one
+  PR after the same-branch restriction, no CI flake this time).
+Previously: Loop 80 complete - final sweep + LAST loop of the
   pre-approved 76-80 batch. Loops 76-79 (merged together in PR #78
   after the same-branch-PR restriction piled them up) gave §16/§30
   responsive treatment to the 5 screens Gate 15's report flagged as
