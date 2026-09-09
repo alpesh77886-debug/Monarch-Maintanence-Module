@@ -148,7 +148,7 @@ export default function ImpactPanel({
             className="w-full rounded-lg border border-line2 p-1.5 text-sm"
           />
         </FormField>
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
         <Button size="sm" type="submit" className="self-start" disabled={submitting}>
           {correcting ? "Record correction" : "Record impact"}
         </Button>

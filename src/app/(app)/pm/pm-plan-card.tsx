@@ -48,7 +48,7 @@ export default function PmPlanCard({ plan, isManager }: { plan: PmPlan; isManage
           <span className="font-medium text-amber-300">Awaiting Manager approval</span>
         )}
       </p>
-      {error && <p className="mt-1 text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-sm text-red-300">{error}</p>}
       {isManager && !plan.approved_at && (
         <Button variant="warning" size="sm" className="mt-2" onClick={approve} disabled={submitting}>
           Approve

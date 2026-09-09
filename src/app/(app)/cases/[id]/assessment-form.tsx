@@ -61,7 +61,7 @@ export default function AssessmentForm({ caseId }: { caseId: string }) {
           className="block w-full rounded-lg border border-brand/25 px-3 py-2 text-base"
         />
       </FormField>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <Button type="submit" disabled={submitting}>
         {submitting ? "Confirming…" : "Confirm Assessment"}
       </Button>

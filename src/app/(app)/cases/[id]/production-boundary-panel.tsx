@@ -222,7 +222,7 @@ export default function ProductionBoundaryPanel({
         </Button>
       </div>
 
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
 
       {boundaryEvents.length > 0 && (
         <ul className="flex flex-col gap-1 border-t border-line pt-3">

@@ -96,7 +96,7 @@ export default function QcPanel({
         <p className="text-sm font-medium text-brand">
           Sent to QC {new Date(pendingClearance.sent_to_qc_at).toLocaleString()} — awaiting decision
         </p>
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
         {!rejecting ? (
           <div className="flex gap-2">
             <Button onClick={() => decide("CLEARED")} disabled={submitting}>
@@ -137,7 +137,7 @@ export default function QcPanel({
         <p className="text-sm text-fg">
           QC required: <span className="font-medium">{qcRequired === null ? "not set" : String(qcRequired)}</span>
         </p>
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setQcRequired(true)} disabled={submitting}>
             Set QC required = Yes

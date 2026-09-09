@@ -66,7 +66,7 @@ export default function RecurrenceRuleCard({
         Set by {createdByName} on {new Date(rule.created_at).toLocaleDateString()}
       </p>
       <p className="mt-1 text-fg">{rule.approval_note}</p>
-      {error && <p className="mt-1 text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-sm text-red-300">{error}</p>}
       {isManager && (
         <Button variant="secondary" size="sm" className="mt-2" onClick={toggle} disabled={submitting}>
           {rule.is_active ? "Deactivate" : "Reactivate"}

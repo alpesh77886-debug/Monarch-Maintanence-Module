@@ -171,7 +171,7 @@ export default function SparesPanel({
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 shadow-sm">
       <h2 className="text-sm font-semibold text-fg">Spares</h2>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
 
       <div className="flex flex-col gap-1">
         {spareRequests.length === 0 && (

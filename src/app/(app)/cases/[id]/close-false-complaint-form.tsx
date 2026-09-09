@@ -71,7 +71,7 @@ export default function CloseFalseComplaintForm({ caseId }: { caseId: string }) 
           />
         </FormField>
       )}
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <Button variant="secondary" className="self-start" onClick={submit} disabled={submitting}>
         Close as false/wrong complaint
       </Button>

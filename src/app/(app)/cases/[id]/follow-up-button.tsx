@@ -35,7 +35,7 @@ export default function FollowUpButton({ caseId }: { caseId: string }) {
         Temporary restoration is not a permanent repair (§10) — resume work to record
         the technical fix.
       </p>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button variant="warning" onClick={() => resume("IN_REPAIR")} disabled={submitting}>
           Resume repair (follow-up)

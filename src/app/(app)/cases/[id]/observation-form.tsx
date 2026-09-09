@@ -172,7 +172,7 @@ export default function ObservationForm({
           className="block w-full rounded-lg border border-line2 px-3 py-2 text-base"
         />
       </FormField>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : "Save entry"}

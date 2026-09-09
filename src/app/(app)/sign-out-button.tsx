@@ -103,7 +103,7 @@ export default function SignOutButton() {
                 className="mt-1 w-full rounded-lg border border-line2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
               />
             </label>
-            {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
+            {error && <p role="alert" className="mt-2 text-sm text-red-300">{error}</p>}
             <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={handoverAndSignOut} disabled={submitting}>
                 {submitting ? "Handing over…" : "Hand over & sign out"}

@@ -75,7 +75,7 @@ export default function HandoverForm({
           className="rounded-lg border border-line2 p-2 text-sm w-full"
         />
       </FormField>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <Button variant="secondary" className="self-start" onClick={submit} disabled={submitting || !toUserId}>
         Hand over
       </Button>
