@@ -285,41 +285,42 @@ export default async function CaseDetailPage({
   // Loop 52 (Sarvam DR-04 "sticky primary action"): pulled out of the
   // Overview tab so it's reachable from ANY tab without switching back —
   // "the next lifecycle step always one thumb-tap away," per Sarvam's own
-  // wording. `sticky bottom-20` pins it just above the fixed mobile bottom
-  // nav (app-nav.tsx) once you've scrolled past it, using the same 5rem
-  // clearance `(app)/layout.tsx`'s <main> already reserves for that nav
-  // bar (`pb-20`) — no new offset invented, reusing an already-established
-  // safe zone. The un-pin breakpoint drops the pinning once the row
-  // already sits in view without needing to follow scroll.
+  // wording. Pinned just above the fixed mobile bottom nav (app-nav.tsx),
+  // using the same 5rem clearance `(app)/layout.tsx`'s <main> already
+  // reserves for that nav bar (`pb-20`) — no new offset invented, reusing
+  // an already-established safe zone. The un-pin breakpoint drops the
+  // pinning once the row already sits in view without needing to follow
+  // scroll (matches AppNav's own lg:hidden switch and sidePanel's own
+  // lg:sticky wrapper from Loop 73 — see Loop 80's bug fix for why lg:,
+  // not the md: this originally shipped with).
   //
-  // Loop 80 bug fix: this originally un-pinned at md: (768px), which was
-  // correct when written (Loop 52 predates Loop 70). Loop 70 later moved
-  // AppNav's own bottom-nav→rail switch to lg: (1024px), since 768-1024px
-  // is the pack's tablet range, not desktop — nobody updated this bar
-  // then, leaving it un-pinned (and unreachable-without-scrolling) across
-  // the whole 768-1024px tablet range while the bottom nav it was meant to
-  // sit above was still visible. Loop 73 later wrapped this in a sidePanel
-  // that itself goes lg:sticky lg:top - so lg: is now this bar's own
-  // correct un-pin point too, matching both AppNav and its own parent.
-  // Verified via the same Loop 53 throwaway-route technique as the rest of
-  // this batch (RISK-05 still blocks live Supabase, but the layout itself
-  // is dummy-data-verifiable).
-  //
-  // Known remaining gap, found while verifying the fix above (disclosed,
-  // not silently fixed — see APPROVAL_REPORT_LOOP_76_80.md): CSS `sticky`
-  // is bounded by its element's own parent box, not by any taller
-  // ancestor. Since Loop 73, this div's immediate parent inside sidePanel
-  // is only as tall as the identity card + lifecycle strip + this block —
-  // far shorter than the tab content it's meant to float above — so below
-  // lg: it stops sticking (and scrolls away) after roughly one sidePanel's
-  // height of scroll, well before a tab's own content ends. A real fix
-  // (e.g. `fixed` positioning instead of `sticky`, or restructuring so
-  // this sits directly inside a container as tall as the tab content)
-  // changes this element's rendering behavior more than a same-loop sweep
-  // fix should risk without dedicated verification — left for a future
-  // loop rather than attempted here under time pressure.
+  // Loop 81 fix (real fix, not just the breakpoint correction from Loop
+  // 80): CSS `position: sticky` is bounded by the element's own immediate
+  // parent box, not any taller ancestor. Since Loop 73 nested this bar
+  // inside sidePanel — only as tall as the identity card + lifecycle strip
+  // + this block, far shorter than the tab content it's meant to float
+  // above — `sticky` stopped sticking (and scrolled away) after roughly
+  // one sidePanel's height of scroll, well before a tab's own content
+  // ended. Confirmed broken via a scroll-position script in Loop 80,
+  // disclosed rather than fixed there since a same-loop fix hadn't been
+  // verified. `position: fixed` sidesteps the containing-block problem
+  // entirely — it anchors to the viewport regardless of any ancestor's
+  // height — restoring the real "always reachable" behaviour Loop 52
+  // intended. `fixed` needs its own explicit horizontal bounds (it drops
+  // out of flow, so it no longer inherits sidePanel's width), so this is
+  // now two nested divs: the outer one owns fixed positioning + width/
+  // centering (mx-auto w-full max-w-3xl px-4, matching (app)/layout.tsx's
+  // own <main> container exactly, so the bar lines up with the page
+  // content instead of spanning full viewport width); the inner one owns
+  // the visual card styling, as before. At lg:+, both halves neutralise
+  // back to the page's normal flow inside sidePanel, unchanged from Loop
+  // 80. Re-verified via the Loop 53 throwaway-route technique with a
+  // scroll-position script across a much taller filler than Loop 80 used,
+  // confirming the bar now stays visible through the whole scroll range on
+  // mobile AND tablet, not just the first ~300px.
   const primaryActions = (
-    <div className="sticky bottom-20 z-10 flex flex-wrap gap-2 rounded-xl border border-line2 bg-card/95 p-3 shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
+    <div className="fixed inset-x-0 bottom-20 z-10 mx-auto w-full max-w-3xl px-4 lg:static lg:inset-auto lg:mx-0 lg:w-auto lg:max-w-none lg:px-0">
+      <div className="flex flex-wrap gap-2 rounded-xl border border-line2 bg-card/95 p-3 shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
       {canAcknowledge && (
         <ActionSheetTrigger label="Acknowledge" sheetTitle="Acknowledge Case" variant="primary">
           <AcknowledgeForm caseId={caseRow.id} />
@@ -355,6 +356,7 @@ export default async function CaseDetailPage({
           />
         </ActionSheetTrigger>
       )}
+      </div>
     </div>
   );
   const hasPrimaryAction =
@@ -636,8 +638,14 @@ export default async function CaseDetailPage({
       <CaseLifecycleStrip status={caseRow.status} />
       {hasPrimaryAction && (
         <div>
+          {/* Loop 81: primaryActions now renders `fixed` below lg: (see its
+              own comment), floating separately from this label rather than
+              sitting inline beneath it — a bare "Next action" eyebrow with
+              nothing visibly under it reads as broken, so it's lg:-only
+              too. At lg:+ primaryActions is back in normal flow right
+              below this label, unchanged from Loop 73. */}
           {hasLifecycleNextAction && (
-            <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-brand">
+            <p className="mb-1.5 hidden font-mono text-[10px] font-semibold uppercase tracking-widest text-brand lg:block">
               Next action
             </p>
           )}
