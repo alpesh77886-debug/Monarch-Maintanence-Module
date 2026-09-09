@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +19,34 @@ export default function NotificationBell({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Loop 84: this dropdown had no Escape-to-close and no outside-click
+  // dismissal at all — the WAI-ARIA APG "Disclosure" pattern's baseline
+  // (a non-modal popup doesn't need a focus trap like Sheet's dialogs do,
+  // but it does need Escape to close and return focus to its trigger).
+  useEffect(() => {
+    if (!open) return;
+
+    function onPointerDown(e: PointerEvent) {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   async function markRead(id: string) {
     setBusyId(id);
@@ -29,8 +57,9 @@ export default function NotificationBell({
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
         aria-haspopup="true"
