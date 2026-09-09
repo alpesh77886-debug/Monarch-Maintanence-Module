@@ -289,13 +289,37 @@ export default async function CaseDetailPage({
   // nav (app-nav.tsx) once you've scrolled past it, using the same 5rem
   // clearance `(app)/layout.tsx`'s <main> already reserves for that nav
   // bar (`pb-20`) — no new offset invented, reusing an already-established
-  // safe zone. `md:static` drops the pinning on desktop, where the row
-  // already sits in view without needing to follow scroll. Not
-  // live-render-verified against a real device (RISK-05, see
-  // LOOP_51_REPORT.md) — the one piece of this loop's UI work that
-  // couldn't be screenshotted, flagged rather than assumed correct.
+  // safe zone. The un-pin breakpoint drops the pinning once the row
+  // already sits in view without needing to follow scroll.
+  //
+  // Loop 80 bug fix: this originally un-pinned at md: (768px), which was
+  // correct when written (Loop 52 predates Loop 70). Loop 70 later moved
+  // AppNav's own bottom-nav→rail switch to lg: (1024px), since 768-1024px
+  // is the pack's tablet range, not desktop — nobody updated this bar
+  // then, leaving it un-pinned (and unreachable-without-scrolling) across
+  // the whole 768-1024px tablet range while the bottom nav it was meant to
+  // sit above was still visible. Loop 73 later wrapped this in a sidePanel
+  // that itself goes lg:sticky lg:top - so lg: is now this bar's own
+  // correct un-pin point too, matching both AppNav and its own parent.
+  // Verified via the same Loop 53 throwaway-route technique as the rest of
+  // this batch (RISK-05 still blocks live Supabase, but the layout itself
+  // is dummy-data-verifiable).
+  //
+  // Known remaining gap, found while verifying the fix above (disclosed,
+  // not silently fixed — see APPROVAL_REPORT_LOOP_76_80.md): CSS `sticky`
+  // is bounded by its element's own parent box, not by any taller
+  // ancestor. Since Loop 73, this div's immediate parent inside sidePanel
+  // is only as tall as the identity card + lifecycle strip + this block —
+  // far shorter than the tab content it's meant to float above — so below
+  // lg: it stops sticking (and scrolls away) after roughly one sidePanel's
+  // height of scroll, well before a tab's own content ends. A real fix
+  // (e.g. `fixed` positioning instead of `sticky`, or restructuring so
+  // this sits directly inside a container as tall as the tab content)
+  // changes this element's rendering behavior more than a same-loop sweep
+  // fix should risk without dedicated verification — left for a future
+  // loop rather than attempted here under time pressure.
   const primaryActions = (
-    <div className="sticky bottom-20 z-10 flex flex-wrap gap-2 rounded-xl border border-line2 bg-card/95 p-3 shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+    <div className="sticky bottom-20 z-10 flex flex-wrap gap-2 rounded-xl border border-line2 bg-card/95 p-3 shadow-[0_4px_20px_rgba(0,0,0,0.3)] backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
       {canAcknowledge && (
         <ActionSheetTrigger label="Acknowledge" sheetTitle="Acknowledge Case" variant="primary">
           <AcknowledgeForm caseId={caseRow.id} />
