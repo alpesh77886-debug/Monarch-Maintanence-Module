@@ -48,9 +48,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
           <div className="flex items-center gap-2 text-sm text-muted">
             {staffName && <span className="hidden truncate sm:inline">{staffName}</span>}
-            {isStaff && <AvailabilityToggle isAvailable={isAvailable} />}
+            {/* Loop 71 (§17 "Mobile Header": don't stuff availability/sign-out
+                into the mobile header — they render as labeled pill/button
+                controls, not icons, and now live on /more's new Account
+                section instead. Staff always have /more one bottom-nav tap
+                away, so nothing is lost. A non-staff user has NO bottom-nav
+                at all (AppNav below is staff-only) and no /more access
+                either — for them the header stays their only reachable
+                surface, so these are never hidden. NotificationBell is left
+                alone everywhere: it's already an icon-only control, not the
+                text clutter this rule targets, and staff rely on it for
+                timely escalation visibility (§7.3/§23) that burying one tap
+                deeper into More would work against. */}
+            {isStaff && (
+              <span className="hidden sm:inline-flex">
+                <AvailabilityToggle isAvailable={isAvailable} />
+              </span>
+            )}
             {user && <NotificationBell notifications={notifications} />}
-            <SignOutButton />
+            <span className={isStaff ? "hidden sm:inline-flex" : undefined}>
+              <SignOutButton />
+            </span>
           </div>
         </div>
       </header>

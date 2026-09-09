@@ -15,7 +15,7 @@
 | 11 (Loops 51–55) | [`APPROVAL_REPORT_LOOP_51_55.md`](./APPROVAL_REPORT_LOOP_51_55.md) | Approved — "Continue...Loop 56 to 60" | 2026-09-08 |
 | 12 (Loops 56–60) | [`APPROVAL_REPORT_LOOP_56_60.md`](./APPROVAL_REPORT_LOOP_56_60.md) | Approved — the Boss supplied a new 47-section Mobile UX Reconstruction Prompt V2 + ENTERPRISE V3 mockup and said "loop start karo 61 se 70" — new forward loop-range instruction, treated as continuation per the same pattern as Gates 8/10 (RISK-32/RISK-33 remain untouched/still open, not re-litigated by this approval) | 2026-09-08 |
 | 13 (Loops 61–65) | [`APPROVAL_REPORT_LOOP_61_65.md`](./APPROVAL_REPORT_LOOP_61_65.md) | Approved — "start loop 66 to 70" | 2026-09-08 |
-| 14 (Loops 66–70) | [`APPROVAL_REPORT_LOOP_66_70.md`](./APPROVAL_REPORT_LOOP_66_70.md) | AWAITING BOSS | 2026-09-08 |
+| 14 (Loops 66–70) | [`APPROVAL_REPORT_LOOP_66_70.md`](./APPROVAL_REPORT_LOOP_66_70.md) | Approved — "loop start karo 71 se 75" | 2026-09-09 |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -219,3 +219,13 @@ the next batch are flagged in that report (§16's harder desktop-layout
 half, and §17's mobile-header cleanup) — the Boss decides what's next.
 Per §19.9 the same mandatory stop will apply again after the next 5
 loops, whatever they turn out to be.
+
+**GATE 14 (Loops 66-70) — RESOLVED.** The Boss replied **"loop start karo
+71 se 75"** — explicit continuation language for the next batch. Per
+`APPROVAL_REPORT_LOOP_66_70.md`'s own two flagged candidates, Loops 71-75
+target: Loop 71 §17 mobile-header cleanup (move Availability/
+Notifications/Sign-out off the mobile header into More), Loops 72-75
+§16's harder desktop-layout half, one flagged surface per loop (Case
+Queue, Case Detail, PM, Spares), with Loop 75 also carrying the mandatory
+Gate 15 stop report. Per §19.9 the same mandatory stop applies again at
+Loop 75.
