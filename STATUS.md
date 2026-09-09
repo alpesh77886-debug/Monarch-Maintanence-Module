@@ -1,6 +1,26 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 74 complete - PM desktop two-column layout (§16
+Current loop: Loop 75 complete - Spares desktop grid layout (§16
+  harder half), LAST loop of the pre-approved 71-75 batch. Same
+  treatment as Case Queue (Loop 72): the flat spare-requests list
+  (<ul className="flex flex-col">) became a real grid (grid-cols-1
+  lg:grid-cols-2 xl:grid-cols-3) - tablet stays single-column per
+  §16's "breathing room" tablet bullets, desktop gets 2-3 columns.
+  Empty state got col-span-full via EmptyState's existing className
+  prop, matching the Loop 72 precedent. Pure JSX/className
+  restructuring: the query, case-lookup join, and approval/status
+  badge logic are all untouched. Verified via the Loop 53 throwaway-
+  route + proxy.ts bypass technique (both reverted before commit,
+  confirmed via git status) - Playwright screenshots at 390/800/
+  1440px confirm mobile/tablet stay single-column and desktop shows a
+  clean 3-column grid. tsc/eslint/build clean; only spares/page.tsx
+  touched. Operational wrinkle this loop: GitHub refuses a second PR
+  from the same head branch while one is still open, so this loop's
+  commit landed inside PR #76 (opened for Loop 74's STATUS.md entry,
+  still pending) instead of its own PR - retitled PR #76 to describe
+  both commits before merging; both merged clean, no flake this time.
+  This closes the 71-75 batch - Gate 15 stop report follows.
+Previously: Loop 74 complete - PM desktop two-column layout (§16
   harder half). Plans and Instances were two independent lists stacked
   one above the other at every viewport - at lg:+ they now run side by
   side in a 2-column grid (lg:items-start so one column doesn't
