@@ -1,6 +1,27 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 72 complete - Case Queue desktop/tablet layout (§16
+Current loop: Loop 73 complete - Case Detail desktop side-panel layout
+  (§16 harder half). The identity Card + CaseLifecycleStrip + primary
+  actions now form a persistent left column at lg:+ (grid-cols-
+  [320px_1fr], sticky at top-[4.5rem] to clear the app header) instead
+  of scrolling away above the 10-tab CaseDetailTabs switcher - desktop
+  keeps "where is this case at" and "what do I do next" visible while
+  working through Journal/Spares/QC/etc. Below lg: (mobile+tablet), the
+  page is byte-for-byte the same single stacked column as before
+  (identity -> lifecycle -> actions -> tabs) - matches the Loop 70/72
+  precedent of only introducing lg:/xl: structure. Pure JSX/className
+  restructuring: no tab content, gating boolean, RPC call, or
+  CaseDetailTabs internals touched. Verified via the Loop 53 throwaway-
+  route + proxy.ts bypass technique (dummy-data preview route, both
+  reverted before commit, confirmed via git status) - Playwright
+  screenshots at 390/800/1440px confirm mobile/tablet stay single-
+  column and desktop shows the sticky side panel next to the tab
+  column; also confirmed at a shorter viewport with a scroll offset
+  that the side panel's sticky positioning holds. tsc/eslint/build
+  clean; only cases/[id]/page.tsx touched. PR #73 merged clean (lint-
+  and-build + e2e + Vercel preview all green on first CI run, no
+  flake this time).
+Previously: Loop 72 complete - Case Queue desktop/tablet layout (§16
   harder half). Converted the queue's <ul className="flex flex-col"> to
   a real grid (grid-cols-1 lg:grid-cols-2 xl:grid-cols-3) - tablet
   (641-1024px) stays single-column per §16's own "breathing room, not
