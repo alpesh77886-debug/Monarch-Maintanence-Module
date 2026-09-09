@@ -1,6 +1,34 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 81 complete - real fix for Case Detail's sticky
+Current loop: Loop 82 complete - accessibility pass, 3 gaps found via
+  grep-based investigation (skip-link/aria-describedby/role= grep sweeps):
+  (1) (app)/layout.tsx got a skip-to-content link (sr-only, revealed on
+  focus) plus id="main-content" on <main> - WCAG 2.4.1 "Bypass Blocks",
+  since every navigation otherwise forces a keyboard/screen-reader user
+  through the whole header (logo, availability toggle, notification
+  bell, sign-out) before reaching page content; (2) role="alert" added
+  to the canonical inline error paragraph pattern
+  (`{error && <p className="text-sm text-red-300">{error}</p>}`) across
+  32 files / 34 occurrences (case detail forms/panels, PM, recurrence
+  rules, sign-out) via a verified sed sweep - without it, a validation
+  or RPC error surfacing after submit was silent to screen readers,
+  nothing announces new content that isn't focused and wasn't present
+  on initial render; (3) components/ui.tsx's FormField required-field
+  asterisk is aria-hidden (decorative, "*" reads poorly aloud) but had
+  NO text alternative - added an sr-only " (required)" span alongside
+  it. Builds on Loop 69's action-sheet focus-trap audit and Loops
+  71-81's layout passes - same audit lens, different surface
+  (announcement/navigation gaps, not layout/responsiveness). No schema,
+  RLS, RPC, or lifecycle-rule changes - pure presentation layer per
+  §36.2's own ordering. tsc/eslint/build clean; live-rendered via the
+  Loop 53 throwaway-route technique (skip-link focus-visible + tab
+  order, role="alert" firing in the accessibility tree on an injected
+  error, FormField's isolated sr-only text confirmed via a targeted
+  .sr-only selector after an initial imprecise selector matched the
+  wrong wrapping span). Joined PR #81 (Loop 81's STATUS.md follow-up)
+  under the same-branch restriction - retitled/rewrote the PR body to
+  describe both loops' changes.
+Previously: Loop 81 complete - real fix for Case Detail's sticky
   primary-action bar, the gap Loop 80 disclosed but didn't fix. CSS
   `position: sticky` is bounded by its own immediate parent's box, not
   any taller ancestor - since Loop 73 nested the bar inside the short
