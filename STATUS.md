@@ -27,7 +27,14 @@ Current loop: Loop 82 complete - accessibility pass, 3 gaps found via
   .sr-only selector after an initial imprecise selector matched the
   wrong wrapping span). Joined PR #81 (Loop 81's STATUS.md follow-up)
   under the same-branch restriction - retitled/rewrote the PR body to
-  describe both loops' changes.
+  describe both loops' changes. PR #81 hit one CI failure on the
+  pre-Loop-82 commit (tests/cleanup-safety.test.ts, 2 tests, opposite
+  assertion mismatches consistent with a synthetic-case-count race
+  against the shared live Supabase test project between two concurrent
+  CI runs) - confirmed via real job logs as unrelated to a docs-only
+  STATUS.md diff, and superseded cleanly by the fresh CI run triggered
+  by Loop 82's own commits (lint-and-build + e2e both green on the
+  final head, no re-run needed). Merged clean via merge_method "merge".
 Previously: Loop 81 complete - real fix for Case Detail's sticky
   primary-action bar, the gap Loop 80 disclosed but didn't fix. CSS
   `position: sticky` is bounded by its own immediate parent's box, not
