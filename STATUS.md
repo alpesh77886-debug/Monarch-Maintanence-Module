@@ -1,6 +1,29 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 87 complete - two related gaps found while
+Current loop: Loop 88 complete - closed the long-flagged
+  "toLocaleString() latent-hydration-risk" gap (in gate reports since
+  before Loop 61, never actually addressed until now). Root cause: raw
+  `.toLocaleString()`/`.toLocaleDateString()` uses the runtime's
+  default locale, which can differ between Vercel's Node runtime (SSR)
+  and a viewer's browser (client hydration) - a real Next.js
+  hydration-mismatch source for the 12 of 15 flagged files that are
+  "use client" components. The fix already existed and was already
+  correctly used in 2 files (pm-instance-card.tsx, pm-plan-card.tsx) -
+  src/lib/format.ts's formatIst(), explicitly documented as fixing this
+  exact issue. The other 15 flagged files just weren't using it.
+  Replaced every raw date-formatting call with formatIst(x) across
+  notification-bell.tsx, recurrence-rule-card.tsx, and 11 Case Detail
+  panels/forms plus cases/[id]/page.tsx itself (9 occurrences there
+  alone). Also fixed 3 Number.toLocaleString() calls in kpi/page.tsx
+  missing the "en-IN" locale the same file already uses elsewhere for
+  currency - an in-file inconsistency, not itself a hydration risk
+  (server component) but fixed for determinism. tsc/eslint/build
+  clean; confirmed zero toLocaleString()/toLocaleDateString()/
+  toLocaleTimeString() calls remain anywhere in src/; live-verified via
+  the Loop 53 throwaway-route technique that formatIst() correctly
+  converts a UTC timestamp to IST (09:30 UTC -> 3:00 pm IST, UTC+5:30).
+  PR #87 merged clean, CI green first try.
+Previously: Loop 87 complete - two related gaps found while
   investigating Loop 86's navigation bug. (1) Loop 82's role="alert"
   sweep matched only the single-line `{error && <p ...>{error}</p>}`
   pattern - 6 files used a multi-line variant (`{error && (` / `<p ...>`
