@@ -1,6 +1,20 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 84 complete - notification-bell.tsx's dropdown had no
+Current loop: Loop 85 complete - final loop of the pre-approved 81-85
+  batch, carrying the mandatory Gate 17 stop per §19.9/§19.13. No new code
+  change this loop: investigated the two remaining candidates flagged by
+  Loop 82's original grep sweep and ruled both out as non-issues rather
+  than inventing work to fill the slot - FormField's hint text is already
+  inside the same <label> as its input, so it's already part of the
+  implicit accessible name/description (aria-describedby would be
+  redundant); StatusBadge already renders status as visible text, not
+  color alone, so it isn't a real colorblind-safe gap. Wrote
+  APPROVAL_REPORT_LOOP_81_85.md (full 5-loop summary), updated
+  APPROVAL_GATE.md (Gate 17 AWAITING BOSS), and this STATUS.md entry.
+  Autonomous work is now PAUSED per the mandatory gate stop - Loop 86
+  will not start without explicit Boss continuation language, silence or
+  an unrelated reply is not approval, same as every gate before this one.
+Previously: Loop 84 complete - notification-bell.tsx's dropdown had no
   way to close except re-clicking the bell: no Escape handling, no
   outside-click dismissal, no focus-return - none of the WAI-ARIA APG
   "Disclosure" pattern's baseline (a non-modal popup doesn't need Sheet's
