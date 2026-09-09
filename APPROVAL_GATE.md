@@ -325,3 +325,46 @@ Loops 82-85 then move to the accessibility pass flagged as the next
 concrete gap since Loop 69's single action-sheet audit, with Loop 85
 also carrying the mandatory Gate 17 stop report. Per §19.9 the same
 mandatory stop applies again at Loop 85.
+
+**GATE 17 (Loops 81-85) — AWAITING BOSS.** All five loops landed and
+merged. Loop 81 delivered the real fix for Case Detail's sticky
+primary-action bar (switched `position: sticky` to `position: fixed`,
+root-causing the containing-block behavior that made the earlier fix
+attempt fail, verified with a dedicated 6-depth scroll-position script
+on mobile and tablet). Loops 82-84 then ran the accessibility pass:
+Loop 82 added a skip-to-content link (WCAG 2.4.1), `role="alert"` on
+the canonical error-paragraph pattern across 32 files, and an `sr-only`
+text alternative for `FormField`'s required-asterisk. Loop 83 added
+`aria-current` to both `AppNav` surfaces, `aria-pressed` to
+`AvailabilityToggle`, `aria-expanded`/`aria-haspopup`/`aria-controls` to
+`NotificationBell`'s trigger, and — the most significant single item —
+ported Sheet's (Loop 51/69) already-verified focus-trap/`role="dialog"`/
+Escape/autofocus/focus-return logic into `sign-out-button.tsx`'s confirm
+dialog, which had visually duplicated Sheet's overlay markup but had
+none of its accessibility work. Loop 84 added Escape-to-close and
+outside-click dismissal to `NotificationBell`'s dropdown, which
+previously had no way to close except re-clicking its own trigger. Loop
+85's own investigation checked two originally-flagged candidates and
+ruled both out as non-issues rather than inventing work to fill the
+loop: `aria-describedby` on `FormField`'s hint text is unnecessary since
+the hint already sits inside the same `<label>` as its input and is
+already part of the implicit accessible name/description; `StatusBadge`
+already renders status as visible text, not color alone, so it isn't a
+real colorblind-safe gap. Every loop's `tsc`/`eslint`/`build` came back
+clean and every behavioral claim was verified live via the Loop 53
+throwaway-route + `proxy.ts`-bypass technique — Loop 83's dialog trap
+specifically via a standalone copy of the identical trap code, since
+`SignOutButton` itself cannot be driven into its open state without a
+live Supabase session (RISK-05's sandbox blocks that). One CI failure
+this batch (PR #81, `tests/cleanup-safety.test.ts`, on a docs-only
+pre-Loop-82 commit) was read via real logs, confirmed consistent with
+the same shared-live-Supabase-test-project race class hit repeatedly in
+prior batches, and superseded cleanly by Loop 82's own fresh CI run —
+no re-run needed. RISK-32/RISK-33 remain untouched and `OPEN` — this
+entire batch stayed presentation-layer only. Full detail in
+`APPROVAL_REPORT_LOOP_81_85.md`, including why this batch's report does
+not pre-select a Loop 86 direction (the grep-driven accessibility pass
+has run out of concrete items) and flags RISK-32/RISK-33 as the
+highest-severity open items awaiting a Boss design decision. Per §19.9
+the same mandatory stop will apply again after the next 5 loops,
+whatever they turn out to be.

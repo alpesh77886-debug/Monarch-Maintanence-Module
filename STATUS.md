@@ -1,6 +1,44 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 83 complete - accessibility pass continuation, 4 more
+Current loop: Loop 85 complete - final loop of the pre-approved 81-85
+  batch, carrying the mandatory Gate 17 stop per §19.9/§19.13. No new code
+  change this loop: investigated the two remaining candidates flagged by
+  Loop 82's original grep sweep and ruled both out as non-issues rather
+  than inventing work to fill the slot - FormField's hint text is already
+  inside the same <label> as its input, so it's already part of the
+  implicit accessible name/description (aria-describedby would be
+  redundant); StatusBadge already renders status as visible text, not
+  color alone, so it isn't a real colorblind-safe gap. Wrote
+  APPROVAL_REPORT_LOOP_81_85.md (full 5-loop summary), updated
+  APPROVAL_GATE.md (Gate 17 AWAITING BOSS), and this STATUS.md entry.
+  Autonomous work is now PAUSED per the mandatory gate stop - Loop 86
+  will not start without explicit Boss continuation language, silence or
+  an unrelated reply is not approval, same as every gate before this one.
+Previously: Loop 84 complete - notification-bell.tsx's dropdown had no
+  way to close except re-clicking the bell: no Escape handling, no
+  outside-click dismissal, no focus-return - none of the WAI-ARIA APG
+  "Disclosure" pattern's baseline (a non-modal popup doesn't need Sheet's
+  full Tab-trap, but does need Escape-to-close-and-return-focus, and
+  outside-interaction dismissal is standard for any non-primary popup).
+  Added a pointerdown listener (outside the panel closes it) and a keydown
+  listener (Escape closes it + returns focus to the bell button), both
+  scoped to a useEffect gated on `open` - same attach-while-open pattern
+  Sheet already uses for its own keydown handler, just without the Tab
+  trap since this isn't a modal. tsc/eslint/build clean; live-rendered via
+  Loop 53 throwaway-route technique - confirmed Escape closes + returns
+  focus, an outside click closes it, and clicking INSIDE the panel does
+  NOT close it (so interacting with a notification's own controls doesn't
+  dismiss the list mid-click). PR #83 opened clean, CI green first try,
+  merged via merge_method "merge". This likely exhausts the concrete,
+  mechanically-verifiable accessibility items surfaced by Loop 82's
+  investigation trail (aria-describedby was checked and found to be a
+  non-issue - FormField already nests inputs inside a real <label>, so
+  hint text is already part of the accessible name via implicit
+  association, no aria-describedby needed; StatusBadge already renders
+  status as text, not color-only, so it isn't a real colorblind-safe gap
+  either) - Loop 85 (this batch's final, mandatory Gate 17 stop loop)
+  will confirm this rather than invent a new item just to fill the slot.
+Previously: Loop 83 complete - accessibility pass continuation, 4 more
   gaps found: (1) app-nav.tsx's mobile bottom bar + desktop rail marked
   the active route with color/stroke-weight only - added
   aria-current="page" on both (isActive()'s own logic untouched, only how
