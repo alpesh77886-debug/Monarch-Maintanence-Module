@@ -45,7 +45,7 @@ export default async function SparesPage() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-red-300">
+        <p role="alert" className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-red-300">
           Could not load spare requests: {error.message}
         </p>
       )}

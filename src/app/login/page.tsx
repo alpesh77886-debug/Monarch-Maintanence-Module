@@ -72,7 +72,7 @@ export default function LoginPage() {
         </label>
 
         {error && (
-          <p className="mt-4 rounded-lg bg-bad/10 px-3 py-2 text-sm text-red-300">{error}</p>
+          <p role="alert" className="mt-4 rounded-lg bg-bad/10 px-3 py-2 text-sm text-red-300">{error}</p>
         )}
 
         <Button type="submit" disabled={loading} className="mt-6 w-full text-base">
