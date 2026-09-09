@@ -17,7 +17,7 @@
 | 13 (Loops 61–65) | [`APPROVAL_REPORT_LOOP_61_65.md`](./APPROVAL_REPORT_LOOP_61_65.md) | Approved — "start loop 66 to 70" | 2026-09-08 |
 | 14 (Loops 66–70) | [`APPROVAL_REPORT_LOOP_66_70.md`](./APPROVAL_REPORT_LOOP_66_70.md) | Approved — "loop start karo 71 se 75" | 2026-09-09 |
 | 15 (Loops 71–75) | [`APPROVAL_REPORT_LOOP_71_75.md`](./APPROVAL_REPORT_LOOP_71_75.md) | Approved — "start loop 76 to 80" | 2026-09-09 |
-| 16 (Loops 76–80) | [`APPROVAL_REPORT_LOOP_76_80.md`](./APPROVAL_REPORT_LOOP_76_80.md) | AWAITING BOSS | — |
+| 16 (Loops 76–80) | [`APPROVAL_REPORT_LOOP_76_80.md`](./APPROVAL_REPORT_LOOP_76_80.md) | Approved — "continue loop 81 to 85" | 2026-09-09 |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -309,3 +309,19 @@ commit. RISK-32/RISK-33 remain untouched and `OPEN` — this entire batch
 stayed presentation-layer only. Full detail in
 `APPROVAL_REPORT_LOOP_76_80.md`. Per §19.9 the same mandatory stop will
 apply again after the next 5 loops, whatever they turn out to be.
+
+**GATE 16 (Loops 76-80) — RESOLVED.** The Boss replied **"continue loop 81
+to 85"** — explicit continuation language, again without specifying a
+direction. Per `APPROVAL_REPORT_LOOP_76_80.md`'s three flagged candidates
+(fix the disclosed sticky-action-bar gap, an accessibility pass, or
+data-freshness/performance per §24/§38), Loop 81 targets the most
+concrete and already-diagnosed item first: a real fix (switching from
+`position: sticky` to `position: fixed`, per the report's own identified
+fix path) for Case Detail's primary-action bar not actually staying
+reachable throughout a tab's scroll on mobile/tablet — this time with
+dedicated verification (the scroll-position script across multiple tabs
+and content heights, not just the one check that surfaced the gap).
+Loops 82-85 then move to the accessibility pass flagged as the next
+concrete gap since Loop 69's single action-sheet audit, with Loop 85
+also carrying the mandatory Gate 17 stop report. Per §19.9 the same
+mandatory stop applies again at Loop 85.
