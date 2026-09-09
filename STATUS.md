@@ -1,6 +1,22 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 89 complete - closed the OTHER long-flagged item
+Current loop: Loop 90 complete - final loop of the pre-approved 86-90
+  batch, carrying the mandatory Gate 18 stop per §19.9/§19.13. No new
+  code this loop: final sweep confirmed no further loading.tsx gap
+  remains - only / (instant redirect, no data fetch) and /login
+  (client-only form, no server fetch) lack one, both correctly. Wrote
+  APPROVAL_REPORT_LOOP_86_90.md (full 5-loop summary), updated
+  APPROVAL_GATE.md (Gate 18 AWAITING BOSS), and this STATUS.md entry.
+  This batch is notable for opening with a real Boss-reported bug
+  (Loop 86) rather than a self-selected candidate, and for finally
+  closing two Type B items that had sat flagged-but-unaddressed across
+  several prior gate reports (toLocaleString hydration risk, Loop 88;
+  loading.tsx coverage, Loop 89) - only RISK-32/RISK-33 remain OPEN,
+  now the clear highest-value next target per this batch's own report.
+  Autonomous work is now PAUSED per the mandatory gate stop - Loop 91
+  will not start without explicit Boss continuation language, silence
+  or an unrelated reply is not approval, same as every gate before this.
+Previously: Loop 89 complete - closed the OTHER long-flagged item
   ("Performance UX investigation" §24/§38, untouched since Gate 13).
   Investigated by checking loading.tsx coverage across every major
   route (Loop 67's own established per-route Skeleton pattern) - found

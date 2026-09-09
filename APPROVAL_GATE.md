@@ -382,3 +382,38 @@ RISK-32/RISK-33 or any other item flagged in `APPROVAL_REPORT_LOOP_81_85.md`.
 Loops 87-90 to follow per whatever Loop 86's investigation and this
 bug's scope leave open, with Loop 90 carrying the next mandatory Gate 18
 stop per §19.9.
+
+**GATE 18 (Loops 86-90) — AWAITING BOSS.** All five loops landed and
+merged, each PR green on the first CI run with no same-branch-PR
+conflicts. Loop 86 fixed the Boss-reported bug: proved (via an isolated
+`page.goBack()` round-trip test, twice) that browser/device back
+navigation was never actually broken, then root-caused the real gap as
+discoverability — `(app)/layout.tsx`'s header showed only a bare "M"
+logo on mobile with no visible back-indicator — and added an explicit
+"‹" chevron. Loop 87 found and fixed two related gaps surfaced by that
+investigation: 6 files Loop 82's `role="alert"` sweep had missed (a
+multi-line `{error && (` variant its exact-match sed skipped), and the
+Create Case flow's own step-0 navigation trap (same class of gap as
+Loop 86, one level deeper), fixed with the same `← All cases` link
+pattern Case Detail already uses. Loops 88 and 89 then closed the two
+Type B items that had sat flagged-but-unaddressed across multiple prior
+gate reports: Loop 88 applied the already-existing `formatIst()` fix to
+the 15 files still using raw `toLocaleString()`/`toLocaleDateString()`
+(a real Next.js server/client hydration-mismatch risk for 12 of them),
+and Loop 89 added `loading.tsx` to the 7 of 12 routes that had none —
+including `/home` (the first screen after sign-in) and `/cases` (the
+single most-visited screen) — closing the "Performance UX investigation
+(§24/§38)" item untouched since Gate 13. Loop 90's own final sweep
+confirmed no further loading.tsx gap remains (only `/` and `/login`
+lack one, both correctly — an instant redirect and a client-only form,
+neither has a server data fetch to show a loading state for). Every
+loop's `tsc`/`eslint`/`build` came back clean and every behavioral claim
+was verified live via the Loop 53 throwaway-route + `proxy.ts`-bypass
+technique. RISK-32/RISK-33 remain untouched and `OPEN` — this entire
+batch stayed presentation-layer only. Full detail in
+`APPROVAL_REPORT_LOOP_86_90.md`, which — with both previously-flagged
+Type B items now closed — recommends RISK-32/RISK-33 as the next
+batch's most concrete, highest-value target, since both have awaited a
+Boss design decision since Gate 12 and no further progress is possible
+without one. Per §19.9 the same mandatory stop will apply again after
+the next 5 loops, whatever they turn out to be.
