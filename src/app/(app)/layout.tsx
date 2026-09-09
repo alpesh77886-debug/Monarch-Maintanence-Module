@@ -52,7 +52,26 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </a>
       <header className="chrome-blur sticky top-0 z-30 flex h-14 items-center border-b border-line px-4">
         <div className="flex w-full items-center justify-between gap-3">
-          <Link href="/home" className="flex items-center gap-2 text-base font-semibold text-fg">
+          {/* Loop 86: the Boss reported no visible way back to the Module
+              Hub after navigating into a section (e.g. Cases) — browser/
+              device back navigation was verified working correctly (a
+              round-trip Home -> Cases -> back -> Cases -> back test via
+              Playwright's goBack() succeeded twice in a row), so the real
+              gap was discoverability: on mobile the "MONARCH Maintenance"
+              text is hidden (`hidden sm:inline`) and the plain "M" logo
+              box alone doesn't read as a back control. An explicit
+              chevron makes this unambiguous at every width, and this
+              header only ever renders on (app) pages - never on /home
+              itself, which lives outside this route group - so "back to
+              Home" is always the correct destination here. */}
+          <Link
+            href="/home"
+            aria-label="Back to Home"
+            className="flex items-center gap-1.5 text-base font-semibold text-fg"
+          >
+            <span aria-hidden="true" className="text-lg leading-none text-muted">
+              ‹
+            </span>
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange to-orange2 text-sm font-bold text-white shadow-[0_2px_8px_rgba(249,115,22,0.3)]">
               M
             </span>

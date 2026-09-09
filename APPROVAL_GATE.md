@@ -368,3 +368,17 @@ has run out of concrete items) and flags RISK-32/RISK-33 as the
 highest-severity open items awaiting a Boss design decision. Per §19.9
 the same mandatory stop will apply again after the next 5 loops,
 whatever they turn out to be.
+
+**GATE 17 (Loops 81-85) — RESOLVED.** The Boss replied **"loop 86 se 90
+continue karo"** — explicit continuation language, this time with an
+explicit direction attached: a real navigation bug reported directly by
+the Boss (screenshots of the live Module Hub home page and its side
+drawer) — from the Home screen, tapping into a section (e.g. Cases) and
+then trying to go back (the device/browser back control) does not return
+to Home; the back button/gesture does not appear to work at all within
+the app. Loop 86 targets this bug first, since it is a direct Boss report
+of a real, live-app defect (not a self-selected candidate) — ahead of
+RISK-32/RISK-33 or any other item flagged in `APPROVAL_REPORT_LOOP_81_85.md`.
+Loops 87-90 to follow per whatever Loop 86's investigation and this
+bug's scope leave open, with Loop 90 carrying the next mandatory Gate 18
+stop per §19.9.
