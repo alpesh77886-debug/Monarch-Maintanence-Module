@@ -560,44 +560,56 @@ export default async function CaseDetailPage({
     <EvidencePanel caseId={caseRow.id} records={(evidenceRecords ?? []) as CaseEvidence[]} nameById={nameById} />
   );
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <Link href="/cases" className="text-xs font-medium text-muted hover:text-fg">
-          ← All cases
-        </Link>
-        <Card className="mt-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-mono text-xs text-muted">{caseRow.case_number}</p>
-            <StatusBadge status={caseRow.status} />
-            {caseRow.priority && <Badge tone="neutral">{caseRow.priority}</Badge>}
-            {caseRow.major_complex_flag && <Badge tone="danger">MAJOR/COMPLEX</Badge>}
-          </div>
-          <h1 className="mt-2 text-lg font-semibold text-fg">{caseRow.symptom}</h1>
-          <p className="mt-1 text-sm text-muted">
-            {caseRow.case_type} · Status: <span className="font-medium">{caseRow.status}</span>
-            {caseRow.priority ? ` · Priority: ${caseRow.priority}` : ""}
+  // Loop 73 (§16 "Responsive Model" harder half): at lg:+ the case-identity
+  // header, lifecycle strip and primary actions become a persistent side
+  // column (sticky under the app header) instead of scrolling away above
+  // the tabs — desktop has the width to keep "where is this case at" and
+  // "what do I do next" visible while working through Journal/Spares/QC/etc.
+  // Mobile and tablet are untouched: below lg: this is still one stacked
+  // column in the original top-to-bottom order (identity → lifecycle →
+  // actions → tabs), matching the precedent from Loops 70/72 of only
+  // introducing lg:/xl: structure and leaving <lg: alone. No tab content,
+  // gating boolean, or RPC call changes — pure JSX/className restructuring.
+  const identityCard = (
+    <div>
+      <Link href="/cases" className="text-xs font-medium text-muted hover:text-fg">
+        ← All cases
+      </Link>
+      <Card className="mt-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-mono text-xs text-muted">{caseRow.case_number}</p>
+          <StatusBadge status={caseRow.status} />
+          {caseRow.priority && <Badge tone="neutral">{caseRow.priority}</Badge>}
+          {caseRow.major_complex_flag && <Badge tone="danger">MAJOR/COMPLEX</Badge>}
+        </div>
+        <h1 className="mt-2 text-lg font-semibold text-fg">{caseRow.symptom}</h1>
+        <p className="mt-1 text-sm text-muted">
+          {caseRow.case_type} · Status: <span className="font-medium">{caseRow.status}</span>
+          {caseRow.priority ? ` · Priority: ${caseRow.priority}` : ""}
+        </p>
+        {caseRow.duplicate_of_case_id && (
+          <p className="mt-2 text-sm text-muted">
+            Duplicate of{" "}
+            {duplicatePrimaryCaseNumber ? (
+              <Link
+                href={`/cases/${caseRow.duplicate_of_case_id}`}
+                className="font-medium text-brand hover:underline"
+              >
+                {duplicatePrimaryCaseNumber}
+              </Link>
+            ) : (
+              caseRow.duplicate_of_case_id
+            )}
           </p>
-          {caseRow.duplicate_of_case_id && (
-            <p className="mt-2 text-sm text-muted">
-              Duplicate of{" "}
-              {duplicatePrimaryCaseNumber ? (
-                <Link
-                  href={`/cases/${caseRow.duplicate_of_case_id}`}
-                  className="font-medium text-brand hover:underline"
-                >
-                  {duplicatePrimaryCaseNumber}
-                </Link>
-              ) : (
-                caseRow.duplicate_of_case_id
-              )}
-            </p>
-          )}
-        </Card>
-      </div>
+        )}
+      </Card>
+    </div>
+  );
 
+  const sidePanel = (
+    <div className="flex flex-col gap-4 lg:sticky lg:top-[4.5rem]">
+      {identityCard}
       <CaseLifecycleStrip status={caseRow.status} />
-
       {hasPrimaryAction && (
         <div>
           {hasLifecycleNextAction && (
@@ -608,7 +620,12 @@ export default async function CaseDetailPage({
           {primaryActions}
         </div>
       )}
+    </div>
+  );
 
+  return (
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[320px_1fr] lg:items-start lg:gap-6">
+      {sidePanel}
       <CaseDetailTabs
         tabs={{
           overview: overviewTab,
