@@ -50,7 +50,12 @@ export default async function SparesPage() {
         </p>
       )}
 
-      <ul className="flex flex-col gap-2">
+      {/* Loop 75 (§16 "Responsive Model" harder half): the same grid
+          treatment as Case Queue (Loop 72) - tablet (641-1024px) stays
+          single-column per §16's own "breathing room" tablet bullets,
+          desktop gets 2-3 columns instead of a long mobile-width list
+          stretched inside the wider lg:/xl: container. */}
+      <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
         {rows.map((r) => {
           const c = caseById.get(r.case_id);
           const pendingApproval = r.requires_manager_approval && !r.approved_at;
@@ -82,7 +87,9 @@ export default async function SparesPage() {
             </li>
           );
         })}
-        {rows.length === 0 && !error && <EmptyState title="No spare requests recorded yet." />}
+        {rows.length === 0 && !error && (
+          <EmptyState title="No spare requests recorded yet." className="col-span-full" />
+        )}
       </ul>
     </div>
   );
