@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseType } from "@/lib/supabase/database.types";
@@ -105,6 +106,14 @@ export default function NewCasePage() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Loop 87: this flow only ever showed a "Back" button once inside
+          step 1+ (step > 0) - at step 0, where every entry lands, there
+          was no way to leave the flow itself (only the header/AppNav,
+          same class of gap as Loop 86's Boss-reported bug). Matches
+          Case Detail's own "← All cases" pattern exactly. */}
+      <Link href="/cases" className="text-xs font-medium text-muted hover:text-fg">
+        ← All cases
+      </Link>
       <div>
         <h1 className="text-lg font-semibold text-fg">Report a problem</h1>
         <p className="mt-1 text-xs text-muted">
@@ -244,7 +253,7 @@ export default function NewCasePage() {
       )}
 
       {error && (
-        <p className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-red-300">{error}</p>
+        <p role="alert" className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-red-300">{error}</p>
       )}
 
       <div className="flex gap-2">
