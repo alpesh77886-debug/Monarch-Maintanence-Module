@@ -1,6 +1,28 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 88 complete - closed the long-flagged
+Current loop: Loop 89 complete - closed the OTHER long-flagged item
+  ("Performance UX investigation" §24/§38, untouched since Gate 13).
+  Investigated by checking loading.tsx coverage across every major
+  route (Loop 67's own established per-route Skeleton pattern) - found
+  7 of 12 routes had NONE: /home (the very first screen after sign-in),
+  /cases (Case Queue, the single most-visited screen), /cases/[id]
+  (Case Detail cockpit), /cases/new, /recurrence-rules, /kpi,
+  /dashboard. Without a loading.tsx, Next.js shows nothing during that
+  route's server-side fetch - a blank/frozen screen on navigation,
+  worst on exactly the screens used most. Added loading.tsx to all 7,
+  same Skeleton/SkeletonCard composition every other route already
+  uses, shape roughly matching each real page (Case Detail's identity-
+  card + tab-bar shape, Home's tile grid, KPI's stat row + report
+  Groups, etc.) - no new component API. tsc/eslint/build clean; live-
+  rendered all 7 via the Loop 53 throwaway-route technique (none of
+  them have a data fetch of their own, so no auth/live-Supabase
+  dependency to work around) - confirmed zero page errors and visually
+  reasonable shapes at 390px. PR #88 merged clean, CI green first try.
+  This closes both Type B items that had sat unaddressed across
+  multiple gate reports (toLocaleString hydration risk in Loop 88,
+  loading.tsx coverage here) - only RISK-32/RISK-33 remain OPEN,
+  awaiting a Boss design decision asked twice now with no answer yet.
+Previously: Loop 88 complete - closed the long-flagged
   "toLocaleString() latent-hydration-risk" gap (in gate reports since
   before Loop 61, never actually addressed until now). Root cause: raw
   `.toLocaleString()`/`.toLocaleDateString()` uses the runtime's
