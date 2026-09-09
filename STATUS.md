@@ -1,6 +1,28 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 85 complete - final loop of the pre-approved 81-85
+Current loop: Loop 86 complete - Boss reported (with screenshots) that
+  after navigating Home -> a section (e.g. Cases), there was no way
+  back - "back wala button jo hota hai vo nahi hai." Investigated before
+  fixing: built two throwaway routes replicating the real structural
+  difference between /home (standalone layout) and an (app)-group page
+  (shared layout/header), drove Home -> click -> back -> click -> back
+  TWICE via Playwright's page.goBack() (the same mechanism Android's
+  system back and Chrome's own back use) - both round trips succeeded
+  cleanly, so browser/device back navigation was never actually broken.
+  Real gap was discoverability: (app)/layout.tsx's header only ever
+  showed a bare "M" logo box - on mobile (the Boss's own screenshot
+  width) the "MONARCH Maintenance" text next to it is hidden
+  (`hidden sm:inline`), so there was no visible text and no
+  back-indicating icon at all; a plain logo doesn't read as a back
+  control. Fixed by adding an explicit "<" chevron before the logo,
+  always visible at every breakpoint, plus aria-label="Back to Home" on
+  the Link for screen readers - this header only ever renders on (app)
+  pages (never /home itself), so "back to Home" is always correct here,
+  no conditional logic needed. tsc/eslint/build clean; live-rendered at
+  both 390px (matching the Boss's screenshots) and desktop widths via
+  the Loop 53 throwaway-route technique. PR #85 merged clean, CI green
+  first try.
+Previously: Loop 85 complete - final loop of the pre-approved 81-85
   batch, carrying the mandatory Gate 17 stop per §19.9/§19.13. No new code
   change this loop: investigated the two remaining candidates flagged by
   Loop 82's original grep sweep and ruled both out as non-issues rather
