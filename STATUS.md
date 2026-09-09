@@ -1,6 +1,27 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 71 complete - Boss said "loop start karo 71 se 75",
+Current loop: Loop 72 complete - Case Queue desktop/tablet layout (§16
+  harder half). Converted the queue's <ul className="flex flex-col"> to
+  a real grid (grid-cols-1 lg:grid-cols-2 xl:grid-cols-3) - tablet
+  (641-1024px) stays single-column per §16's own "breathing room, not
+  necessarily multi-column" tablet bullets, desktop gets 2-3 columns.
+  Real bug caught and fixed in the same loop: the Report-case FAB used
+  `md:bottom-6`, assuming the bottom nav disappears at 768px - but Loop
+  70 moved AppNav's own switch to lg: (1024px), since 768-1024px is
+  the pack's tablet range, not desktop. Nobody updated this FAB when
+  Loop 70 landed, so it sat only 24px from the bottom (overlapping the
+  still-visible bottom nav) across the whole 768-1024px range - swept
+  the rest of the app for the same stale-breakpoint pattern (grep for
+  md:bottom/md:pb-/md:hidden/md:flex under (app)/), found no other
+  instances. Verified all 3 breakpoints (390/800/1280px) via the Loop
+  53 throwaway-route technique, rendering the real grid+FAB markup
+  with dummy case data and a fake bottom-nav element mimicking
+  AppNav's lg:hidden switch - screenshots confirm tablet stays
+  single-column with the FAB correctly clearing the fake nav, and
+  desktop shows a clean 3x2 grid with the FAB at the true bottom-right
+  corner. tsc/eslint/build clean; only cases/page.tsx touched, zero
+  query/sort/filter logic changed.
+Previously: Loop 71 complete - Boss said "loop start karo 71 se 75",
   closing Gate 14. §17 "Mobile Header" cleanup. Real findings:
   AvailabilityToggle renders a labeled "On shift"/"Off shift" pill and
   SignOutButton renders a labeled "Sign out" button (with real §22.1

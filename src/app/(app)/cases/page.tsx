@@ -142,7 +142,12 @@ export default async function CasesPage({
         </p>
       )}
 
-      <ul className="flex flex-col gap-2">
+      {/* Loop 72 (§16 "Responsive Model" harder half): a real multi-column
+          grid at lg:/xl: — tablet stays single-column (its own §16
+          bullets ask for "breathing room", not necessarily multi-column),
+          desktop gets 2-3 columns instead of one long mobile-width list
+          stretched inside Loop 70's wider container. */}
+      <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
         {sorted.map((c) => (
           <li key={c.id}>
             <Link
@@ -184,16 +189,22 @@ export default async function CasesPage({
           </li>
         ))}
         {sorted.length === 0 && !error && (
-          <p className="rounded-xl border border-dashed border-line2 p-8 text-center text-sm text-muted">
+          <p className="col-span-full rounded-xl border border-dashed border-line2 p-8 text-center text-sm text-muted">
             {q || status ? "No cases match this search/filter." : "No cases yet. Report the first one to get started."}
           </p>
         )}
       </ul>
 
+      {/* Loop 72 bug fix: this used md:bottom-6, assuming the bottom nav
+          disappears at md: (768px). Loop 70 corrected AppNav's own switch
+          to lg: (1024px) since 768-1024px is the pack's tablet range, not
+          desktop — but never touched this FAB, leaving it sitting only
+          24px from the bottom (overlapping the still-visible bottom nav)
+          across that whole tablet range. Matches AppNav's lg:hidden now. */}
       <Link
         href="/cases/new"
         aria-label="Report case"
-        className="fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand2 text-2xl font-semibold text-white shadow-[0_8px_24px_rgba(59,130,246,0.4)] md:bottom-6"
+        className="fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand2 text-2xl font-semibold text-white shadow-[0_8px_24px_rgba(59,130,246,0.4)] lg:bottom-6"
       >
         +
       </Link>
