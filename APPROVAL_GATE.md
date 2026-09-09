@@ -17,6 +17,7 @@
 | 13 (Loops 61–65) | [`APPROVAL_REPORT_LOOP_61_65.md`](./APPROVAL_REPORT_LOOP_61_65.md) | Approved — "start loop 66 to 70" | 2026-09-08 |
 | 14 (Loops 66–70) | [`APPROVAL_REPORT_LOOP_66_70.md`](./APPROVAL_REPORT_LOOP_66_70.md) | Approved — "loop start karo 71 se 75" | 2026-09-09 |
 | 15 (Loops 71–75) | [`APPROVAL_REPORT_LOOP_71_75.md`](./APPROVAL_REPORT_LOOP_71_75.md) | Approved — "start loop 76 to 80" | 2026-09-09 |
+| 16 (Loops 76–80) | [`APPROVAL_REPORT_LOOP_76_80.md`](./APPROVAL_REPORT_LOOP_76_80.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -278,3 +279,33 @@ Recurrence & CAPA responsive pass, Loop 79 My Work + Emergency responsive
 pass (combined — both are small single-purpose landing pages), Loop 80
 final sweep + the mandatory Gate 16 stop report. Per §19.9 the same
 mandatory stop applies again at Loop 80.
+
+**GATE 16 (Loops 76-80) — AWAITING BOSS.** All five loops landed and
+merged: Dashboard, KPI, Recurrence & CAPA, and My Work + Emergency all
+got real `lg:`/`xl:` desktop layouts (Loops 76-79, merged together in
+PR #78 after the same-branch-PR restriction piled them up into one PR —
+disclosed as an operational wrinkle, not a defect, since every commit
+still went through CI and a real review-diff, nothing silently
+skipped). Loop 80's own codebase-wide grep sweep for stale `md:`
+breakpoint usage (matching the Loop 72 precedent) found and fixed one
+real leftover bug: Case Detail's sticky primary-action bar still
+un-pinned at `md:` (768px) instead of `lg:` (1024px), stale since Loop
+70 moved AppNav's own bottom-nav cutoff. While verifying that fix with
+a live scroll-position script, this loop also found and **disclosed
+rather than silently fixed** a deeper, pre-existing gap in the same
+bar: CSS `sticky` is bounded by its own parent's box height, and since
+Loop 73 nested this bar inside the short `sidePanel`, it stops sticking
+after roughly one `sidePanel`-height of scroll instead of following the
+whole tab-content scroll as Loop 52 originally intended — a real fix
+(most likely switching to `fixed` positioning) changes this element's
+rendering behavior more than a same-loop sweep fix should risk without
+dedicated verification, so it was left for a future loop and documented
+in code and in `APPROVAL_REPORT_LOOP_76_80.md` rather than attempted
+under time pressure. Every loop's `tsc`/`eslint`/`build` came back
+clean and every layout claim was verified by live-rendering the real
+page via the Loop 53 throwaway-route + `proxy.ts`-bypass technique with
+Playwright screenshots at 390/800/1440px, both reverted before each
+commit. RISK-32/RISK-33 remain untouched and `OPEN` — this entire batch
+stayed presentation-layer only. Full detail in
+`APPROVAL_REPORT_LOOP_76_80.md`. Per §19.9 the same mandatory stop will
+apply again after the next 5 loops, whatever they turn out to be.

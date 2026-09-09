@@ -1,6 +1,33 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 75 complete - Spares desktop grid layout (§16
+Current loop: Loop 80 complete - final sweep + LAST loop of the
+  pre-approved 76-80 batch. Loops 76-79 (merged together in PR #78
+  after the same-branch-PR restriction piled them up) gave §16/§30
+  responsive treatment to the 5 screens Gate 15's report flagged as
+  the batch's target: Dashboard (Unassigned/Oldest-Open now run side
+  by side at lg:+), KPI (the 8 report Groups now run in a 2-column
+  grid at lg:+), Recurrence & CAPA / My Work / Emergency (all three
+  had ZERO responsive classes before this - now the same grid
+  treatment as Case Queue/Spares). Loop 80's own codebase-wide grep
+  sweep for stale `md:` breakpoint usage (matching the Loop 72
+  precedent) found one real leftover bug: Case Detail's sticky
+  primary-action bar (Loop 52) still un-pinned at md: (768px) instead
+  of lg: (1024px), stale since Loop 70 moved AppNav's own bottom-nav
+  cutoff - fixed to match. While verifying that fix with a live
+  scroll-position script, found and DISCLOSED (not silently fixed) a
+  deeper pre-existing gap: the bar's CSS `sticky` is bounded by its
+  own parent's height, and since Loop 73 nested it inside the short
+  sidePanel, it stops sticking after about one sidePanel's height of
+  scroll rather than following the whole tab-content scroll like Loop
+  52 originally intended - documented in code and in
+  APPROVAL_REPORT_LOOP_76_80.md as a real fix for a future loop
+  (changing to `fixed` positioning likely), not attempted here without
+  dedicated verification. tsc/eslint/build clean on every commit;
+  every layout claim live-rendered via the Loop 53 throwaway-route
+  technique at 390/800/1440px, both route and proxy.ts bypass reverted
+  before each commit. This closes the 76-80 batch - Gate 16 stop
+  report follows.
+Previously: Loop 75 complete - Spares desktop grid layout (§16
   harder half), LAST loop of the pre-approved 71-75 batch. Same
   treatment as Case Queue (Loop 72): the flat spare-requests list
   (<ul className="flex flex-col">) became a real grid (grid-cols-1
