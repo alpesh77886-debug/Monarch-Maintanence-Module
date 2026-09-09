@@ -65,7 +65,7 @@ export default function MarkDuplicateForm({ caseId }: { caseId: string }) {
           rows={2}
         />
       </FormField>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <Button
         variant="secondary"
         className="self-start"

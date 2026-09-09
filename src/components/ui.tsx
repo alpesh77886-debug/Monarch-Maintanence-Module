@@ -283,10 +283,13 @@ export function FormField({
       <span>
         {label}
         {required && (
-          <span className="text-bad" aria-hidden="true">
-            {" "}
-            *
-          </span>
+          <>
+            <span className="text-bad" aria-hidden="true">
+              {" "}
+              *
+            </span>
+            <span className="sr-only"> (required)</span>
+          </>
         )}
       </span>
       <div className="mt-1">{children}</div>

@@ -114,7 +114,7 @@ export default function CreateRecurrenceRuleForm() {
           className="w-full rounded-lg border border-line2 p-2 text-sm"
         />
       </FormField>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <Button className="self-start" onClick={submit} disabled={submitting || !canSubmit}>
         Create rule
       </Button>

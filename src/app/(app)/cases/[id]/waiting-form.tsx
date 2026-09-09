@@ -146,7 +146,7 @@ export default function WaitingForm({ caseId }: { caseId: string }) {
           className="block w-full rounded-lg border border-warn/25 px-3 py-2 text-base"
         />
       </FormField>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         <Button variant="warning" type="submit" disabled={submitting}>
           {submitting ? "Saving…" : "Enter WAITING"}

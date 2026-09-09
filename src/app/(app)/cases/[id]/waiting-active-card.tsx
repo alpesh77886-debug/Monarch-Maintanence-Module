@@ -43,7 +43,7 @@ export default function WaitingActiveCard({ wait }: { wait: CaseWait }) {
           Resume-ready since {new Date(wait.resume_ready_at).toLocaleString()}
         </p>
       )}
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <div className="flex gap-2">
         {wait.reason_type === "EXTERNAL" && !wait.resume_ready_at && (
           <Button variant="warning" onClick={() => callRpc("mark_wait_resolved")} disabled={submitting}>

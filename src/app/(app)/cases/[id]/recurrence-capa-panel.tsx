@@ -66,7 +66,7 @@ export default function RecurrenceCapaPanel({
     >
       <h2 className="text-sm font-semibold text-fg">Recurrence &amp; CAPA</h2>
 
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
 
       {/* ---------------- §18 recurrence ---------------- */}
       <div>

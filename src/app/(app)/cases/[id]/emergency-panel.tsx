@@ -88,7 +88,7 @@ export default function EmergencyPanel({
           Emergency/Safety-Critical claimed — awaiting Executive/Manager confirmation
         </p>
         <p className="text-xs text-orange-300">{emergencyClaimReason}</p>
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
         {canConfirm && (
           <Button variant="warning" className="self-start" onClick={confirm} disabled={submitting}>
             Confirm Emergency (starts 1h escalation clock)
@@ -113,7 +113,7 @@ export default function EmergencyPanel({
           rows={2}
         />
       </FormField>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <Button variant="danger" className="self-start" onClick={claim} disabled={submitting}>
         Claim Emergency
       </Button>

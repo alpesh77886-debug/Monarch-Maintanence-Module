@@ -38,6 +38,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-bg">
+      {/* Loop 82 (accessibility pass): a keyboard/screen-reader user
+          otherwise has to tab through the whole header (logo link,
+          availability toggle, notification bell, sign-out) before reaching
+          any page content on every single navigation - WCAG 2.4.1 "Bypass
+          Blocks". Visually hidden until focused (sr-only / focus:not-sr-only
+          is the standard pattern), so sighted mouse users never see it. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Skip to content
+      </a>
       <header className="chrome-blur sticky top-0 z-30 flex h-14 items-center border-b border-line px-4">
         <div className="flex w-full items-center justify-between gap-3">
           <Link href="/home" className="flex items-center gap-2 text-base font-semibold text-fg">
@@ -81,7 +93,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             screen. pb-20 (bottom-nav clearance) matches AppNav's own
             lg:hidden switch — the fixed bottom bar keeps needing that
             clearance through the whole mobile+tablet range. */}
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-20 pt-4 lg:max-w-4xl lg:pb-4 xl:max-w-5xl">
+        <main
+          id="main-content"
+          className="mx-auto w-full max-w-3xl flex-1 px-4 pb-20 pt-4 lg:max-w-4xl lg:pb-4 xl:max-w-5xl"
+        >
           {children}
         </main>
       </div>

@@ -80,7 +80,7 @@ export default function CreatePlanForm({ isManager }: { isManager: boolean }) {
           />
         </FormField>
       )}
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <Button className="self-start" onClick={submit} disabled={submitting || !title.trim()}>
         Create plan
       </Button>

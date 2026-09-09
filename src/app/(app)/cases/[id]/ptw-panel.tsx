@@ -90,7 +90,7 @@ export default function PtwPanel({
         )}
       </p>
 
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
 
       {status === "DIAGNOSING" && (
         <div className="flex flex-col gap-1">

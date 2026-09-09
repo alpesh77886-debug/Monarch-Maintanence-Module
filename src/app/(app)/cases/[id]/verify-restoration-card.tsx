@@ -49,7 +49,7 @@ export default function VerifyRestorationCard({ restoration }: { restoration: Re
         Technical restoration pending verification
       </p>
       <p className="text-sm text-purple-300">{restoration.details}</p>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       {!failing ? (
         <div className="flex gap-2">
           <Button variant="success" onClick={pass} disabled={submitting}>

@@ -121,7 +121,7 @@ export default function PmInstanceCard({
           )}
         </p>
       )}
-      {error && <p className="mt-1 text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-sm text-red-300">{error}</p>}
       {canAct && (
         <div className="mt-2 flex flex-col gap-2 border-t border-line pt-2">
           {!instance.case_id && (

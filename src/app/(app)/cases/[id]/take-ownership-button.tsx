@@ -39,7 +39,7 @@ export default function TakeOwnershipButton({ caseId }: { caseId: string }) {
       <p className="text-sm text-amber-300">
         This case has no Maintenance owner.
       </p>
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       <div>
         <Button variant="warning" onClick={takeOwnership} disabled={submitting}>
           Take ownership
