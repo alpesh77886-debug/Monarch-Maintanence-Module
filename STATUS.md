@@ -1,6 +1,32 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: GATE 14 STOP (Loops 66-70 complete) - mandatory 5-loop
+Current loop: Loop 71 complete - Boss said "loop start karo 71 se 75",
+  closing Gate 14. §17 "Mobile Header" cleanup. Real findings:
+  AvailabilityToggle renders a labeled "On shift"/"Off shift" pill and
+  SignOutButton renders a labeled "Sign out" button (with real §22.1
+  handover-warning logic behind it) - both genuine text-clutter in the
+  compact mobile header, unlike NotificationBell which is already an
+  icon-only control. Also found a real constraint that shaped the fix:
+  AppNav (bottom-nav) is staff-only (`isStaff && <AppNav />`), so a
+  non-staff user has NO bottom-nav at all and no /more access either -
+  for them the header remains their only reachable surface. Fixed by
+  hiding AvailabilityToggle/SignOutButton from the mobile header ONLY
+  for staff (sm:inline-flex), and adding the SAME components (not
+  reimplemented, so Sign Out's handover-warning stays intact) to a new
+  "Account" section on /more, reachable via bottom-nav. Non-staff
+  header is unchanged - both controls stay visible at every viewport
+  for them. NotificationBell deliberately left alone everywhere -
+  icon-only already, not the text clutter §17 targets, and staff rely
+  on it for timely escalation visibility (§7.3/§23) that burying it in
+  More would work against; documented as an explicit scope call, not a
+  silent gap. Verified via the Loop 53 throwaway-route technique:
+  rendered both the staff and non-staff header variants plus the new
+  More Account section side by side at mobile width - confirmed staff
+  header shows only logo+bell, non-staff header still shows bell+Sign
+  out, and the Account section renders both controls correctly. tsc/
+  eslint/build clean; only layout.tsx/more/page.tsx touched, zero
+  business logic changed (same components, same RPCs).
+Previously: GATE 14 STOP (Loops 66-70 complete) - mandatory 5-loop
   checkpoint per Section 19.9/19.13. Autonomous loop work is PAUSED,
   AWAITING BOSS explicit continuation language before Loop 71 - even
   though the Boss pre-approved the full 66-70 range ("start loop 66 to

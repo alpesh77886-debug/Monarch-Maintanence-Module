@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/ui";
+import AvailabilityToggle from "../availability-toggle";
+import SignOutButton from "../sign-out-button";
 
 // Loop 63 (Prompt §6, nav relabel): the bottom tab bar only has 5 slots
 // (Cases/Control/PM/Spares/More per the mockup's own in-app tab bar).
 // Recurrence and KPIs don't fit — this page is where they now live,
 // matching Prompt §17's "secondary controls live in a surface such as More."
+//
+// Loop 71 (§17 "Mobile Header"): the global header used to show the
+// Availability toggle and Sign Out unconditionally on mobile — real
+// clutter, since both render as labeled pill/button controls, not icons.
+// Both now live here instead for staff (who always have this page one
+// bottom-nav tap away). Reuses the SAME components the header used —
+// not a reimplementation — so Sign Out's shift-handover-warning logic
+// (§22.1) is untouched.
 const MORE_LINKS = [
   {
     href: "/recurrence-rules",
@@ -27,7 +37,7 @@ export default async function MorePage() {
 
   const { data: isStaffRow } = await supabase
     .from("staff")
-    .select("id")
+    .select("id, is_available")
     .eq("id", user?.id ?? "")
     .maybeSingle();
 
@@ -55,6 +65,23 @@ export default async function MorePage() {
           </li>
         ))}
       </ul>
+
+      <section>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+          Account
+        </h2>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-card p-3.5 shadow-sm">
+          <div>
+            <p className="text-sm font-medium text-fg">Shift availability</p>
+            <p className="mt-0.5 text-xs text-muted">Whether you can receive handovers.</p>
+          </div>
+          <AvailabilityToggle isAvailable={!!isStaffRow.is_available} />
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-line bg-card p-3.5 shadow-sm">
+          <p className="text-sm font-medium text-fg">Sign out</p>
+          <SignOutButton />
+        </div>
+      </section>
     </div>
   );
 }
