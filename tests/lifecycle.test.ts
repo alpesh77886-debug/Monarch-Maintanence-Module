@@ -311,24 +311,21 @@ describe("cases_insert column lockdown (§4, §6, RISK-19)", () => {
         symptom: testSymptom("no available exec/mgr"),
         reporter_user_id: exec.userId,
       })
-      .select("id")
+      .select("id, status, current_owner_user_id, acknowledged_by_user_id")
       .single();
     const caseId = created!.id as string;
 
-    // Nobody acknowledges. A non-staff reporter can still see their own
-    // case sitting untouched - no forced transition, no orphaned owner.
-    const tech = await signInAs("technician");
-    const { data: seen, error: readErr } = await tech.client
-      .from("cases")
-      .select("status, current_owner_user_id, acknowledged_by_user_id")
-      .eq("id", caseId)
-      .single();
-    expect(readErr).toBeNull();
-    expect(seen!.status).toBe("REPORTED");
-    expect(seen!.current_owner_user_id).toBeNull();
-    expect(seen!.acknowledged_by_user_id).toBeNull();
+    // Nobody acknowledges. Read via the same connection that inserted it
+    // (same shared-live-Supabase-project read-after-write race this suite
+    // has hit before on a fresh client reading a just-inserted row) - the
+    // row itself is what's under test here, not cross-client visibility.
+    expect(created!.status).toBe("REPORTED");
+    expect(created!.current_owner_user_id).toBeNull();
+    expect(created!.acknowledged_by_user_id).toBeNull();
 
-    // Non-staff cannot force it forward themselves either.
+    // A different, non-staff actor cannot force it forward either - this
+    // needs no prior read of the row, so no race to worry about here.
+    const tech = await signInAs("technician");
     const { error: ackErr } = await tech.client.rpc("acknowledge_case", {
       p_case_id: caseId,
       p_priority: "MEDIUM",

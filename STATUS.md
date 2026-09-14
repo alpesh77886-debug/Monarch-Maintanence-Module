@@ -33,7 +33,17 @@ Current loop: Loop 96 complete - first loop of the Boss-approved 96-100
   inventing an availability feature the pack never asked for - closed
   RISK-07 as RESOLVED. tsc/eslint clean. Could not run the new test
   locally against live Supabase (same sandbox network restriction as
-  every test change this session) - verification is via CI.
+  every test change this session) - verification is via CI, which caught
+  a real bug in the test itself: reading the just-inserted case back with
+  a DIFFERENT client (tech.client) immediately after exec.client's
+  insert hit PGRST116 (0 rows) - the same shared-live-Supabase-project
+  read-after-write race already documented elsewhere this session
+  (tests/emergency-and-notifications.test.ts's CASE_NOT_FOUND flake).
+  Root-caused rather than re-run blind: the test didn't need the
+  cross-client read at all, since the insert's own .select() already
+  returns the row's state on the same connection. Fixed by asserting on
+  that directly and keeping tech.client only for the FORBIDDEN check
+  (no prior read needed, so nothing to race).
 Previously: Loop 95 complete - final loop of the Boss-approved 91-95
   batch, carrying the mandatory Gate 19 stop per §19.9/§19.13. PR #92
   (Loop 94, including the Codex-review follow-up fix) merged clean, CI
