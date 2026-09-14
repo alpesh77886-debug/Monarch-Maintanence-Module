@@ -1,6 +1,45 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 106 - Boss approved "Continue loop 106 to 110" and asked
+Current loop: Loop 108 - spare-consumption Excel export. New API route
+  src/app/api/spares/export/route.ts (staff-only - refuses a non-staff
+  caller outright rather than silently scoping to just their own rows)
+  reads spare_usage joined with spare_requests (spare name, estimated
+  amount) and cases (case number, symptom, area, line), resolves
+  actor_user_id to a staff full_name the same way every other panel in
+  this app already does (falls back to the raw id for a non-staff
+  actor, matching ownership-history's existing pattern - not a new
+  gap), and streams a real .xlsx via the new exceljs dependency.
+  "Download Excel" button added to the Spares page (src/app/(app)/
+  spares/page.tsx) - the exact page titled "Spare Consumption" the
+  Boss meant. Columns: date, spare, quantity, estimated amount, case
+  number, symptom, area, line, machine/asset, used by, outcome, stores
+  reference status/id - every field the Boss asked for. Verified the
+  actual join/query logic against a live synthetic scenario (inserted,
+  confirmed the joined result matched exactly what the route computes,
+  then cleaned up via the same safe cleanup_synthetic_cases function -
+  no residual test data left). tsc/eslint/next build all clean. `npm
+  audit` found one new moderate transitive finding (exceljs -> uuid,
+  GHSA-w5hq-g745-h8pq) - not reachable from any Maintenance-supplied
+  input, documented as RISK-34 (LOW, OPEN) rather than force-downgrading
+  exceljs, matching Loop 59/98's "small bumps only" precedent.
+Previously: Loop 107 - multi-material spare consumption. Boss: a
+  technician often uses several different materials in one
+  intervention (e.g. 2 bearings + 3 switches + 5 MCBs) - raising a
+  request and recording usage was one-at-a-time before this. The data
+  model already keeps each material as its own spare_requests/
+  spare_usage row pair (correctly, for §16.1 traceability - one row
+  can't mean "2 bearings AND 3 switches"), so this was a UI convenience
+  gap only, not a schema/RPC change: spares-panel.tsx gained a new
+  "Record materials used (multiple at once)" form with dynamic rows
+  (spare name / qty / estimated amount) and a shared asset ref/outcome;
+  on submit each row does the same raise_spare_request ->
+  record_spare_usage pair the existing single-item forms already do,
+  sequentially, with a per-row result summary (a >Rs12,000 item that
+  needs Manager approval is clearly called out, not silently dropped).
+  No new RPC, no migration. Existing single-item "Raise a request" /
+  "Record spare usage" forms kept untouched alongside it for the
+  pre-approval-needed workflow. tsc/eslint/next build all clean.
+Previously: Loop 106 - Boss approved "Continue loop 106 to 110" and asked
   for all test data to be removed "agar application ko koi nuksan nahi hai
   to" (if it doesn't harm the app). Verified live before touching anything:
   all 1101 cases in the Maintenance Supabase project carried the

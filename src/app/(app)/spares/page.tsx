@@ -10,6 +10,14 @@ import { EmptyState } from "@/components/ui";
 export default async function SparesPage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: staffRow } = user
+    ? await supabase.from("staff").select("id").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const isStaff = !!staffRow;
+
   const { data: requests, error } = await supabase
     .from("spare_requests")
     .select(
@@ -39,9 +47,19 @@ export default async function SparesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-fg">Spare Consumption</h1>
-        <p className="text-sm text-muted">Most recent spare requests, across all cases</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-fg">Spare Consumption</h1>
+          <p className="text-sm text-muted">Most recent spare requests, across all cases</p>
+        </div>
+        {isStaff && (
+          <a
+            href="/api/spares/export"
+            className="shrink-0 rounded-lg border border-line2 bg-card2 px-3 py-2 text-xs font-medium text-fg shadow-sm hover:bg-card3"
+          >
+            Download Excel
+          </a>
+        )}
       </div>
 
       {error && (
