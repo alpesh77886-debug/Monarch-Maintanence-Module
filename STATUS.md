@@ -1,6 +1,26 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 98 complete - PR #95 (Loop 97) merged; its own first
+Current loop: Loop 99 complete - PR #96 (Loop 98) merged; its own first
+  CI run hit a genuinely different failure shape this time - not the
+  read-visibility race hit 3x already this batch, but the e2e job's
+  browser sign-in stalling ("did not reach /home", no inline error) on
+  2 of 8 tests. Root-caused as RISK-16's already-documented GoTrue
+  slowness/rate-limiting class under CI load, just manifesting in the
+  e2e job's own real sign-in flow rather than the Vitest suite RISK-16
+  originally fixed - not this PR's dependency-only diff. Posted a
+  standing-down comment, re-ran once, came back green, merged. Loop 99
+  itself: rather than leave this as "just re-run it next time," actually
+  hardened e2e/helpers.ts's signIn() with one targeted retry of the
+  login attempt itself (not the whole Playwright test, which already
+  has its own retry that didn't help one of the two failures) when the
+  first attempt stalls on /login with no inline error - an explicit
+  rejection (wrong password etc.) still fails immediately, never masked
+  by a retry. Documented as an addendum to RISK-16 rather than a new
+  risk entry, since it's the same root cause in a code path the
+  original fix never covered (session caching isn't an option for e2e,
+  since the login UI itself is what's under test there). tsc/eslint
+  clean.
+Previously: Loop 98 complete - PR #95 (Loop 97) merged; its own first
   CI run hit ANOTHER real-but-unrelated flake first (this time
   tests/production-boundary.test.ts - the same shared-live-Supabase
   write-visibility race, on a docs-only diff that never touched that
