@@ -21,7 +21,8 @@
 | 17 (Loops 81–85) | [`APPROVAL_REPORT_LOOP_81_85.md`](./APPROVAL_REPORT_LOOP_81_85.md) | Approved — "loop 86 se 90 continue karo" (with a Boss-reported live bug attached) | 2026-09-09 |
 | 18 (Loops 86–90) | [`APPROVAL_REPORT_LOOP_86_90.md`](./APPROVAL_REPORT_LOOP_86_90.md) | Approved — "Loop start karo 91 se 95" | 2026-09-14 |
 | 19 (Loops 91–95) | [`APPROVAL_REPORT_LOOP_91_95.md`](./APPROVAL_REPORT_LOOP_91_95.md) | Approved — "Continue loop 96 to 100", with an explicit ask to be told how much work is left at the end | 2026-09-14 |
-| 20 (Loops 96–100) | [`APPROVAL_REPORT_LOOP_96_100.md`](./APPROVAL_REPORT_LOOP_96_100.md) | AWAITING BOSS | — |
+| 20 (Loops 96–100) | [`APPROVAL_REPORT_LOOP_96_100.md`](./APPROVAL_REPORT_LOOP_96_100.md) | Approved — "Continue loop 101 to 105", and in the same message supplied the RISK-32/RISK-33 design decisions this gate report had asked for | 2026-09-14 |
+| 21 (Loops 101–105) | [`APPROVAL_REPORT_LOOP_101_105.md`](./APPROVAL_REPORT_LOOP_101_105.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -471,19 +472,25 @@ per whatever that audit leaves open, with Loop 100 carrying the
 mandatory Gate 20 stop and the honest completion answer the Boss asked
 for.
 
-**GATE 20 (Loops 96-100) — AWAITING BOSS.** The completion figure the
-Boss asked for: **24 of 25 §32 V1 items are functionally complete**,
-verified fresh against actual code/tests, not a reused percentage. Only
-RISK-32 (reopen authority) and RISK-33 (complainant-disagreement path)
-remain as real gaps, and both are business-rule design decisions the
-Boss must supply — this is the 9th consecutive gate report to flag them,
-unchanged since Gate 12. Along the way this batch closed two real,
-smaller findings: `RISK-07`'s test-coverage record was stale (fixed,
-plus the one genuine remaining §37 gap closed with a test) and
-`RISK-16`'s auth-rate-limit fix had an uncovered code path in the `e2e`
-job's own sign-in flow (hardened with a targeted retry, verified working
-on the very next PR). A fresh dependency security audit found 0
-vulnerabilities and applied 4 safe patch/minor bumps. Full detail,
-including why this report does not pre-select a Loop 101 direction, in
-`APPROVAL_REPORT_LOOP_96_100.md`. Per §19.9 the same mandatory stop will
-apply again after the next 5 loops, whatever they turn out to be.
+**GATE 20 (Loops 96-100) — RESOLVED.** The Boss replied **"Continue loop
+101 to 105"** and, in the same message, supplied both design decisions
+this gate report (and 8 before it, since Gate 12) had been asking for:
+RISK-32 (reopen authority) is MAINTENANCE_MANAGER only; RISK-33
+(complainant disagreement) is a complainant-raises/Executive-acknowledges
+interaction. Full detail in `APPROVAL_REPORT_LOOP_96_100.md`.
+
+**GATE 21 (Loops 101-105) — AWAITING BOSS.** Both decisions implemented
+server-side, migration-first, exactly as given, with the actual "no
+unilateral closure" enforcement living inside `transition_case` itself,
+not just the UI. **RISK-32 and RISK-33 are both now RESOLVED** in
+`RISK_REGISTER.md` — for the first time since Gate 12, this report has no
+outstanding business-rule design question to re-raise. One real gap is
+explicitly acknowledged rather than silently skipped: browser-level e2e
+coverage for the Reopen button and the two new dispute forms does not
+exist yet (the RPC-level authority is fully tested; the UI-wiring layer
+is only manually verified via `tsc`/`eslint`/`next build`, not an
+automated browser test) — writing it safely needs a multi-step UI walk
+this sandbox cannot verify locally, so it was deliberately deferred
+rather than rushed. Full detail in `APPROVAL_REPORT_LOOP_101_105.md`. Per
+§19.9 the same mandatory stop will apply again after the next 5 loops,
+whatever they turn out to be.

@@ -1,6 +1,119 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 100 complete - final loop of the Boss-approved 96-100
+Current loop: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
+  identically (confirmed deterministic on a re-run before treating it as
+  anything but a flake). Root cause: migration 0052 (Loop 103) rebuilt
+  transition_case from migration 0007's stale body, silently reverting
+  two later fixes still in production - 0019's PTW gate and 0034's
+  QC-authority identity's narrow CLEARANCE_PENDING-only transition grant
+  (F-01/F-01b). 13 tests failed across 5 files, including this batch's
+  own new restoration-dispute.test.ts. Fixed by restoring 0034's full
+  body verbatim with only the RISK-33 dispute guard layered back on top
+  - no other behavior change. Applied live, documented in
+  APPROVAL_REPORT_LOOP_101_105.md and RISK_REGISTER.md. Re-run came back
+  narrower: 9 of 13 failures gone (confirms the transition_case fix), 4
+  remained, all in this batch's own restoration-dispute.test.ts, all
+  "Cannot read properties of null" on the very first case-insert. Second
+  real bug, found by reading cases_insert's actual RLS policy (migration
+  0026): reporter_user_id = auth.uid() is required unconditionally, no
+  is_staff() escape hatch - so driveToTechnicallyRestoredAndPassed's
+  insert (issued from exec.client with reporter_user_id: tech.userId)
+  was refused by RLS every time, and the test never checked the insert's
+  error, so it surfaced as a bare TypeError instead of the real cause.
+  Fixed by inserting from the reporter's own client instead, and by
+  asserting error is null at every insert in this file. Re-run narrowed
+  to exactly 1 failure (227/228): the test's own notification check read
+  via exec.client while checking for tech's notification - RLS
+  (recipient_user_id = auth.uid(), migration 0008) means exec can never
+  see tech's row regardless of correctness. Fixed by reading via
+  tech.client. Same CI run's cleanup step also warned of a real,
+  non-blocking gap: cleanup_synthetic_cases deletes restorations before
+  restoration_disputes (new this batch, no CASCADE), so any synthetic
+  case with a dispute failed that cleanup batch with a live FK
+  violation. Fixed in migration 0054 - one line added to the existing
+  "children first, FK order" delete list. Pushed, CI re-running.
+Previously: Loop 105 complete - final loop of the Boss-approved 101-105
+  batch, carrying the mandatory Gate 21 stop per #19.9/#19.13. Both
+  RISK-32 and RISK-33 are now RESOLVED in RISK_REGISTER.md - the first
+  gate report since Gate 12 with no outstanding business-rule design
+  question to re-raise. Wrote APPROVAL_REPORT_LOOP_101_105.md (full
+  5-loop summary) and updated APPROVAL_GATE.md (Gate 20 marked
+  Approved/resolved with the Boss's actual reply, Gate 21 AWAITING
+  BOSS). One real gap explicitly acknowledged rather than silently
+  skipped: browser-level e2e coverage for the Reopen button and the two
+  new dispute forms does not exist yet - writing it safely needs a
+  multi-step UI walk (Acknowledge -> Assessment -> Assign -> an
+  intervention that auto-advances DIAGNOSING/IN_REPAIR -> Restoration ->
+  QC) this sandbox cannot verify locally, so rather than push a risky,
+  unverified long e2e spec and iterate blind against a real shared
+  Supabase project, this batch documented the gap honestly instead. The
+  RPC-level authority enforcement itself is fully tested either way.
+  Autonomous work is now PAUSED per the mandatory gate stop - Loop 106
+  will not start without explicit Boss continuation language.
+Previously: Loop 104 complete - UI wiring for both Gate 21 fixes.
+  Reopen button (close-reopen-actions.tsx) now only renders for a Manager
+  (isManager prop threaded from page.tsx), matching the RISK-32 RPC gate.
+  New dispute-restoration-form.tsx ("Machine still not okay" - the case's
+  own reporter, shown on the Restorations tab when a TECHNICAL restoration
+  was just verified PASSED and the case is still TECHNICALLY_RESTORED with
+  no dispute already pending) and acknowledge-dispute-card.tsx (Confirmed
+  fixed / Confirmed not fixed - staff, shown when a dispute is PENDING).
+  New RestorationDispute type in database.types.ts. Both forms are
+  convenience gating only - raise_restoration_dispute and
+  acknowledge_restoration_dispute re-check every precondition server-side
+  regardless of what the UI offers. tsc --noEmit, eslint, and a full
+  `next build` all clean.
+Previously: Loop 103 complete - RISK-33 acknowledge side + "no unilateral
+  closure" guard, closing RISK-33 RESOLVED. Migration 0052 adds
+  acknowledge_restoration_dispute (staff-only): not-fixed returns the case
+  to DIAGNOSING/IN_REPAIR (reusing verify_restoration's existing failure
+  edges, no new graph edge) and notifies the complainant of the outcome;
+  fixed leaves the case status untouched. The actual server-side teeth for
+  "no unilateral closure" is a new guard inside transition_case itself -
+  TECHNICALLY_RESTORED cannot advance to CLEARANCE_PENDING/
+  MAINTENANCE_RELEASED (neither send_to_qc nor the no-QC-required direct
+  release) while a restoration_disputes row is still PENDING. Both risks
+  the Boss asked about at Gate 20 (RISK-32, RISK-33) are now RESOLVED in
+  RISK_REGISTER.md, after 9+ consecutive gate reports raising them
+  unanswered since Gate 12. tests/restoration-dispute.test.ts covers both
+  RPCs' authority/preconditions, both resolution paths, the guard actually
+  blocking send_to_qc/direct release (with a check that a blocked
+  send_to_qc leaves no orphaned clearances row), duplicate-pending and
+  already-acknowledged refusals, and notification delivery both ways.
+Previously: Loop 102 complete - RISK-33 raise side. Migration 0051 adds
+  maintenance.restoration_disputes (RPC-only, same pattern as clearances)
+  and raise_restoration_dispute: callable only by the case's own
+  reporter_user_id, only against a TECHNICAL restoration staff already
+  verified PASSED, only while the case is still TECHNICALLY_RESTORED
+  (matching #11's own placement in the pack, between #10 restoration and
+  #12 QC gate - not a general post-closure reopen, that's RISK-32).
+  Notifies the case's owning Executive (or all active Managers if
+  unassigned). tests/restoration-dispute.test.ts covers authority
+  (Executive who isn't the reporter is refused, technician-as-reporter
+  succeeds), preconditions (unverified restoration refused, reason
+  required), and duplicate-pending refusal. RISK-33 marked IN PROGRESS
+  in RISK_REGISTER.md, not yet RESOLVED - the Executive-side
+  acknowledge_restoration_dispute RPC and the "no unilateral closure"
+  guard (blocking QC/closure while a dispute is PENDING) are Loop 103's
+  work.
+Previously: Loop 101 complete - Boss approved "Continue loop 101 to 105"
+  and, in the same message, supplied the two design decisions every gate
+  report since Gate 12 has been asking for. RISK-32 (reopen authority):
+  Boss said "Yaha Sirf Maintenance Manager rakho" - reopen authority is
+  MAINTENANCE_MANAGER only, resolving IMPLEMENTATION_PACK.md line 150's
+  ambiguous "Executive + Manager" phrase. Migration 0050 changes
+  reopen_case's guard from is_staff() to the pre-existing is_manager()
+  (not redefined). UI now only shows the Reopen button to a Manager
+  (server RPC is the real enforcement regardless). lifecycle.test.ts's
+  Scenario A now asserts an Executive gets FORBIDDEN before a Manager
+  succeeds; red-team-matrix.test.ts adds a dedicated case - an Executive
+  who owns and closes a case still cannot reopen it. RISK-32 closed
+  RESOLVED in RISK_REGISTER.md. RISK-33 (complainant disagreement): Boss
+  supplied the interaction shape too - complainant raises "kaam nahi
+  hua" (work not done), Executive then acknowledges whether it is
+  actually fixed or not. Design captured this loop; schema + RPCs are
+  Loop 102-103's work, not yet built.
+Previously: Loop 100 complete - final loop of the Boss-approved 96-100
   batch, carrying the mandatory Gate 20 stop per §19.9/§19.13. PR #97
   (Loop 99) merged clean, CI green on the first try - including the
   e2e job, confirming the RISK-16 retry fix actually works under real

@@ -71,21 +71,37 @@ describe("Scenario A — normal breakdown happy path (§38)", () => {
       .single();
     expect(closedCase!.status).toBe("CLOSED");
 
-    // Scenario F — reopen (§4.5, §38)
+    // Scenario F — reopen (§4.5, §38, RISK-32). Reopen authority is
+    // MAINTENANCE_MANAGER only (Boss decision, Gate 21/Loop 101) — an
+    // Executive, even the case's own owning Executive, must be rejected.
     ({ error } = await exec.client.rpc("reopen_case", {
+      p_case_id: caseId,
+      p_reason: "autotest: exec should not be able to reopen",
+    }));
+    expect(error?.message).toMatch(/FORBIDDEN/);
+
+    const { data: stillClosed } = await exec.client
+      .from("cases")
+      .select("status")
+      .eq("id", caseId)
+      .single();
+    expect(stillClosed!.status).toBe("CLOSED");
+
+    const manager = await signInAs("manager");
+    ({ error } = await manager.client.rpc("reopen_case", {
       p_case_id: caseId,
       p_reason: "autotest: same problem recurred",
     }));
     expect(error).toBeNull();
 
-    const { data: reopenedCase } = await exec.client
+    const { data: reopenedCase } = await manager.client
       .from("cases")
       .select("status")
       .eq("id", caseId)
       .single();
     expect(reopenedCase!.status).toBe("DIAGNOSING");
 
-    const { data: events } = await exec.client
+    const { data: events } = await manager.client
       .from("case_events")
       .select("event_type")
       .eq("case_id", caseId);

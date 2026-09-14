@@ -141,3 +141,41 @@ describe("Red team — an Executive cannot jump the lifecycle graph", () => {
     }
   });
 });
+
+describe("Red team — an Executive cannot reopen a closed case (RISK-32, Gate 21/Loop 101)", () => {
+  it("is refused even when the Executive owns the case and closed it themselves", async () => {
+    const exec = await signInAs("executive");
+    const caseId = await freshCase(exec, "red team reopen authority");
+
+    for (const status of ["ASSESSED", "ASSIGNED", "DIAGNOSING", "IN_REPAIR"]) {
+      await exec.client.rpc("transition_case", { p_case_id: caseId, p_new_status: status });
+    }
+    await exec.client.rpc("record_restoration", {
+      p_case_id: caseId,
+      p_restoration_type: "TECHNICAL",
+      p_details: "red team fix",
+    });
+    await exec.client.rpc("set_qc_required", {
+      p_case_id: caseId,
+      p_qc_required: false,
+      p_reason: "red team: no QC needed",
+    });
+    await exec.client.rpc("transition_case", { p_case_id: caseId, p_new_status: "MAINTENANCE_RELEASED" });
+    await exec.client.rpc("transition_case", {
+      p_case_id: caseId,
+      p_new_status: "CLOSED",
+      p_reason: "red team: production resumed",
+    });
+
+    // Executive attempts to reopen the very case they just closed —
+    // IMPLEMENTATION_PACK.md §3.2's "Executive + Manager" reopen authority
+    // resolves (Boss decision) to MAINTENANCE_MANAGER only, so this must be
+    // refused server-side regardless of the Executive's involvement.
+    const { error } = await exec.client.rpc("reopen_case", {
+      p_case_id: caseId,
+      p_reason: "red team: exec self-reopen",
+    });
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/FORBIDDEN/);
+  });
+});

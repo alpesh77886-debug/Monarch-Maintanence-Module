@@ -28,6 +28,8 @@ import RootCausePanel from "./root-cause-panel";
 import EvidencePanel from "./evidence-panel";
 import AssetPanel from "./asset-panel";
 import RestorationHistoryPanel from "./restoration-history-panel";
+import DisputeRestorationForm from "./dispute-restoration-form";
+import AcknowledgeDisputeCard from "./acknowledge-dispute-card";
 import Link from "next/link";
 import { Badge, Card, StatusBadge } from "@/components/ui";
 import CaseLifecycleStrip from "./case-lifecycle-strip";
@@ -43,6 +45,7 @@ import type {
   CaseRootCause,
   CaseEvidence,
   CaseAsset,
+  RestorationDispute,
 } from "@/lib/supabase/database.types";
 
 export default async function CaseDetailPage({
@@ -75,6 +78,7 @@ export default async function CaseDetailPage({
     { data: activeWait },
     { data: pendingRestoration },
     { data: restorationHistory },
+    { data: restorationDisputes },
     { data: pendingClearance },
     { data: spareRequests },
     { data: spareUsage },
@@ -120,6 +124,12 @@ export default async function CaseDetailPage({
       .is("verification_result", null)
       .maybeSingle(),
     supabase.from("restorations").select("*").eq("case_id", id).order("recorded_at", { ascending: true }),
+    // RISK-33 (§11, Gate 21 Loops 102-103): the complainant disagreement
+    // path — all disputes, ordered newest first, so the PENDING one (at
+    // most one at a time — raise_restoration_dispute refuses a second)
+    // is easy to find for both the reporter's "dispute" button state and
+    // the staff acknowledge card.
+    supabase.from("restoration_disputes").select("*").eq("case_id", id).order("raised_at", { ascending: false }),
     supabase.from("clearances").select("*").eq("case_id", id).eq("decision", "PENDING").maybeSingle(),
     supabase.from("spare_requests").select("*").eq("case_id", id).order("requested_at", { ascending: true }),
     supabase.from("spare_usage").select("*").eq("case_id", id).order("used_at", { ascending: true }),
@@ -192,6 +202,23 @@ export default async function CaseDetailPage({
   // locked lifecycle graph (only IN_REPAIR does) — see FollowUpButton.
   const canRecordRestoration = !!isStaffRow && caseRow.status === "IN_REPAIR";
   const needsFollowUp = !!isStaffRow && caseRow.status === "TEMPORARILY_RESTORED";
+
+  // RISK-33 (§11, Gate 21 Loops 102-103): complainant disagreement path.
+  // raise_restoration_dispute itself re-checks all of this server-side —
+  // these flags only decide what the UI offers.
+  const pendingDispute =
+    ((restorationDisputes ?? []) as RestorationDispute[]).find((d) => d.status === "PENDING") ?? null;
+  const latestPassedTechnicalRestoration =
+    (restorationHistory ?? [])
+      .filter((r) => r.restoration_type === "TECHNICAL" && r.verification_result === "PASSED")
+      .at(-1) ?? null;
+  const canDisputeRestoration =
+    !!user &&
+    user.id === caseRow.reporter_user_id &&
+    caseRow.status === "TECHNICALLY_RESTORED" &&
+    !!latestPassedTechnicalRestoration &&
+    !pendingDispute;
+  const canAcknowledgeDispute = !!isStaffRow && !!pendingDispute;
 
   // §6: reporter or staff may claim; only staff may confirm, and only once
   // claimed. Not offered once the case is CLOSED/REJECTED/DUPLICATE.
@@ -375,7 +402,9 @@ export default async function CaseDetailPage({
     <div className="flex flex-col gap-4">
       {escalationBanner}
       {emergencyPanel}
-      {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
+      {isStaffRow && (
+        <CloseReopenActions caseId={caseRow.id} status={caseRow.status} isManager={isManager} />
+      )}
       {isStaffRow && (
         <PriorityPanel
           caseId={caseRow.id}
@@ -545,6 +574,12 @@ export default async function CaseDetailPage({
         <FollowUpButton caseId={caseRow.id} />
       ) : (
         canRecordRestoration && <RestorationForm caseId={caseRow.id} />
+      )}
+      {canAcknowledgeDispute && pendingDispute && (
+        <AcknowledgeDisputeCard dispute={pendingDispute} />
+      )}
+      {canDisputeRestoration && latestPassedTechnicalRestoration && (
+        <DisputeRestorationForm restorationId={latestPassedTechnicalRestoration.id} />
       )}
       {isStaffRow && <RestorationHistoryPanel restorations={restorationHistory ?? []} />}
     </div>
