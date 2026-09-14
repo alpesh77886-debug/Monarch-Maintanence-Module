@@ -7,8 +7,11 @@ Current loop: Loop 95 complete - final loop of the Boss-approved 91-95
   APPROVAL_REPORT_LOOP_91_95.md (full 5-loop summary), updated
   APPROVAL_GATE.md (Gate 19 AWAITING BOSS), and this STATUS.md entry.
   This batch's shape: RISK-32/RISK-33 stayed untouched again (no Boss
-  answer to either design question across four consecutive gate
-  reports now), so every other RISK_REGISTER OPEN item was checked and
+  answer to either design question across eight gate reports now, Gate
+  12 through this one - verified by grep, not estimated, after a Codex
+  review on PR #93 correctly caught this report's own first draft
+  undercounting it as "four"), so every other RISK_REGISTER OPEN item
+  was checked and
   confirmed Boss/access-blocked before pivoting to self-directed work -
   Loop 91 closed a real test-coverage gap (decide_recurrence_flag,
   zero coverage on a locked authority boundary), Loops 92-93 did a live

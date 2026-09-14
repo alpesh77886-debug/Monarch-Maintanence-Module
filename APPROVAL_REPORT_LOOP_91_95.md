@@ -123,9 +123,10 @@ before using the one permitted re-run; it came back green.
 
 - **RISK-32** (CRITICAL, reopen authority) and **RISK-33** (MEDIUM,
   complainant disagreement) remain `OPEN` in `RISK_REGISTER.md`,
-  unchanged since Gate 12 — now flagged to the Boss across four
-  consecutive gate reports (17, 18, and now this one) with no design
-  decision yet on either:
+  unchanged since Gate 12 — verified by grepping every gate report file
+  for both risk IDs (not estimated): both appear in all eight gate
+  reports from Gate 12 through this one (Gates 12, 13, 14, 15, 16, 17,
+  18, 19), with no design decision yet on either:
   1. **RISK-32**: what should "reopen authority = Executive + Manager"
      mean as an implementation? Manager-only? A genuine two-actor joint
      action?
@@ -143,9 +144,9 @@ before using the one permitted re-run; it came back green.
 ## What the Boss needs to decide before Loop 96
 
 Per §19.9/§19.13: explicit continuation language is required. With
-RISK-32/RISK-33 now flagged across four gate reports running and no
-other RISK_REGISTER item self-directable, the honest options for Loop 96
-are narrowing:
+RISK-32/RISK-33 now flagged across eight gate reports running (Gate 12
+through this one) and no other RISK_REGISTER item self-directable, the
+honest options for Loop 96 are narrowing:
 
 1. **Answer RISK-32/RISK-33** so real progress can resume on the
    highest-severity open items in the repo — this is the strongest
