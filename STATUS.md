@@ -1,6 +1,44 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 91 complete - first loop of the Boss-approved 91-95
+Current loop: Loop 92 complete - live re-verification of the CLAUDE.md
+  non-negotiable append-only rule ("maintenance_case_events /
+  maintenance_audit_log are append-only. Corrections are new rows, never
+  UPDATE/DELETE of business history"), directly against the deployed
+  Maintenance Supabase project (maavrlqkdrisjwzhjdgg) via
+  mcp__Supabase__execute_sql rather than trusting existing test code -
+  queried pg_policies for every maintenance.* table (27 tables) plus
+  relrowsecurity/relforcerowsecurity on the two history tables
+  specifically. Result: clean. case_events and audit_log each carry
+  exactly one policy (SELECT, staff-gated via is_staff()) and NO
+  INSERT/UPDATE/DELETE policy at all - so even a write attempt from an
+  authenticated staff member is RLS-default-denied; all real writes go
+  through SECURITY DEFINER RPCs that bypass RLS by design. RLS is
+  enabled on both. No table in the entire maintenance schema (all 27)
+  carries a DELETE policy - nothing is ever client-deletable anywhere.
+  The one UPDATE policy that looked worth checking closer,
+  safety_stops_update, turned out to be a `using (false)` always-deny
+  guard - the same explicit RPC-only pattern this repo already
+  established for clearances_insert after RISK-17 - not a gap.
+  Cross-checked against existing automated coverage: lifecycle.test.ts
+  already asserts the case_events insert-denial and
+  observations-clearances-audit.test.ts already asserts audit_log's
+  insert/update/delete-denial directly (including a real .delete() call
+  that gets rejected) - so this loop's live query is a fresh, independent
+  confirmation that no drift has happened since those tests were written,
+  not a newly-discovered gap. No code change - "found nothing" is
+  recorded as the result itself, same standing precedent as Loop 44.
+  This was chosen for Loop 92 because the RPC test-coverage angle from
+  Loop 91 is now exhausted: the other two candidates flagged then
+  (is_qc_authority, mark_asset_known) turned out on closer inspection to
+  be false positives from the literal-name grep - both are already
+  thoroughly covered by existing tests under different names/shapes
+  (is_qc_authority's true/false branches both exercised via
+  qc_decision's own FORBIDDEN/success tests in
+  forensic-authorization.test.ts; mark_asset_known's trigger behavior is
+  directly tested by name-blind assertion in case-assets.test.ts) - not
+  padding this loop with a low-value duplicate test just to have
+  something to show.
+Previously: Loop 91 complete - first loop of the Boss-approved 91-95
   batch ("Loop start karo 91 se 95"). RISK-32/RISK-33 remain the
   highest-value item but stayed untouched again - the Boss's reply did
   not answer either design question raised in the Gate 18 report, and
