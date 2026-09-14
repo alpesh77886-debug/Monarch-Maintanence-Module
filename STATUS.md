@@ -1,6 +1,22 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 110 - Manager analytics (scoped, not full 7-chart
+Current loop: PR #100 CI hotfix - Loop 107's multi-material form reused
+  "Spare name" / "Asset/machine ref" / "Outcome" as FormField labels,
+  identical to labels already used by the existing single-item "Raise a
+  spare request" and "Record spare usage" forms on the same panel - a
+  real duplicate-accessible-name bug (not a flake; confirmed by reading
+  the actual e2e job log, not just the pass/fail conclusion), which is
+  also why e2e/roles-and-notifications.spec.ts's existing
+  getByLabel("Spare name") started resolving to 2 elements the moment
+  Loop 107 shipped. Fixed at the root, not by patching the test: the
+  multi-material form's per-row spare-name label is now
+  "Material N name" (distinct per row, and more informative for a
+  screen-reader user filling several rows than a repeated "Spare name"
+  would have been anyway), and its two shared fields are now
+  "Asset/machine ref (all materials)" / "Outcome (all materials)".
+  tsc/eslint/next build all clean; grepped e2e/ to confirm no other
+  spec depends on the old label text.
+Previously: Loop 110 - Manager analytics (scoped, not full 7-chart
   mockup parity, as promised in Loop 106's plan). Dashboard already had
   a status-distribution bar (Loop 21's BarBreakdown) but nothing showing
   trend - a Manager could see today's snapshot, not whether case volume

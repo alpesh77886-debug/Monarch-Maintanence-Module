@@ -351,7 +351,11 @@ export default function SparesPanel({
           </p>
           {materialRows.map((row, i) => (
             <div key={i} className="flex flex-wrap items-end gap-2 rounded-lg border border-teal/20 p-2">
-              <FormField label="Spare name" required className="min-w-[140px] flex-1">
+              <FormField
+                label={`Material ${i + 1} name`}
+                required
+                className="min-w-[140px] flex-1"
+              >
                 <input
                   value={row.spareName}
                   onChange={(e) => updateMaterialRow(i, "spareName", e.target.value)}
@@ -394,14 +398,14 @@ export default function SparesPanel({
             + Add another material
           </Button>
           <div className="flex gap-2">
-            <FormField label="Asset/machine ref" className="flex-1">
+            <FormField label="Asset/machine ref (all materials)" className="flex-1">
               <input
                 value={bulkAssetRef}
                 onChange={(e) => setBulkAssetRef(e.target.value)}
                 className="w-full rounded-lg border border-line2 p-2 text-sm"
               />
             </FormField>
-            <FormField label="Outcome" className="flex-1">
+            <FormField label="Outcome (all materials)" className="flex-1">
               <input
                 value={bulkOutcome}
                 onChange={(e) => setBulkOutcome(e.target.value)}
