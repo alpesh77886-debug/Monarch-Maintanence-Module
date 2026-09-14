@@ -248,6 +248,19 @@ export interface Restoration {
   follow_up_required: boolean;
 }
 
+export interface RestorationDispute {
+  id: string;
+  restoration_id: string;
+  case_id: string;
+  raised_by: string;
+  raised_reason: string;
+  raised_at: string;
+  status: "PENDING" | "ACKNOWLEDGED_FIXED" | "ACKNOWLEDGED_NOT_FIXED";
+  acknowledged_by: string | null;
+  acknowledged_at: string | null;
+  acknowledgement_reason: string | null;
+}
+
 export interface Clearance {
   id: string;
   case_id: string;

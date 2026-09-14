@@ -1,6 +1,19 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 103 complete - RISK-33 acknowledge side + "no unilateral
+Current loop: Loop 104 complete - UI wiring for both Gate 21 fixes.
+  Reopen button (close-reopen-actions.tsx) now only renders for a Manager
+  (isManager prop threaded from page.tsx), matching the RISK-32 RPC gate.
+  New dispute-restoration-form.tsx ("Machine still not okay" - the case's
+  own reporter, shown on the Restorations tab when a TECHNICAL restoration
+  was just verified PASSED and the case is still TECHNICALLY_RESTORED with
+  no dispute already pending) and acknowledge-dispute-card.tsx (Confirmed
+  fixed / Confirmed not fixed - staff, shown when a dispute is PENDING).
+  New RestorationDispute type in database.types.ts. Both forms are
+  convenience gating only - raise_restoration_dispute and
+  acknowledge_restoration_dispute re-check every precondition server-side
+  regardless of what the UI offers. tsc --noEmit, eslint, and a full
+  `next build` all clean.
+Previously: Loop 103 complete - RISK-33 acknowledge side + "no unilateral
   closure" guard, closing RISK-33 RESOLVED. Migration 0052 adds
   acknowledge_restoration_dispute (staff-only): not-fixed returns the case
   to DIAGNOSING/IN_REPAIR (reusing verify_restoration's existing failure
