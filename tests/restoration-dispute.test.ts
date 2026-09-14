@@ -10,18 +10,23 @@ import { signInAs, testSymptom } from "./helpers";
 
 async function driveToTechnicallyRestoredAndPassed(
   exec: Awaited<ReturnType<typeof signInAs>>,
-  reporterUserId: string,
+  reporter: Awaited<ReturnType<typeof signInAs>>,
   label: string
 ) {
-  const { data: created } = await exec.client
+  // cases_insert (migration 0026) requires reporter_user_id = auth.uid()
+  // unconditionally, with no is_staff() escape hatch — so the INSERT must
+  // come from the reporter's own client, not exec's, even though exec is
+  // staff and will own the case from acknowledge_case onward.
+  const { data: created, error: createErr } = await reporter.client
     .from("cases")
     .insert({
       case_type: "BREAKDOWN",
       symptom: testSymptom(label),
-      reporter_user_id: reporterUserId,
+      reporter_user_id: reporter.userId,
     })
     .select("id")
     .single();
+  expect(createErr).toBeNull();
   const caseId = created!.id as string;
 
   await exec.client.rpc("acknowledge_case", { p_case_id: caseId, p_priority: "MEDIUM" });
@@ -52,7 +57,7 @@ describe("raise_restoration_dispute (§11, RISK-33)", () => {
 
     const { caseId, restorationId } = await driveToTechnicallyRestoredAndPassed(
       exec,
-      tech.userId,
+      tech,
       "restoration dispute — authority"
     );
 
@@ -100,7 +105,7 @@ describe("raise_restoration_dispute (§11, RISK-33)", () => {
     const exec = await signInAs("executive");
     const tech = await signInAs("technician");
 
-    const { data: created } = await exec.client
+    const { data: created, error: createErr } = await tech.client
       .from("cases")
       .insert({
         case_type: "BREAKDOWN",
@@ -109,6 +114,7 @@ describe("raise_restoration_dispute (§11, RISK-33)", () => {
       })
       .select("id")
       .single();
+    expect(createErr).toBeNull();
     const caseId = created!.id as string;
     await exec.client.rpc("acknowledge_case", { p_case_id: caseId, p_priority: "MEDIUM" });
     for (const status of ["ASSESSED", "ASSIGNED", "DIAGNOSING", "IN_REPAIR"]) {
@@ -146,7 +152,7 @@ describe("acknowledge_restoration_dispute + \"no unilateral closure\" guard (§1
 
     const { caseId, restorationId } = await driveToTechnicallyRestoredAndPassed(
       exec,
-      tech.userId,
+      tech,
       "restoration dispute — not fixed + guard"
     );
     const { data: dispute } = await tech.client.rpc("raise_restoration_dispute", {
@@ -222,7 +228,7 @@ describe("acknowledge_restoration_dispute + \"no unilateral closure\" guard (§1
 
     const { caseId, restorationId } = await driveToTechnicallyRestoredAndPassed(
       exec,
-      tech.userId,
+      tech,
       "restoration dispute — fixed"
     );
     const { data: dispute } = await tech.client.rpc("raise_restoration_dispute", {

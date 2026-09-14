@@ -10,7 +10,19 @@ Current loop: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
   own new restoration-dispute.test.ts. Fixed by restoring 0034's full
   body verbatim with only the RISK-33 dispute guard layered back on top
   - no other behavior change. Applied live, documented in
-  APPROVAL_REPORT_LOOP_101_105.md and RISK_REGISTER.md. Re-running CI now.
+  APPROVAL_REPORT_LOOP_101_105.md and RISK_REGISTER.md. Re-run came back
+  narrower: 9 of 13 failures gone (confirms the transition_case fix), 4
+  remained, all in this batch's own restoration-dispute.test.ts, all
+  "Cannot read properties of null" on the very first case-insert. Second
+  real bug, found by reading cases_insert's actual RLS policy (migration
+  0026): reporter_user_id = auth.uid() is required unconditionally, no
+  is_staff() escape hatch - so driveToTechnicallyRestoredAndPassed's
+  insert (issued from exec.client with reporter_user_id: tech.userId)
+  was refused by RLS every time, and the test never checked the insert's
+  error, so it surfaced as a bare TypeError instead of the real cause.
+  Fixed by inserting from the reporter's own client instead, and by
+  asserting error is null at every insert in this file. Pushed, CI
+  re-running.
 Previously: Loop 105 complete - final loop of the Boss-approved 101-105
   batch, carrying the mandatory Gate 21 stop per #19.9/#19.13. Both
   RISK-32 and RISK-33 are now RESOLVED in RISK_REGISTER.md - the first

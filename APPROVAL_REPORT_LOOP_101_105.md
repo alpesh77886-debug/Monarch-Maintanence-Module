@@ -85,7 +85,22 @@ conditions in `page.tsx`. The RPC-level enforcement itself — which is what
 actually matters per CLAUDE.md ("server-side enforced, never UI-only") —
 is fully covered.
 
-## A real defect this batch caught, not just a flake
+## Two real defects this batch caught, not just a flake
+
+The first re-run (after the standing-down comment below) came back with a
+narrower, deterministic 4-test failure — all four in this batch's own
+`restoration-dispute.test.ts`, all `Cannot read properties of null` on the
+very first case-insert. Root cause, found by reading `cases_insert`'s
+actual RLS policy (migration `0026`) rather than assumed: `reporter_user_id
+= auth.uid()` is required **unconditionally**, with no `is_staff()`
+escape hatch — so `driveToTechnicallyRestoredAndPassed`'s insert, issued
+from `exec.client` with `reporter_user_id: tech.userId`, was refused by
+RLS every single time, and the test never checked the insert's `error`,
+so it surfaced as a bare null-dereference instead of the real cause. Fixed
+by inserting from the reporter's own client (`tech.client`) instead, and
+by asserting `error` is null at every insert in this file going forward
+so a future RLS refusal fails loudly, not as a `TypeError` three lines
+away.
 
 CI on this batch's own PR (#99) failed twice, identically, after Loop 105's
 final push — a genuine regression, confirmed deterministic on a re-run
