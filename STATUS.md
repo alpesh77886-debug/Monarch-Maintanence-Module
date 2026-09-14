@@ -1,6 +1,41 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
+Current loop: Loop 106 - Boss approved "Continue loop 106 to 110" and asked
+  for all test data to be removed "agar application ko koi nuksan nahi hai
+  to" (if it doesn't harm the app). Verified live before touching anything:
+  all 1101 cases in the Maintenance Supabase project carried the
+  [AUTOTEST] prefix - zero real business cases, confirmed by direct query,
+  not assumed. Ran maintenance.cleanup_synthetic_cases (migration 0036,
+  the same safety-checked function CI's own cleanup already used, which
+  refuses non-synthetic rows all-or-nothing) against every case at once,
+  then removed the still-synthetic pm_plans/recurrence_rules/dangling
+  PM-related notifications/orphan idempotency_keys the same way after
+  confirming each was 100% [AUTOTEST]-tagged. Result: 0 cases, 0 pm_plans,
+  0 pm_instances, 0 recurrence_rules, 0 notifications remain. Deliberately
+  left alone: the 2 real staff seed accounts (Executive + Manager login),
+  1 qc_authority grant, and ~1,120 audit_log rows whose target isn't a
+  deleted case/pm_plan (CLAUDE.md's append-only rule on audit_log - safe
+  to trim only what's provably tied to deleted synthetic objects, not
+  blanket-wiped). App's auth/demo accounts untouched; the database is now
+  a clean slate for cases/PM/recurrence.
+  Boss also asked: (1) whether Manager/Technician have distinct screens
+  like the attached Premium UI v2 mockup - answered honestly: no, today
+  everyone (Executive/Manager/Technician-with-staff-access) shares one
+  nav (Cases/Control/PM/Spares/More) and one Home page, gated by
+  show/hide booleans within shared pages, not the mockup's fully separate
+  Manager 7-chart analytics dashboard / Technician mobile task workspace;
+  (2) multi-material spare consumption (e.g. 2 bearings + 3 switches + 5
+  MCBs in one go) - current schema already supports arbitrary distinct
+  spares per case (one spare_request/spare_usage row each, correctly, for
+  §16.1 traceability) but the UI makes a technician repeat the whole
+  raise+record flow per material - a real UI convenience gap; (3) an
+  Excel-download option on Spare Consumption with full details (spare,
+  qty, where, who, date, machine) - does not exist yet, a real feature
+  gap. Plan for the rest of this batch: Loop 107 multi-item spare
+  consumption UI, Loop 108 Excel export, Loop 109-110 a scoped (not
+  full-mockup-parity) Technician workspace + Manager analytics
+  improvement, then Gate 22 report.
+Previously: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
   identically (confirmed deterministic on a re-run before treating it as
   anything but a flake). Root cause: migration 0052 (Loop 103) rebuilt
   transition_case from migration 0007's stale body, silently reverting
