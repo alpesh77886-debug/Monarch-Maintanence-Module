@@ -22,7 +22,8 @@
 | 18 (Loops 86–90) | [`APPROVAL_REPORT_LOOP_86_90.md`](./APPROVAL_REPORT_LOOP_86_90.md) | Approved — "Loop start karo 91 se 95" | 2026-09-14 |
 | 19 (Loops 91–95) | [`APPROVAL_REPORT_LOOP_91_95.md`](./APPROVAL_REPORT_LOOP_91_95.md) | Approved — "Continue loop 96 to 100", with an explicit ask to be told how much work is left at the end | 2026-09-14 |
 | 20 (Loops 96–100) | [`APPROVAL_REPORT_LOOP_96_100.md`](./APPROVAL_REPORT_LOOP_96_100.md) | Approved — "Continue loop 101 to 105", and in the same message supplied the RISK-32/RISK-33 design decisions this gate report had asked for | 2026-09-14 |
-| 21 (Loops 101–105) | [`APPROVAL_REPORT_LOOP_101_105.md`](./APPROVAL_REPORT_LOOP_101_105.md) | AWAITING BOSS | — |
+| 21 (Loops 101–105) | [`APPROVAL_REPORT_LOOP_101_105.md`](./APPROVAL_REPORT_LOOP_101_105.md) | Approved — "Start karo 106 se 110" (compound message, also requesting test-data cleanup, a screens question, and two spare-consumption features) | 2026-09-14 |
+| 22 (Loops 106–110) | [`APPROVAL_REPORT_LOOP_106_110.md`](./APPROVAL_REPORT_LOOP_106_110.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -494,3 +495,38 @@ this sandbox cannot verify locally, so it was deliberately deferred
 rather than rushed. Full detail in `APPROVAL_REPORT_LOOP_101_105.md`. Per
 §19.9 the same mandatory stop will apply again after the next 5 loops,
 whatever they turn out to be.
+
+**GATE 21 (Loops 101-105) — RESOLVED.** The Boss replied with a compound
+message: explicit continuation (**"Start karo 106 se 110"**), plus a
+live-DB test-data cleanup request conditional on safety, a question about
+whether Manager/Technician screens are separate, and two concrete
+spare-consumption feature asks (multi-material recording, an Excel
+export). All four addressed this batch — see
+`APPROVAL_REPORT_LOOP_106_110.md`.
+
+**GATE 22 (Loops 106-110) — AWAITING BOSS.** Loop 106 verified all 1101
+live cases were synthetic before clearing them via the existing
+safety-checked `cleanup_synthetic_cases` function, and answered the
+screens question honestly (shared today, not separate). Loop 107 added
+multi-material spare recording (UI convenience only — the data model
+already supported it correctly). Loop 108 added the staff-only Excel
+export the Boss asked for, with every column requested. Loop 109 gave a
+technician visibility into their own assigned work on `/home` (RLS
+already permitted the read; nothing surfaced it before). Loop 110 added
+a real 14-day created-vs-closed trend chart to the Manager dashboard,
+from data already fetched, no invented target/SLA. A genuine CI-caught
+bug (not a flake — confirmed by reading the actual job log): Loop 107's
+bulk form reused three `FormField` labels already in use elsewhere on
+the same panel, breaking an existing e2e test and creating a real
+duplicate-accessible-name defect; fixed at the source (distinct labels
+per row) rather than patched around, verified green, then merged (PR
+#100, `merge` method). One new low-severity dependency finding
+(**RISK-34**, `exceljs`→`uuid`, not reachable from Maintenance input)
+documented rather than silently accepted or over-corrected. RISK-32/
+RISK-33 remain RESOLVED, unchanged this batch. Full detail in
+`APPROVAL_REPORT_LOOP_106_110.md`, which flags that going deeper on
+Manager/Technician screen separation (to the Premium UI v2 mockup's
+depth) would be a multi-loop project of its own, not a bounded batch
+item, and asks for an explicit go-ahead before treating it as in scope.
+Per §19.9 the same mandatory stop will apply again after the next 5
+loops, whatever they turn out to be.
