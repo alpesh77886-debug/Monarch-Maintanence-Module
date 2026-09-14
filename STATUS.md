@@ -1,6 +1,87 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 90 complete - final loop of the pre-approved 86-90
+Current loop: Loop 92 complete - live re-verification of the CLAUDE.md
+  non-negotiable append-only rule ("maintenance_case_events /
+  maintenance_audit_log are append-only. Corrections are new rows, never
+  UPDATE/DELETE of business history"), directly against the deployed
+  Maintenance Supabase project (maavrlqkdrisjwzhjdgg) via
+  mcp__Supabase__execute_sql rather than trusting existing test code -
+  queried pg_policies for every maintenance.* table (27 tables) plus
+  relrowsecurity/relforcerowsecurity on the two history tables
+  specifically. Result: clean. case_events and audit_log each carry
+  exactly one policy (SELECT, staff-gated via is_staff()) and NO
+  INSERT/UPDATE/DELETE policy at all - so even a write attempt from an
+  authenticated staff member is RLS-default-denied; all real writes go
+  through SECURITY DEFINER RPCs that bypass RLS by design. RLS is
+  enabled on both. No table in the entire maintenance schema (all 27)
+  carries a DELETE policy - nothing is ever client-deletable anywhere.
+  The one UPDATE policy that looked worth checking closer,
+  safety_stops_update, turned out to be a `using (false)` always-deny
+  guard - the same explicit RPC-only pattern this repo already
+  established for clearances_insert after RISK-17 - not a gap.
+  Cross-checked against existing automated coverage: lifecycle.test.ts
+  already asserts the case_events insert-denial and
+  observations-clearances-audit.test.ts already asserts audit_log's
+  insert/update/delete-denial directly (including a real .delete() call
+  that gets rejected) - so this loop's live query is a fresh, independent
+  confirmation that no drift has happened since those tests were written,
+  not a newly-discovered gap. No code change - "found nothing" is
+  recorded as the result itself, same standing precedent as Loop 44.
+  This was chosen for Loop 92 because the RPC test-coverage angle from
+  Loop 91 is now exhausted: the other two candidates flagged then
+  (is_qc_authority, mark_asset_known) turned out on closer inspection to
+  be false positives from the literal-name grep - both are already
+  thoroughly covered by existing tests under different names/shapes
+  (is_qc_authority's true/false branches both exercised via
+  qc_decision's own FORBIDDEN/success tests in
+  forensic-authorization.test.ts; mark_asset_known's trigger behavior is
+  directly tested by name-blind assertion in case-assets.test.ts) - not
+  padding this loop with a low-value duplicate test just to have
+  something to show.
+Previously: Loop 91 complete - first loop of the Boss-approved 91-95
+  batch ("Loop start karo 91 se 95"). RISK-32/RISK-33 remain the
+  highest-value item but stayed untouched again - the Boss's reply did
+  not answer either design question raised in the Gate 18 report, and
+  guessing a reopen-authority or joint-decision mechanism would be
+  business-rule invention (barred outright). Checked every other OPEN
+  RISK_REGISTER item first (RISK-01/02/03/04/06) - all six are Boss- or
+  access-blocked, none self-directed. Pivoted to a fresh, mechanically-
+  verifiable investigation mirroring Loop 43/44's precedent: an RPC
+  test-coverage audit across all ~55 maintenance.* functions, cross-
+  referenced against tests/ (broad `\bname\b` grep, not just literal
+  .rpc() calls - a narrower first pass produced false negatives from a
+  call(...) wrapper used in one UI component) and src/ (to separate
+  real gaps from internal triggers never meant to be called directly).
+  Found exactly 3 zero-coverage functions: decide_recurrence_flag,
+  is_qc_authority, mark_asset_known (the last is actually a DB trigger,
+  not an RPC - different verification shape, not touched this loop).
+  decide_recurrence_flag is a real, client-callable, SECURITY DEFINER
+  RPC with a fully locked authority boundary (staff-only, decision enum,
+  required reason, flag-not-found/already-decided guards) and zero test
+  mentions anywhere - added 4 new tests to tests/recurrence-capa.test.ts
+  covering every guard reachable WITHOUT a seeded recurrence_flags row
+  (FORBIDDEN for non-staff, INVALID_DECISION, REASON_REQUIRED,
+  FLAG_NOT_FOUND via a fake uuid - confirmed this exact check order by
+  reading the function body in 0018_maintenance_recurrence_capa.sql).
+  The CONFIRMED/DISMISSED happy path and ALREADY_DECIDED guard still
+  can't be covered here - a recurrence_flags row is only ever created by
+  run_recurrence_scan, which is cron-only and permission-denied for
+  every authenticated client (same reasoning the file's own header
+  already gives for why the full chain was only ever verified live, see
+  CHANGELOG Loop 15) - not invented a test-only backdoor RPC for this,
+  since that would itself be a schema/authority change needing its own
+  Change Control entry, out of proportion to a coverage gap. tsc/eslint
+  clean. Could NOT execute vitest against live Supabase from this
+  sandbox this loop - direct HTTPS to *.supabase.co returns 403 from
+  this session's own egress proxy policy (confirmed via curl and
+  /root/.ccr/README.md's "403/407 = destination not allowed, do not
+  retry" guidance) - a genuine, newly-observed sandbox network
+  restriction, distinct from RISK-05's browser-auth-specific block.
+  This does not block the batch: this suite has only ever run for real
+  in GitHub Actions CI (a separate, unrestricted network), never in this
+  interactive sandbox - so verification happens via the PR's CI run,
+  watched and driven to green same as every other loop.
+Previously: Loop 90 complete - final loop of the pre-approved 86-90
   batch, carrying the mandatory Gate 18 stop per §19.9/§19.13. No new
   code this loop: final sweep confirmed no further loading.tsx gap
   remains - only / (instant redirect, no data fetch) and /login

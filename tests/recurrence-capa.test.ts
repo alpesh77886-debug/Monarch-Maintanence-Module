@@ -45,6 +45,70 @@ describe("§18 — no recurrence threshold is hard-coded (PENDING-04)", () => {
   });
 });
 
+// Loop 91: decide_recurrence_flag had zero automated coverage — an RPC
+// test-coverage audit (mirroring Loop 43/44's authorization-boundary sweep)
+// found it was the last real, client-callable, SECURITY DEFINER RPC in this
+// module with no test-file mention at all.
+//
+// The happy path (CONFIRMED/DISMISSED against a real SUSPECTED flag, and the
+// ALREADY_DECIDED guard that follows) still cannot be covered here for the
+// same reason the file header already gives: a recurrence_flags row is only
+// ever created by run_recurrence_scan, which is cron-only and
+// `permission denied` for every authenticated client (asserted above). That
+// chain was exercised live instead (see CHANGELOG.md Loop 15).
+//
+// What IS reachable without a seeded flag: every guard the function checks
+// BEFORE it looks the flag up — is_staff(), p_decision, p_reason — plus
+// FLAG_NOT_FOUND itself, since a nonexistent id reaches that check. Reading
+// maintenance.decide_recurrence_flag (0018_maintenance_recurrence_capa.sql)
+// confirms that exact order: FORBIDDEN, then INVALID_DECISION, then
+// REASON_REQUIRED, then FLAG_NOT_FOUND — so a fake uuid isolates each one.
+describe("decide_recurrence_flag (§18 confirm/dismiss)", () => {
+  const FAKE_FLAG_ID = "00000000-0000-0000-0000-000000000000";
+
+  it("is staff-only", async () => {
+    const tech = await signInAs("technician");
+    const { error } = await tech.client.rpc("decide_recurrence_flag", {
+      p_flag_id: FAKE_FLAG_ID,
+      p_decision: "CONFIRMED",
+      p_reason: "non-staff should not reach this",
+    });
+    expect(error?.message).toMatch(/FORBIDDEN/);
+  });
+
+  it("rejects a decision that is not CONFIRMED or DISMISSED", async () => {
+    const exec = await signInAs("executive");
+    const { error } = await exec.client.rpc("decide_recurrence_flag", {
+      p_flag_id: FAKE_FLAG_ID,
+      p_decision: "MAYBE",
+      p_reason: "basis",
+    });
+    expect(error?.message).toMatch(/INVALID_DECISION/);
+  });
+
+  it("requires a non-empty reason", async () => {
+    const mgr = await signInAs("manager");
+    const { error } = await mgr.client.rpc("decide_recurrence_flag", {
+      p_flag_id: FAKE_FLAG_ID,
+      p_decision: "DISMISSED",
+      p_reason: "   ",
+    });
+    expect(error?.message).toMatch(/REASON_REQUIRED/);
+  });
+
+  it("rejects an unknown flag id", async () => {
+    // §18: both Executive and Manager may confirm/dismiss — unlike the
+    // ₹12,000 approval, this is not reserved to the Manager.
+    const exec = await signInAs("executive");
+    const { error } = await exec.client.rpc("decide_recurrence_flag", {
+      p_flag_id: FAKE_FLAG_ID,
+      p_decision: "CONFIRMED",
+      p_reason: "[AUTOTEST] Loop 91 FLAG_NOT_FOUND coverage",
+    });
+    expect(error?.message).toMatch(/FLAG_NOT_FOUND/);
+  });
+});
+
 describe("create_recurrence_rule (§18 configuration)", () => {
   it("is Manager-only", async () => {
     const exec = await signInAs("executive");
