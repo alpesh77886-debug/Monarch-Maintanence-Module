@@ -1,6 +1,22 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 101 complete - Boss approved "Continue loop 101 to 105"
+Current loop: Loop 102 complete - RISK-33 raise side. Migration 0051 adds
+  maintenance.restoration_disputes (RPC-only, same pattern as clearances)
+  and raise_restoration_dispute: callable only by the case's own
+  reporter_user_id, only against a TECHNICAL restoration staff already
+  verified PASSED, only while the case is still TECHNICALLY_RESTORED
+  (matching #11's own placement in the pack, between #10 restoration and
+  #12 QC gate - not a general post-closure reopen, that's RISK-32).
+  Notifies the case's owning Executive (or all active Managers if
+  unassigned). tests/restoration-dispute.test.ts covers authority
+  (Executive who isn't the reporter is refused, technician-as-reporter
+  succeeds), preconditions (unverified restoration refused, reason
+  required), and duplicate-pending refusal. RISK-33 marked IN PROGRESS
+  in RISK_REGISTER.md, not yet RESOLVED - the Executive-side
+  acknowledge_restoration_dispute RPC and the "no unilateral closure"
+  guard (blocking QC/closure while a dispute is PENDING) are Loop 103's
+  work.
+Previously: Loop 101 complete - Boss approved "Continue loop 101 to 105"
   and, in the same message, supplied the two design decisions every gate
   report since Gate 12 has been asking for. RISK-32 (reopen authority):
   Boss said "Yaha Sirf Maintenance Manager rakho" - reopen authority is
