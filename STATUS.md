@@ -1,6 +1,31 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 94 complete - PR #91 (Loop 93) merged. Its own CI hit
+Current loop: Loop 95 complete - final loop of the Boss-approved 91-95
+  batch, carrying the mandatory Gate 19 stop per §19.9/§19.13. PR #92
+  (Loop 94, including the Codex-review follow-up fix) merged clean, CI
+  green. No new investigation this loop - wrote
+  APPROVAL_REPORT_LOOP_91_95.md (full 5-loop summary), updated
+  APPROVAL_GATE.md (Gate 19 AWAITING BOSS), and this STATUS.md entry.
+  This batch's shape: RISK-32/RISK-33 stayed untouched again (no Boss
+  answer to either design question across four consecutive gate
+  reports now), so every other RISK_REGISTER OPEN item was checked and
+  confirmed Boss/access-blocked before pivoting to self-directed work -
+  Loop 91 closed a real test-coverage gap (decide_recurrence_flag,
+  zero coverage on a locked authority boundary), Loops 92-93 did a live
+  full-schema RLS/append-only re-verification against the deployed
+  Supabase project (clean, no drift since RISK-15/28/29), Loop 94
+  re-ran Loop 47's Vercel/Sentry audit and found + fixed a real item
+  (CI test traffic mistagged as production in Sentry, plus a real gap
+  in the first fix caught by an automated Codex review and properly
+  fixed before merge). The gate report flags that the self-directed
+  angles available without a Boss decision are now largely exhausted -
+  RPC-coverage, RLS-audit, and Vercel/Sentry-config are all freshly
+  re-verified clean or fixed this batch - and again recommends
+  RISK-32/RISK-33 as the clear next-batch target. Autonomous work is
+  now PAUSED per the mandatory gate stop - Loop 96 will not start
+  without explicit Boss continuation language, silence or an unrelated
+  reply is not approval, same as every gate before this.
+Previously: Loop 94 complete - PR #91 (Loop 93) merged. Its own CI hit
   a real but unrelated flake first (tests/emergency-and-notifications.test.ts,
   a read-after-write race on the shared live Supabase test project reading
   back a case the same test had just inserted - same recurring pattern as
