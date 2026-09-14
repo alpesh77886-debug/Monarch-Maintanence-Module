@@ -18,6 +18,9 @@
 | 14 (Loops 66–70) | [`APPROVAL_REPORT_LOOP_66_70.md`](./APPROVAL_REPORT_LOOP_66_70.md) | Approved — "loop start karo 71 se 75" | 2026-09-09 |
 | 15 (Loops 71–75) | [`APPROVAL_REPORT_LOOP_71_75.md`](./APPROVAL_REPORT_LOOP_71_75.md) | Approved — "start loop 76 to 80" | 2026-09-09 |
 | 16 (Loops 76–80) | [`APPROVAL_REPORT_LOOP_76_80.md`](./APPROVAL_REPORT_LOOP_76_80.md) | Approved — "continue loop 81 to 85" | 2026-09-09 |
+| 17 (Loops 81–85) | [`APPROVAL_REPORT_LOOP_81_85.md`](./APPROVAL_REPORT_LOOP_81_85.md) | Approved — "loop 86 se 90 continue karo" (with a Boss-reported live bug attached) | 2026-09-09 |
+| 18 (Loops 86–90) | [`APPROVAL_REPORT_LOOP_86_90.md`](./APPROVAL_REPORT_LOOP_86_90.md) | Approved — "Loop start karo 91 se 95" | 2026-09-14 |
+| 19 (Loops 91–95) | [`APPROVAL_REPORT_LOOP_91_95.md`](./APPROVAL_REPORT_LOOP_91_95.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -428,3 +431,26 @@ self-directed candidate instead of guessing at RISK-32/RISK-33's
 business-rule shape. The RISK-32/RISK-33 questions remain open and are
 restated plainly for the Boss in this loop's own report, independent of
 whatever Loop 91 ends up covering.
+
+**GATE 19 (Loops 91-95) — AWAITING BOSS.** RISK-32/RISK-33 stayed
+untouched again this batch — still no Boss answer to either design
+question. Every other `RISK_REGISTER.md` OPEN item was checked and
+confirmed Boss/access-blocked before pivoting to fresh, self-directed,
+mechanically-verifiable work: Loop 91 closed a real test-coverage gap on
+`decide_recurrence_flag` (a locked, zero-coverage authority boundary,
+found via an RPC-coverage audit mirroring Loop 43/44). Loops 92-93 did a
+live, full-schema RLS/append-only re-verification directly against the
+deployed Supabase project (not just trusting test code) — clean, no
+drift since RISK-15/28/29. Loop 94 re-ran Loop 47's Vercel/Sentry
+runtime-config audit (~6 days stale) and found a real item this time: CI
+e2e test traffic silently mistagged as `environment:"production"` in
+Sentry, root-caused and fixed, with an automated Codex review on the PR
+catching a real remaining gap in the first fix attempt's client-side
+half — fixed properly and re-verified against the actual compiled
+bundle output before merging. Full detail in
+`APPROVAL_REPORT_LOOP_91_95.md`, which flags that the self-directed
+angles available without a Boss decision are now largely exhausted
+(RPC-coverage, RLS-audit, and Vercel/Sentry-config are all freshly
+re-verified clean or fixed this batch) and again recommends RISK-32/
+RISK-33 as the next batch's target. Per §19.9 the same mandatory stop
+will apply again after the next 5 loops, whatever they turn out to be.
