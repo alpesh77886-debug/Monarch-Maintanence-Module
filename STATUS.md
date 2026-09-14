@@ -1,6 +1,27 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 96 complete - first loop of the Boss-approved 96-100
+Current loop: Loop 97 complete - PR #94 (Loop 96) merged, but its own
+  first CI run caught a real bug in the loop's own new test before
+  merging: reading a just-inserted case back with a DIFFERENT client
+  immediately after insert hit the same shared-live-Supabase read-after-
+  write race documented elsewhere this session - root-caused (not
+  re-run blind) and fixed by asserting on the insert's own returned row
+  instead of a second cross-client read; re-ran clean, merged. Loop 97
+  itself: live-verified Loop 94's Sentry environment-tagging fix is
+  actually working in production data, not just at build time - queried
+  Sentry directly and found MONARCH-MAINTENANCE-MODULE-4 had reopened
+  (20 new events in 4h, marked "regressed") since Loop 94 resolved it;
+  read the latest event's own tags and confirmed environment:"ci", not
+  "production" - the fix holds. The issue itself is expected, benign,
+  recurring CI-only noise (every e2e run's Playwright navigation trips
+  the same harmless Next.js stream-abort) that will keep re-triggering
+  forever under normal CI operation, so set it to ignored/forever
+  instead of leaving it to flap resolved-then-reopened on every run.
+  Also re-confirmed RISK_REGISTER.md's OPEN list is exactly the 7 items
+  already accounted for (RISK-01/02/03/04/06/32/33) - RISK-07's Loop 96
+  closure held, nothing else silently regressed. No code change this
+  loop.
+Previously: Loop 96 complete - first loop of the Boss-approved 96-100
   batch ("Continue loop 96 to 100"), which came with an explicit ask to
   be told the honest remaining-work figure at the end. RISK-32/RISK-33
   again went unanswered, so this loop opened with a fresh, from-scratch
