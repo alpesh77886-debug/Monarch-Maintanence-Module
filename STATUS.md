@@ -1,6 +1,24 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 104 complete - UI wiring for both Gate 21 fixes.
+Current loop: Loop 105 complete - final loop of the Boss-approved 101-105
+  batch, carrying the mandatory Gate 21 stop per #19.9/#19.13. Both
+  RISK-32 and RISK-33 are now RESOLVED in RISK_REGISTER.md - the first
+  gate report since Gate 12 with no outstanding business-rule design
+  question to re-raise. Wrote APPROVAL_REPORT_LOOP_101_105.md (full
+  5-loop summary) and updated APPROVAL_GATE.md (Gate 20 marked
+  Approved/resolved with the Boss's actual reply, Gate 21 AWAITING
+  BOSS). One real gap explicitly acknowledged rather than silently
+  skipped: browser-level e2e coverage for the Reopen button and the two
+  new dispute forms does not exist yet - writing it safely needs a
+  multi-step UI walk (Acknowledge -> Assessment -> Assign -> an
+  intervention that auto-advances DIAGNOSING/IN_REPAIR -> Restoration ->
+  QC) this sandbox cannot verify locally, so rather than push a risky,
+  unverified long e2e spec and iterate blind against a real shared
+  Supabase project, this batch documented the gap honestly instead. The
+  RPC-level authority enforcement itself is fully tested either way.
+  Autonomous work is now PAUSED per the mandatory gate stop - Loop 106
+  will not start without explicit Boss continuation language.
+Previously: Loop 104 complete - UI wiring for both Gate 21 fixes.
   Reopen button (close-reopen-actions.tsx) now only renders for a Manager
   (isManager prop threaded from page.tsx), matching the RISK-32 RPC gate.
   New dispute-restoration-form.tsx ("Machine still not okay" - the case's
