@@ -1,6 +1,40 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 95 complete - final loop of the Boss-approved 91-95
+Current loop: Loop 96 complete - first loop of the Boss-approved 96-100
+  batch ("Continue loop 96 to 100"), which came with an explicit ask to
+  be told the honest remaining-work figure at the end. RISK-32/RISK-33
+  again went unanswered, so this loop opened with a fresh, from-scratch
+  completion re-audit rather than reusing an old percentage: re-checked
+  every one of IMPLEMENTATION_PACK.md's 25 §32 V1 items and every §37
+  test-matrix bullet against actual current code/tests, file by file.
+  Result: 24 of 25 §32 items are functionally complete; item 13
+  ("Reopen / duplicate / false complaint") is only partially - duplicate
+  and false-complaint are done, but reopen itself is RISK-32 (any single
+  staff member can reopen alone; the pack requires Executive+Manager
+  jointly). Plus one named, LOCKED, zero-implementation rule sitting
+  outside the 25-item list: RISK-33's §11 complainant-disagreement path.
+  Every other item verified genuinely done, including confirming §19's
+  LOTO/PTW item is complete as designed (a feature-flagged ptw_required
+  seam exists per Loop 16/RISK-02's own mitigation plan, correctly not
+  blocked on the still-missing plant SOP). Also re-audited RISK-07
+  ("no automated test framework"), stale at PARTIALLY RESOLVED since
+  Loop 6's original 17-test suite - the suite has grown to 31 files/222
+  cases since then and now covers every §37 area that entry still listed
+  as missing (PM, spares, notifications/escalation, duplicate/false-
+  complaint all have dedicated test files). Cross-checking every
+  individual §37 bullet found exactly one genuine remaining gap: "no
+  available Executive/Manager" (Intake/ownership) had zero coverage
+  anywhere. Read acknowledge_case's actual guard (is_staff() only, no
+  queue/SLA/availability logic) - confirmed there's no separate code
+  path for this condition to test, because there isn't one: a case just
+  stays REPORTED, unowned, until some staff member acts. Added a test in
+  lifecycle.test.ts pinning exactly that (case stays untouched and
+  visible; a non-staff caller still can't force it forward) rather than
+  inventing an availability feature the pack never asked for - closed
+  RISK-07 as RESOLVED. tsc/eslint clean. Could not run the new test
+  locally against live Supabase (same sandbox network restriction as
+  every test change this session) - verification is via CI.
+Previously: Loop 95 complete - final loop of the Boss-approved 91-95
   batch, carrying the mandatory Gate 19 stop per §19.9/§19.13. PR #92
   (Loop 94, including the Codex-review follow-up fix) merged clean, CI
   green. No new investigation this loop - wrote
