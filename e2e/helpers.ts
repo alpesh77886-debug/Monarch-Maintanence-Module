@@ -54,10 +54,14 @@ export const ACCOUNTS = {
 
 export type AccountName = keyof typeof ACCOUNTS;
 
-export async function signIn(page: Page, account: AccountName) {
-  const { email, password } = ACCOUNTS[account];
-  await page.goto("/login");
-  await page.getByRole("heading", { name: "MONARCH Maintenance" }).waitFor();
+// Loop 99: a "still on /login, no inline error" timeout with GoTrue itself
+// never responding (not a rejection, a hang) matches RISK-16's documented
+// shared-live-Supabase auth-slowness/rate-limiting class — that fix covers
+// the Vitest suite (cached sessions in tests/helpers.ts) but not this job's
+// own real browser sign-in per test. One retry of the login *attempt itself*
+// (not the whole test) recovers a transient stall without re-running every
+// earlier step Playwright's own test-level retry would redo.
+async function attemptSignIn(page: Page, email: string, password: string): Promise<boolean> {
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -67,12 +71,31 @@ export async function signIn(page: Page, account: AccountName) {
   // path is where RISK-10 (the "Database error querying schema" login bug)
   // hid for five loops, and the message is what identified it.
   const inlineError = page.locator("form p.text-red-700");
-  const landed = await Promise.race([
+  return Promise.race([
     page.waitForURL(/\/home$/, { timeout: 20_000 }).then(() => true),
     inlineError.waitFor({ timeout: 20_000 }).then(() => false),
   ]).catch(() => false);
+}
+
+export async function signIn(page: Page, account: AccountName) {
+  const { email, password } = ACCOUNTS[account];
+  await page.goto("/login");
+  await page.getByRole("heading", { name: "MONARCH Maintenance" }).waitFor();
+
+  let landed = await attemptSignIn(page, email, password);
+  if (!landed && page.url().includes("/login")) {
+    // Only retry a genuine stall (still on /login, no inline error) - an
+    // explicit rejection (wrong password, etc.) should fail immediately,
+    // not be masked by a retry.
+    const inlineError = page.locator("form p.text-red-700");
+    const hasError = await inlineError.isVisible().catch(() => false);
+    if (!hasError) {
+      landed = await attemptSignIn(page, email, password);
+    }
+  }
 
   if (!landed) {
+    const inlineError = page.locator("form p.text-red-700");
     const message = (await inlineError.textContent().catch(() => null))?.trim();
     throw new Error(
       `signIn(${account}) did not reach /home. ` +
