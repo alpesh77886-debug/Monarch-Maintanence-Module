@@ -1,6 +1,33 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 92 complete - live re-verification of the CLAUDE.md
+Current loop: Loop 93 complete - PR #90 (Loop 91 + Loop 92) merged clean,
+  CI green first try (`tests/recurrence-capa.test.ts` new tests passed
+  against the live Supabase test project in GitHub Actions - this
+  sandbox's own egress proxy still can't reach *.supabase.co directly,
+  confirmed harmless since CI is where this suite has always actually
+  run). Branch re-synced to main. Loop 93 itself extended Loop 92's
+  narrow (2-table) audit into a full-schema sweep: queried
+  relrowsecurity + pg_policies for all 28 tables and 2 views in the
+  maintenance schema, plus reloptions for both views and
+  information_schema.role_table_grants for the authenticated role.
+  Result: clean, nothing to fix. Every table has RLS enabled; the only
+  0-policy table is idempotency_keys (correctly RPC-only, internal). The
+  second reporting view, case_current_root_cause (0020, added after
+  RISK-15's case_current_impact fix), already correctly carries
+  security_invoker=true - the RISK-15 precedent held for it without
+  anyone having to be reminded. `authenticated` holds broad table-level
+  GRANTs (INSERT/UPDATE/DELETE/etc.) on nearly every table, which looks
+  alarming out of context but is standard, expected Supabase/Postgres
+  architecture here - RLS policies are the actual enforcement layer, and
+  those are confirmed correctly restrictive (e.g. case_events/audit_log
+  still have no INSERT/UPDATE/DELETE policy at all, so the broad GRANT
+  is inert for them). This re-confirms RISK-15/28/29's fixes are still
+  holding across the ~50 migrations added since those loops, not just
+  asserted by aging test code. No code change - third consecutive
+  verification-only result, which is the honest output of a batch that
+  opened with its one real target (RISK-32/RISK-33) still Boss-blocked;
+  recorded plainly rather than padded with invented busywork.
+Previously: Loop 92 complete - live re-verification of the CLAUDE.md
   non-negotiable append-only rule ("maintenance_case_events /
   maintenance_audit_log are append-only. Corrections are new rows, never
   UPDATE/DELETE of business history"), directly against the deployed
