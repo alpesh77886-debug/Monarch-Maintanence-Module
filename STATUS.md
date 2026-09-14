@@ -1,6 +1,141 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
+Current loop: PR #100 CI hotfix - Loop 107's multi-material form reused
+  "Spare name" / "Asset/machine ref" / "Outcome" as FormField labels,
+  identical to labels already used by the existing single-item "Raise a
+  spare request" and "Record spare usage" forms on the same panel - a
+  real duplicate-accessible-name bug (not a flake; confirmed by reading
+  the actual e2e job log, not just the pass/fail conclusion), which is
+  also why e2e/roles-and-notifications.spec.ts's existing
+  getByLabel("Spare name") started resolving to 2 elements the moment
+  Loop 107 shipped. Fixed at the root, not by patching the test: the
+  multi-material form's per-row spare-name label is now
+  "Material N name" (distinct per row, and more informative for a
+  screen-reader user filling several rows than a repeated "Spare name"
+  would have been anyway), and its two shared fields are now
+  "Asset/machine ref (all materials)" / "Outcome (all materials)".
+  tsc/eslint/next build all clean; grepped e2e/ to confirm no other
+  spec depends on the old label text.
+Previously: Loop 110 - Manager analytics (scoped, not full 7-chart
+  mockup parity, as promised in Loop 106's plan). Dashboard already had
+  a status-distribution bar (Loop 21's BarBreakdown) but nothing showing
+  trend - a Manager could see today's snapshot, not whether case volume
+  is rising or falling. Added TrendChart (src/components/stat-card.tsx,
+  co-located with BarBreakdown, same "render what the caller already
+  computed, invent nothing" convention) - a 14-day created-vs-closed bar
+  chart wired into src/app/(app)/dashboard/page.tsx using the SAME
+  `cases` rows that page already fetches (created_at/closed_at were
+  already selected - no new query, no new RLS surface). Bucket keys use
+  the UTC calendar date embedded in each ISO timestamp on both the
+  bucket-generation and the case-lookup side, so they line up regardless
+  of server timezone - verified with a standalone Node script against a
+  case landing exactly at 23:59 UTC and one outside the 14-day window
+  (correctly excluded from every bucket, not silently added to day 1).
+  Bar heights are plain pixels computed in JS (value/max*80px), not a
+  CSS percentage-height inside a flex container, which the codebase has
+  no precedent for and resolves inconsistently without a separately
+  fixed container height - same "don't ship an unverified new pattern"
+  discipline as Loop 109's embed-query refactor. No new dependency, no
+  invented target/SLA line (§25.2). tsc/eslint/next build all clean.
+Previously: Loop 109 - technician home visibility. Real gap, not a
+  permissions one: a non-staff technician's /home page showed only a
+  warning banner and one generic "Cases" tile - zero visibility into
+  their own actively-assigned work - even though cases_select
+  (migration 0032, the current definition, verified by checking every
+  migration that touches it, not just the first) already lets them read
+  exactly that (staff OR reporter OR assigned technician), and
+  case_assignments_select (migration 0002) already scopes to
+  technician_user_id = auth.uid(). Fixed src/app/home/page.tsx's
+  non-staff branch to query case_assignments (active, theirs) and join
+  to cases for a "My assigned work" list; notifications_select
+  (migration 0008) is recipient-scoped by auth.uid(), not staff-gated,
+  so also un-gated NotificationBell in home-client.tsx from isStaff -
+  a technician could already receive a notification and previously had
+  no way to see it. Deliberately used the established two-query +
+  Map join pattern (matching src/app/(app)/spares/page.tsx exactly)
+  rather than PostgREST embed syntax (`cases(...)` inside .select) -
+  caught myself about to ship the embed form (it compiled, tsc/eslint/
+  build all passed with an `as unknown as` cast) but a grep across the
+  whole codebase found zero other uses of that pattern anywhere, and
+  this sandbox has no live Supabase network access to verify its
+  runtime shape directly, so refactored to the proven pattern before
+  committing rather than trust an unverified one. tsc/eslint/next
+  build all clean on the refactored version.
+Previously: Loop 108 - spare-consumption Excel export. New API route
+  src/app/api/spares/export/route.ts (staff-only - refuses a non-staff
+  caller outright rather than silently scoping to just their own rows)
+  reads spare_usage joined with spare_requests (spare name, estimated
+  amount) and cases (case number, symptom, area, line), resolves
+  actor_user_id to a staff full_name the same way every other panel in
+  this app already does (falls back to the raw id for a non-staff
+  actor, matching ownership-history's existing pattern - not a new
+  gap), and streams a real .xlsx via the new exceljs dependency.
+  "Download Excel" button added to the Spares page (src/app/(app)/
+  spares/page.tsx) - the exact page titled "Spare Consumption" the
+  Boss meant. Columns: date, spare, quantity, estimated amount, case
+  number, symptom, area, line, machine/asset, used by, outcome, stores
+  reference status/id - every field the Boss asked for. Verified the
+  actual join/query logic against a live synthetic scenario (inserted,
+  confirmed the joined result matched exactly what the route computes,
+  then cleaned up via the same safe cleanup_synthetic_cases function -
+  no residual test data left). tsc/eslint/next build all clean. `npm
+  audit` found one new moderate transitive finding (exceljs -> uuid,
+  GHSA-w5hq-g745-h8pq) - not reachable from any Maintenance-supplied
+  input, documented as RISK-34 (LOW, OPEN) rather than force-downgrading
+  exceljs, matching Loop 59/98's "small bumps only" precedent.
+Previously: Loop 107 - multi-material spare consumption. Boss: a
+  technician often uses several different materials in one
+  intervention (e.g. 2 bearings + 3 switches + 5 MCBs) - raising a
+  request and recording usage was one-at-a-time before this. The data
+  model already keeps each material as its own spare_requests/
+  spare_usage row pair (correctly, for §16.1 traceability - one row
+  can't mean "2 bearings AND 3 switches"), so this was a UI convenience
+  gap only, not a schema/RPC change: spares-panel.tsx gained a new
+  "Record materials used (multiple at once)" form with dynamic rows
+  (spare name / qty / estimated amount) and a shared asset ref/outcome;
+  on submit each row does the same raise_spare_request ->
+  record_spare_usage pair the existing single-item forms already do,
+  sequentially, with a per-row result summary (a >Rs12,000 item that
+  needs Manager approval is clearly called out, not silently dropped).
+  No new RPC, no migration. Existing single-item "Raise a request" /
+  "Record spare usage" forms kept untouched alongside it for the
+  pre-approval-needed workflow. tsc/eslint/next build all clean.
+Previously: Loop 106 - Boss approved "Continue loop 106 to 110" and asked
+  for all test data to be removed "agar application ko koi nuksan nahi hai
+  to" (if it doesn't harm the app). Verified live before touching anything:
+  all 1101 cases in the Maintenance Supabase project carried the
+  [AUTOTEST] prefix - zero real business cases, confirmed by direct query,
+  not assumed. Ran maintenance.cleanup_synthetic_cases (migration 0036,
+  the same safety-checked function CI's own cleanup already used, which
+  refuses non-synthetic rows all-or-nothing) against every case at once,
+  then removed the still-synthetic pm_plans/recurrence_rules/dangling
+  PM-related notifications/orphan idempotency_keys the same way after
+  confirming each was 100% [AUTOTEST]-tagged. Result: 0 cases, 0 pm_plans,
+  0 pm_instances, 0 recurrence_rules, 0 notifications remain. Deliberately
+  left alone: the 2 real staff seed accounts (Executive + Manager login),
+  1 qc_authority grant, and ~1,120 audit_log rows whose target isn't a
+  deleted case/pm_plan (CLAUDE.md's append-only rule on audit_log - safe
+  to trim only what's provably tied to deleted synthetic objects, not
+  blanket-wiped). App's auth/demo accounts untouched; the database is now
+  a clean slate for cases/PM/recurrence.
+  Boss also asked: (1) whether Manager/Technician have distinct screens
+  like the attached Premium UI v2 mockup - answered honestly: no, today
+  everyone (Executive/Manager/Technician-with-staff-access) shares one
+  nav (Cases/Control/PM/Spares/More) and one Home page, gated by
+  show/hide booleans within shared pages, not the mockup's fully separate
+  Manager 7-chart analytics dashboard / Technician mobile task workspace;
+  (2) multi-material spare consumption (e.g. 2 bearings + 3 switches + 5
+  MCBs in one go) - current schema already supports arbitrary distinct
+  spares per case (one spare_request/spare_usage row each, correctly, for
+  §16.1 traceability) but the UI makes a technician repeat the whole
+  raise+record flow per material - a real UI convenience gap; (3) an
+  Excel-download option on Spare Consumption with full details (spare,
+  qty, where, who, date, machine) - does not exist yet, a real feature
+  gap. Plan for the rest of this batch: Loop 107 multi-item spare
+  consumption UI, Loop 108 Excel export, Loop 109-110 a scoped (not
+  full-mockup-parity) Technician workspace + Manager analytics
+  improvement, then Gate 22 report.
+Previously: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
   identically (confirmed deterministic on a re-run before treating it as
   anything but a flake). Root cause: migration 0052 (Loop 103) rebuilt
   transition_case from migration 0007's stale body, silently reverting

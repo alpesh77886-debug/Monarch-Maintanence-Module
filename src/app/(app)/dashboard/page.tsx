@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { CaseStatus, MaintenanceCase, StaffMember } from "@/lib/supabase/database.types";
-import { StatCard, BarBreakdown, Icons } from "@/components/stat-card";
+import { StatCard, BarBreakdown, TrendChart, Icons } from "@/components/stat-card";
 import { statusFillClass } from "@/components/ui";
 
 // §22 shift-handover dashboard: total open, Executive-wise pending/completed,
@@ -95,6 +95,41 @@ export default async function DashboardPage() {
     colorClass: statusFillClass(label),
   }));
 
+  // Loop 110 (Boss: "Manager ke liye better analytics — existing KPI/
+  // Dashboard data pe real charts"): a 14-day created-vs-closed volume
+  // trend, built from the same `cases` rows already fetched above — no new
+  // query, no invented target line (§25.2/CLAUDE.md: no SLA to compare
+  // against). Bucket keys use the UTC calendar date embedded in each ISO
+  // timestamp on both sides (bucket generation and case lookup) so they
+  // line up regardless of server timezone.
+  const TREND_DAYS = 14;
+  const trendBuckets: { key: string; label: string }[] = [];
+  const todayUtc = new Date();
+  for (let i = TREND_DAYS - 1; i >= 0; i--) {
+    const d = new Date(
+      Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), todayUtc.getUTCDate() - i)
+    );
+    trendBuckets.push({
+      key: d.toISOString().slice(0, 10),
+      label: d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "UTC" }),
+    });
+  }
+  const createdByDay = new Map<string, number>();
+  const closedByDay = new Map<string, number>();
+  for (const c of cases) {
+    const createdKey = c.created_at.slice(0, 10);
+    createdByDay.set(createdKey, (createdByDay.get(createdKey) ?? 0) + 1);
+    if (c.closed_at) {
+      const closedKey = c.closed_at.slice(0, 10);
+      closedByDay.set(closedKey, (closedByDay.get(closedKey) ?? 0) + 1);
+    }
+  }
+  const trendSeries = trendBuckets.map((b) => ({
+    label: b.label,
+    created: createdByDay.get(b.key) ?? 0,
+    closed: closedByDay.get(b.key) ?? 0,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold text-fg">Shift dashboard</h1>
@@ -120,6 +155,8 @@ export default async function DashboardPage() {
       {cases.length > 0 && (
         <BarBreakdown title="Cases by status (all time)" total={cases.length} segments={statusSegments} />
       )}
+
+      <TrendChart title="Case volume — created vs closed, last 14 days" series={trendSeries} />
 
       <section>
         <h2 className="text-sm font-semibold text-fg">By staff member</h2>
