@@ -1,6 +1,24 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 97 complete - PR #94 (Loop 96) merged, but its own
+Current loop: Loop 98 complete - PR #95 (Loop 97) merged; its own first
+  CI run hit ANOTHER real-but-unrelated flake first (this time
+  tests/production-boundary.test.ts - the same shared-live-Supabase
+  write-visibility race, on a docs-only diff that never touched that
+  file), confirmed via one permitted re-run after a standing-down
+  comment, came back green, merged. Loop 98 itself: a fresh dependency
+  security audit (last done Loop 59, many loops ago) - npm audit found
+  0 vulnerabilities across 640 dependencies, clean. npm outdated found
+  4 safe in-range (caret-range, non-major) bumps available:
+  @sentry/nextjs 10.73.0->10.74.0, @types/node/@types/react/
+  @types/react-dom patch/minor bumps. Applied via npm update (not a
+  package.json range change - the existing ^ ranges already permitted
+  these). Left next/eslint/typescript/react alone since their "Latest"
+  sits outside the currently-pinned range - a deliberate major/minor
+  version change is a different, riskier kind of decision than a safe
+  patch bump, matching Loop 59's own precedent of small bumps only.
+  Verified: tsc/eslint/build all clean after the bump, 0 vulnerabilities
+  confirmed again post-update. Only package-lock.json changed.
+Previously: Loop 97 complete - PR #94 (Loop 96) merged, but its own
   first CI run caught a real bug in the loop's own new test before
   merging: reading a just-inserted case back with a DIFFERENT client
   immediately after insert hit the same shared-live-Supabase read-after-
