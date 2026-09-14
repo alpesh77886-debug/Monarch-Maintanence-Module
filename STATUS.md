@@ -1,6 +1,50 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 93 complete - PR #90 (Loop 91 + Loop 92) merged clean,
+Current loop: Loop 94 complete - PR #91 (Loop 93) merged. Its own CI hit
+  a real but unrelated flake first (tests/emergency-and-notifications.test.ts,
+  a read-after-write race on the shared live Supabase test project reading
+  back a case the same test had just inserted - same recurring pattern as
+  PR #89's CASE_NOT_FOUND flake), confirmed via one permitted re-run after
+  posting a standing-down comment; came back green, merged clean. Loop 94
+  itself: a fresh angle after Loops 91-93 exhausted the RPC-coverage and
+  RLS-audit surfaces - a live Vercel/Sentry runtime-config re-check
+  (Loop 47's original scope, ~6 days stale). Vercel: deployment protection
+  still off, still correctly a non-defect (Loop 44's anon lockdown is the
+  real boundary), no drift. Sentry: found a REAL new item this time, not a
+  repeat "nothing to fix" - MONARCH-MAINTENANCE-MODULE-4, "Error: the
+  destination stream closed early" on GET /home, 145 occurrences over 5
+  days, status escalating. Root-caused before touching anything: every
+  occurrence's server_name matches the GitHub Actions runner format and
+  browser is HeadlessChrome - this is the e2e job's own `next build &&
+  next start` process (playwright.config.ts), not the real Vercel
+  deployment; Users Impacted stayed 0 throughout. The error itself is
+  Next.js aborting a React Server Component stream when Playwright
+  navigates away from /home before the response finishes - expected
+  behavior, not an application bug. But it was wrongly tagged
+  environment:"production" because src/instrumentation.ts and
+  instrumentation-client.ts both fell back to `process.env.NODE_ENV`
+  (which next start always sets to "production", CI included) whenever
+  VERCEL_ENV was unset - the exact same blind spot Loop 47 had to work
+  around by hand for two earlier stale issues. Fixed both files to check
+  GitHub Actions' own CI=true env var before that fallback, so CI-run
+  errors now tag environment:"ci" and stop being conflated with real
+  production traffic. Verified: tsc/eslint clean; two full `next build`
+  runs (default env and CI=true) both succeeded; confirmed via the built
+  server bundle that process.env.CI is read live at runtime server-side
+  (no build-time inlining ambiguity there). Honestly flagged, not
+  overclaimed: the client-side (instrumentation-client.ts) fix's actual
+  effect in the browser bundle could not be fully confirmed - Next.js
+  only reliably inlines NODE_ENV for client code, not arbitrary env vars
+  like CI, so process.env.CI may resolve to undefined in an actual
+  browser and silently fall through to the same "production" tag as
+  before; not a regression either way (worst case: no better, no worse
+  than pre-fix), and the ACTUAL Sentry issue being fixed is 100%
+  server-side (platform: node, mechanism: auto.function.nextjs.
+  on_request_error) where the fix is confirmed correct. Resolved
+  MONARCH-MAINTENANCE-MODULE-4 in Sentry with a full root-cause comment
+  (Loop 47's own established practice) rather than leaving it sitting
+  unresolved/escalating.
+Previously: Loop 93 complete - PR #90 (Loop 91 + Loop 92) merged clean,
   CI green first try (`tests/recurrence-capa.test.ts` new tests passed
   against the live Supabase test project in GitHub Actions - this
   sandbox's own egress proxy still can't reach *.supabase.co directly,
