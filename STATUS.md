@@ -1,6 +1,27 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 99 complete - PR #96 (Loop 98) merged; its own first
+Current loop: Loop 100 complete - final loop of the Boss-approved 96-100
+  batch, carrying the mandatory Gate 20 stop per §19.9/§19.13. PR #97
+  (Loop 99) merged clean, CI green on the first try - including the
+  e2e job, confirming the RISK-16 retry fix actually works under real
+  load. Wrote APPROVAL_REPORT_LOOP_96_100.md (full 5-loop summary,
+  including the completion figure the Boss explicitly asked for),
+  updated APPROVAL_GATE.md (Gate 20 AWAITING BOSS), and this STATUS.md
+  entry. The answer delivered: 24 of 25 IMPLEMENTATION_PACK.md #32 V1
+  items are functionally complete, verified fresh against actual
+  code/tests this batch, not a reused percentage - only RISK-32 (reopen
+  authority) and RISK-33 (complainant-disagreement path) remain as real
+  gaps, both business-rule design decisions only the Boss can supply,
+  now flagged across 9 consecutive gate reports since Gate 12 with no
+  answer yet. This batch also closed two smaller real findings along
+  the way (RISK-07's stale test-coverage record + the one genuine
+  remaining #37 gap; RISK-16's uncovered e2e sign-in code path) and
+  ran a fresh dependency security audit (0 vulnerabilities, 4 safe
+  patch/minor bumps). Autonomous work is now PAUSED per the mandatory
+  gate stop - Loop 101 will not start without explicit Boss
+  continuation language, silence or an unrelated reply is not
+  approval, same as every gate before this.
+Previously: Loop 99 complete - PR #96 (Loop 98) merged; its own first
   CI run hit a genuinely different failure shape this time - not the
   read-visibility race hit 3x already this batch, but the e2e job's
   browser sign-in stalling ("did not reach /home", no inline error) on
