@@ -15,6 +15,26 @@ type Counts = {
   activeEmergency: number;
 };
 
+// Loop 109 (Gate 22): a technician's own actively-assigned cases — the
+// visibility gap this loop closes. cases_select (migration 0032) already
+// lets a non-staff technician read exactly these rows; nothing surfaced
+// them until now.
+export type AssignedCase = {
+  id: string;
+  case_number: string;
+  symptom: string;
+  status: string;
+  priority: string | null;
+  area: string | null;
+  line: string | null;
+};
+
+const PRIORITY_DOT: Record<string, string> = {
+  HIGH: "bg-bad",
+  MEDIUM: "bg-warn",
+  LOW: "bg-good",
+};
+
 const ROLE_LABEL: Record<StaffRole, string> = {
   MAINTENANCE_EXECUTIVE: "Maintenance Executive",
   MAINTENANCE_MANAGER: "Maintenance Manager",
@@ -36,6 +56,7 @@ export default function HomeClient({
   counts,
   notifications,
   isStaff,
+  myAssignedCases = [],
 }: {
   userLabel: string;
   role: StaffRole | null;
@@ -43,6 +64,7 @@ export default function HomeClient({
   counts: Counts;
   notifications: AppNotification[];
   isStaff: boolean;
+  myAssignedCases?: AssignedCase[];
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
@@ -80,7 +102,11 @@ export default function HomeClient({
           <span className="text-sm font-semibold">MONARCH</span>
         </div>
         <div className="flex items-center gap-2">
-          {isStaff && <NotificationBell notifications={notifications} />}
+          {/* Loop 109: notifications_select is recipient-scoped by
+              auth.uid(), not staff-gated — a non-staff technician can
+              already receive one (e.g. a handover), so this is no longer
+              staff-only. */}
+          <NotificationBell notifications={notifications} />
           <button
             aria-label="Open menu"
             onClick={() => setMenuOpen(true)}
@@ -126,6 +152,54 @@ export default function HomeClient({
             You&rsquo;re signed in, but this identity has no Maintenance staff record — module
             access below is limited. Contact a Manager if this is unexpected.
           </p>
+        )}
+
+        {/* Loop 109 (Gate 22): a technician's own assigned work, made
+            visible for the first time — cases_select already let them read
+            these rows, nothing surfaced them. Cards link straight into
+            /cases/[id], where intervention/spare-usage recording is
+            already technician-accessible (isAssignedTechnician gating). */}
+        {!isStaff && (
+          <section>
+            <h2 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted">
+              My assigned work
+            </h2>
+            {myAssignedCases.length === 0 ? (
+              <p className="rounded-xl border border-line bg-card p-4 text-sm text-muted">
+                No case is currently assigned to you.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {myAssignedCases.map((c) => (
+                  <li key={c.id}>
+                    <Link
+                      href={`/cases/${c.id}`}
+                      className="block rounded-xl border border-line bg-card p-3.5 shadow-sm transition-shadow hover:shadow-md active:bg-bg2"
+                    >
+                      <div className="flex items-center gap-2">
+                        {c.priority && (
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[c.priority] ?? "bg-muted2"}`}
+                            aria-hidden="true"
+                          />
+                        )}
+                        <span className="text-xs font-mono font-bold text-muted">{c.case_number}</span>
+                        <span className="ml-auto rounded-full bg-card2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
+                          {c.status}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-sm font-medium text-fg">{c.symptom}</p>
+                      {(c.area || c.line) && (
+                        <p className="mt-1 text-xs text-muted">
+                          {[c.area, c.line].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         )}
 
         <section>

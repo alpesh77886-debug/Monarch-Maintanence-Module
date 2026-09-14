@@ -1,6 +1,30 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 108 - spare-consumption Excel export. New API route
+Current loop: Loop 109 - technician home visibility. Real gap, not a
+  permissions one: a non-staff technician's /home page showed only a
+  warning banner and one generic "Cases" tile - zero visibility into
+  their own actively-assigned work - even though cases_select
+  (migration 0032, the current definition, verified by checking every
+  migration that touches it, not just the first) already lets them read
+  exactly that (staff OR reporter OR assigned technician), and
+  case_assignments_select (migration 0002) already scopes to
+  technician_user_id = auth.uid(). Fixed src/app/home/page.tsx's
+  non-staff branch to query case_assignments (active, theirs) and join
+  to cases for a "My assigned work" list; notifications_select
+  (migration 0008) is recipient-scoped by auth.uid(), not staff-gated,
+  so also un-gated NotificationBell in home-client.tsx from isStaff -
+  a technician could already receive a notification and previously had
+  no way to see it. Deliberately used the established two-query +
+  Map join pattern (matching src/app/(app)/spares/page.tsx exactly)
+  rather than PostgREST embed syntax (`cases(...)` inside .select) -
+  caught myself about to ship the embed form (it compiled, tsc/eslint/
+  build all passed with an `as unknown as` cast) but a grep across the
+  whole codebase found zero other uses of that pattern anywhere, and
+  this sandbox has no live Supabase network access to verify its
+  runtime shape directly, so refactored to the proven pattern before
+  committing rather than trust an unverified one. tsc/eslint/next
+  build all clean on the refactored version.
+Previously: Loop 108 - spare-consumption Excel export. New API route
   src/app/api/spares/export/route.ts (staff-only - refuses a non-staff
   caller outright rather than silently scoping to just their own rows)
   reads spare_usage joined with spare_requests (spare name, estimated
