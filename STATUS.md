@@ -21,8 +21,17 @@ Current loop: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
   was refused by RLS every time, and the test never checked the insert's
   error, so it surfaced as a bare TypeError instead of the real cause.
   Fixed by inserting from the reporter's own client instead, and by
-  asserting error is null at every insert in this file. Pushed, CI
-  re-running.
+  asserting error is null at every insert in this file. Re-run narrowed
+  to exactly 1 failure (227/228): the test's own notification check read
+  via exec.client while checking for tech's notification - RLS
+  (recipient_user_id = auth.uid(), migration 0008) means exec can never
+  see tech's row regardless of correctness. Fixed by reading via
+  tech.client. Same CI run's cleanup step also warned of a real,
+  non-blocking gap: cleanup_synthetic_cases deletes restorations before
+  restoration_disputes (new this batch, no CASCADE), so any synthetic
+  case with a dispute failed that cleanup batch with a live FK
+  violation. Fixed in migration 0054 - one line added to the existing
+  "children first, FK order" delete list. Pushed, CI re-running.
 Previously: Loop 105 complete - final loop of the Boss-approved 101-105
   batch, carrying the mandatory Gate 21 stop per #19.9/#19.13. Both
   RISK-32 and RISK-33 are now RESOLVED in RISK_REGISTER.md - the first

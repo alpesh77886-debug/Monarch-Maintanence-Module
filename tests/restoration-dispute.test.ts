@@ -207,7 +207,10 @@ describe("acknowledge_restoration_dispute + \"no unilateral closure\" guard (§1
       .eq("event_type", "RESTORATION_DISPUTE_ACKNOWLEDGED");
     expect(events!.length).toBe(1);
 
-    const { data: notifications } = await exec.client
+    // notifications_select is recipient_user_id = auth.uid() only (migration
+    // 0008) — exec.client can never see a row addressed to tech, regardless
+    // of whether it was inserted correctly. Must read as tech.
+    const { data: notifications } = await tech.client
       .from("notifications")
       .select("recipient_user_id")
       .eq("case_id", caseId)

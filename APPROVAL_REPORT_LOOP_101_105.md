@@ -85,7 +85,27 @@ conditions in `page.tsx`. The RPC-level enforcement itself — which is what
 actually matters per CLAUDE.md ("server-side enforced, never UI-only") —
 is fully covered.
 
-## Two real defects this batch caught, not just a flake
+## Three real defects this batch caught, not just a flake
+
+The second re-run narrowed further: to exactly 1 failure (227/228 passing),
+confirming both fixes above actually worked. The remaining one:
+`restoration-dispute.test.ts`'s own notification assertion read
+`notifications` via `exec.client` while checking for a row addressed to
+`tech` — but `notifications_select`'s RLS policy (migration 0008) is
+`recipient_user_id = auth.uid()` only, so `exec.client` can never see a
+row meant for `tech`, correctly inserted or not. Fixed by reading via
+`tech.client` instead, matching the pattern the file's own first test
+already used correctly for the reverse case (exec checking its own
+notification via `exec.client`).
+
+The same CI run's cleanup step also surfaced a real, non-blocking data
+hygiene gap in its warning output: `cleanup_synthetic_cases` deletes
+`maintenance.restorations` for a batch of synthetic cases without first
+deleting `restoration_disputes` (new this batch, migration 0051, no
+CASCADE — this schema has none by design), so any synthetic case with a
+dispute failed that batch's cleanup with a live FK violation, silently
+leaving rows behind run after run. Fixed in migration `0054` by adding
+one line to the same "children first, FK order" delete list.
 
 The first re-run (after the standing-down comment below) came back with a
 narrower, deterministic 4-test failure — all four in this batch's own
