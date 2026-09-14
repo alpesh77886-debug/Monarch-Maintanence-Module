@@ -375,7 +375,9 @@ export default async function CaseDetailPage({
     <div className="flex flex-col gap-4">
       {escalationBanner}
       {emergencyPanel}
-      {isStaffRow && <CloseReopenActions caseId={caseRow.id} status={caseRow.status} />}
+      {isStaffRow && (
+        <CloseReopenActions caseId={caseRow.id} status={caseRow.status} isManager={isManager} />
+      )}
       {isStaffRow && (
         <PriorityPanel
           caseId={caseRow.id}

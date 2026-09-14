@@ -1,6 +1,23 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 100 complete - final loop of the Boss-approved 96-100
+Current loop: Loop 101 complete - Boss approved "Continue loop 101 to 105"
+  and, in the same message, supplied the two design decisions every gate
+  report since Gate 12 has been asking for. RISK-32 (reopen authority):
+  Boss said "Yaha Sirf Maintenance Manager rakho" - reopen authority is
+  MAINTENANCE_MANAGER only, resolving IMPLEMENTATION_PACK.md line 150's
+  ambiguous "Executive + Manager" phrase. Migration 0050 changes
+  reopen_case's guard from is_staff() to the pre-existing is_manager()
+  (not redefined). UI now only shows the Reopen button to a Manager
+  (server RPC is the real enforcement regardless). lifecycle.test.ts's
+  Scenario A now asserts an Executive gets FORBIDDEN before a Manager
+  succeeds; red-team-matrix.test.ts adds a dedicated case - an Executive
+  who owns and closes a case still cannot reopen it. RISK-32 closed
+  RESOLVED in RISK_REGISTER.md. RISK-33 (complainant disagreement): Boss
+  supplied the interaction shape too - complainant raises "kaam nahi
+  hua" (work not done), Executive then acknowledges whether it is
+  actually fixed or not. Design captured this loop; schema + RPCs are
+  Loop 102-103's work, not yet built.
+Previously: Loop 100 complete - final loop of the Boss-approved 96-100
   batch, carrying the mandatory Gate 20 stop per §19.9/§19.13. PR #97
   (Loop 99) merged clean, CI green on the first try - including the
   e2e job, confirming the RISK-16 retry fix actually works under real

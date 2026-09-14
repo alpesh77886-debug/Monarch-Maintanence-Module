@@ -8,9 +8,11 @@ import { Button } from "@/components/ui";
 export default function CloseReopenActions({
   caseId,
   status,
+  isManager,
 }: {
   caseId: string;
   status: string;
+  isManager: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,11 @@ export default function CloseReopenActions({
           Close case
         </Button>
       )}
-      {status === "CLOSED" && (
+      {status === "CLOSED" && isManager && (
+        // RISK-32 (Gate 21, Loop 101): reopen authority is Maintenance
+        // Manager only — the RPC itself enforces this (maintenance.is_manager()),
+        // this just avoids showing a button to an Executive that would
+        // always come back FORBIDDEN.
         <Button variant="secondary" className="self-start" onClick={reopen} disabled={submitting}>
           Reopen (same problem recurred)
         </Button>
