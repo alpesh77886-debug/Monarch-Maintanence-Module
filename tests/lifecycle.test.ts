@@ -295,4 +295,41 @@ describe("cases_insert column lockdown (§4, §6, RISK-19)", () => {
     expect(data!.current_owner_user_id).toBeNull();
     expect(data!.closed_at).toBeNull();
   });
+
+  // Loop 96: §37 "no available Executive/Manager" had no test anywhere in
+  // the suite. Reading acknowledge_case (is_staff()-gated, no queue/SLA
+  // logic) confirms there is no separate "unavailable staff" code path to
+  // exercise — a case simply stays REPORTED, visible and untouched, until
+  // *some* staff member chooses to act. This pins that existing behavior
+  // is actually safe under that condition, rather than assuming it.
+  it("a case with no staff available to acknowledge it stays REPORTED, unowned, and untouched (§37)", async () => {
+    const exec = await signInAs("executive");
+    const { data: created } = await exec.client
+      .from("cases")
+      .insert({
+        case_type: "BREAKDOWN",
+        symptom: testSymptom("no available exec/mgr"),
+        reporter_user_id: exec.userId,
+      })
+      .select("id, status, current_owner_user_id, acknowledged_by_user_id")
+      .single();
+    const caseId = created!.id as string;
+
+    // Nobody acknowledges. Read via the same connection that inserted it
+    // (same shared-live-Supabase-project read-after-write race this suite
+    // has hit before on a fresh client reading a just-inserted row) - the
+    // row itself is what's under test here, not cross-client visibility.
+    expect(created!.status).toBe("REPORTED");
+    expect(created!.current_owner_user_id).toBeNull();
+    expect(created!.acknowledged_by_user_id).toBeNull();
+
+    // A different, non-staff actor cannot force it forward either - this
+    // needs no prior read of the row, so no race to worry about here.
+    const tech = await signInAs("technician");
+    const { error: ackErr } = await tech.client.rpc("acknowledge_case", {
+      p_case_id: caseId,
+      p_priority: "MEDIUM",
+    });
+    expect(ackErr?.message).toMatch(/FORBIDDEN/);
+  });
 });
