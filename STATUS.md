@@ -31,19 +31,26 @@ Current loop: Loop 94 complete - PR #91 (Loop 93) merged. Its own CI hit
   production traffic. Verified: tsc/eslint clean; two full `next build`
   runs (default env and CI=true) both succeeded; confirmed via the built
   server bundle that process.env.CI is read live at runtime server-side
-  (no build-time inlining ambiguity there). Honestly flagged, not
-  overclaimed: the client-side (instrumentation-client.ts) fix's actual
-  effect in the browser bundle could not be fully confirmed - Next.js
-  only reliably inlines NODE_ENV for client code, not arbitrary env vars
-  like CI, so process.env.CI may resolve to undefined in an actual
-  browser and silently fall through to the same "production" tag as
-  before; not a regression either way (worst case: no better, no worse
-  than pre-fix), and the ACTUAL Sentry issue being fixed is 100%
-  server-side (platform: node, mechanism: auto.function.nextjs.
-  on_request_error) where the fix is confirmed correct. Resolved
+  (no build-time inlining ambiguity there). Resolved
   MONARCH-MAINTENANCE-MODULE-4 in Sentry with a full root-cause comment
   (Loop 47's own established practice) rather than leaving it sitting
   unresolved/escalating.
+  PR #92's own review caught a real gap in this same loop: an automated
+  Codex review correctly flagged that the original client-side fix
+  (`process.env.CI` in instrumentation-client.ts) could not actually work
+  - Next.js only reliably inlines NEXT_PUBLIC_*/configured vars into the
+  browser bundle, so a bare CI reference there resolves against an empty
+  shim, silently falling through to "production" exactly as before. This
+  had already been flagged honestly (not claimed as fixed) in the PR
+  description rather than glossed over, which is what let the finding
+  land as "here's the real fix" instead of a surprise. Fixed properly:
+  added `env: { NEXT_PUBLIC_CI: process.env.CI }` to next.config.ts and
+  switched instrumentation-client.ts to read NEXT_PUBLIC_CI. Verified by
+  inspecting the actual built client bundle both ways - grepped the
+  Sentry.init() call in the compiled chunk and confirmed the ternary
+  fully constant-folded to the literal `environment:...??"ci"` when built
+  with CI=true, and to `??"production"` on a plain build - not just
+  trusting the source read this time, the built output itself.
 Previously: Loop 93 complete - PR #90 (Loop 91 + Loop 92) merged clean,
   CI green first try (`tests/recurrence-capa.test.ts` new tests passed
   against the live Supabase test project in GitHub Actions - this
