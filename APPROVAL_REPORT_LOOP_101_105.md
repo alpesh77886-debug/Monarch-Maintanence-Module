@@ -85,14 +85,37 @@ conditions in `page.tsx`. The RPC-level enforcement itself — which is what
 actually matters per CLAUDE.md ("server-side enforced, never UI-only") —
 is fully covered.
 
+## A real defect this batch caught, not just a flake
+
+CI on this batch's own PR (#99) failed twice, identically, after Loop 105's
+final push — a genuine regression, confirmed deterministic on a re-run
+before being treated as anything else. Root cause: migration `0052` (Loop
+103) redefined `transition_case` by copying migration **0007**'s body and
+adding the new RISK-33 dispute guard on top of it. But `transition_case`
+had already been redefined twice more since 0007 — by `0019` (the §14.2
+PTW gate) and, most recently, `0034` (the QC-authority identity's narrow
+CLEARANCE_PENDING-only transition grant, F-01/F-01b, plus the DUPLICATE
+redirect and a refined QC-gate message). Building on the stale 0007 base
+silently reverted all three, live, on the actual Maintenance Supabase
+project — caught by 13 test failures across 5 files (including this
+batch's own new `restoration-dispute.test.ts`), not by review.
+
+Fixed in migration `0053`: `0034`'s full body restored verbatim, with only
+the RISK-33 guard layered back on top in the same place. No other behavior
+change. This is exactly the "no silent architecture drift" mistake
+CLAUDE.md warns about, and it happened despite following the file — the
+lesson for future loops touching a function with a long revision history
+is to grep for every `create or replace` of that function first, not just
+read the migration that originally introduced it.
+
 ## Verification posture this batch
 
 - Every loop's `tsc --noEmit` and `eslint` came back clean.
 - Loop 104 additionally ran a full `next build` (not just `tsc`), since UI
   wiring is exactly the kind of change a type check alone can miss.
-- All three new/changed migrations (`0050`, `0051`, `0052`) were applied
-  live to the Maintenance Supabase project via the Supabase MCP tool, not
-  just written and hoped for.
+- All four new/changed migrations (`0050`, `0051`, `0052`, `0053`) were
+  applied live to the Maintenance Supabase project via the Supabase MCP
+  tool, not just written and hoped for.
 - CI (GitHub Actions, real network access to the live Supabase project)
   is this batch's actual test-execution evidence, same as every batch
   before it — this sandbox's own egress proxy still blocks direct

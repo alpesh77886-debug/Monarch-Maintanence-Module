@@ -1,6 +1,17 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 105 complete - final loop of the Boss-approved 101-105
+Current loop: Loop 105 hotfix (migration 0053) - PR #99's CI failed twice,
+  identically (confirmed deterministic on a re-run before treating it as
+  anything but a flake). Root cause: migration 0052 (Loop 103) rebuilt
+  transition_case from migration 0007's stale body, silently reverting
+  two later fixes still in production - 0019's PTW gate and 0034's
+  QC-authority identity's narrow CLEARANCE_PENDING-only transition grant
+  (F-01/F-01b). 13 tests failed across 5 files, including this batch's
+  own new restoration-dispute.test.ts. Fixed by restoring 0034's full
+  body verbatim with only the RISK-33 dispute guard layered back on top
+  - no other behavior change. Applied live, documented in
+  APPROVAL_REPORT_LOOP_101_105.md and RISK_REGISTER.md. Re-running CI now.
+Previously: Loop 105 complete - final loop of the Boss-approved 101-105
   batch, carrying the mandatory Gate 21 stop per #19.9/#19.13. Both
   RISK-32 and RISK-33 are now RESOLVED in RISK_REGISTER.md - the first
   gate report since Gate 12 with no outstanding business-rule design
