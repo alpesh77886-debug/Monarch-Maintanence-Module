@@ -1,6 +1,27 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 109 - technician home visibility. Real gap, not a
+Current loop: Loop 110 - Manager analytics (scoped, not full 7-chart
+  mockup parity, as promised in Loop 106's plan). Dashboard already had
+  a status-distribution bar (Loop 21's BarBreakdown) but nothing showing
+  trend - a Manager could see today's snapshot, not whether case volume
+  is rising or falling. Added TrendChart (src/components/stat-card.tsx,
+  co-located with BarBreakdown, same "render what the caller already
+  computed, invent nothing" convention) - a 14-day created-vs-closed bar
+  chart wired into src/app/(app)/dashboard/page.tsx using the SAME
+  `cases` rows that page already fetches (created_at/closed_at were
+  already selected - no new query, no new RLS surface). Bucket keys use
+  the UTC calendar date embedded in each ISO timestamp on both the
+  bucket-generation and the case-lookup side, so they line up regardless
+  of server timezone - verified with a standalone Node script against a
+  case landing exactly at 23:59 UTC and one outside the 14-day window
+  (correctly excluded from every bucket, not silently added to day 1).
+  Bar heights are plain pixels computed in JS (value/max*80px), not a
+  CSS percentage-height inside a flex container, which the codebase has
+  no precedent for and resolves inconsistently without a separately
+  fixed container height - same "don't ship an unverified new pattern"
+  discipline as Loop 109's embed-query refactor. No new dependency, no
+  invented target/SLA line (§25.2). tsc/eslint/next build all clean.
+Previously: Loop 109 - technician home visibility. Real gap, not a
   permissions one: a non-staff technician's /home page showed only a
   warning banner and one generic "Cases" tile - zero visibility into
   their own actively-assigned work - even though cases_select

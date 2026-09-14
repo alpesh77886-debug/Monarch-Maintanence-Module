@@ -139,3 +139,75 @@ export function BarBreakdown({
     </div>
   );
 }
+
+// Loop 110 (Boss: "Manager ke liye better analytics — existing KPI/Dashboard
+// data pe real charts"): a daily created-vs-closed volume trend. Bar heights
+// are computed in plain pixels from the caller's own counts (never a CSS
+// percentage-height inside a flex container, which resolves inconsistently
+// unless the container has a definite height set another way) — so a bar's
+// height is exactly `value / max * MAX_BAR_PX`, nothing implicit. Like
+// BarBreakdown above, this renders whatever `series` the caller already
+// computed from real rows; it invents no target, threshold, or SLA line.
+const MAX_BAR_PX = 80;
+
+export function TrendChart({
+  title,
+  series,
+}: {
+  title: string;
+  series: { label: string; created: number; closed: number }[];
+}) {
+  const max = Math.max(1, ...series.flatMap((s) => [s.created, s.closed]));
+  const summary = series
+    .map((s) => `${s.label}: ${s.created} created, ${s.closed} closed`)
+    .join("; ");
+
+  return (
+    <div className="rounded-lg border border-line bg-card p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-medium text-muted">{title}</p>
+        <div className="flex gap-3 text-[10px] text-muted">
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-brand" /> Created
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-teal" /> Closed
+          </span>
+        </div>
+      </div>
+      {series.length === 0 ? (
+        <p className="mt-2 text-xs text-muted2">No data yet.</p>
+      ) : (
+        <>
+          <div
+            role="img"
+            aria-label={`${title}. ${summary}`}
+            className="mt-3 flex items-end gap-1.5 overflow-x-auto"
+            style={{ height: MAX_BAR_PX + 8 }}
+          >
+            {series.map((s) => (
+              <div
+                key={s.label}
+                className="flex shrink-0 items-end gap-0.5"
+                title={`${s.label}: ${s.created} created, ${s.closed} closed`}
+              >
+                <div
+                  className="w-2 rounded-t bg-brand"
+                  style={{ height: Math.max(2, Math.round((s.created / max) * MAX_BAR_PX)) }}
+                />
+                <div
+                  className="w-2 rounded-t bg-teal"
+                  style={{ height: Math.max(2, Math.round((s.closed / max) * MAX_BAR_PX)) }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-1 flex justify-between text-[10px] text-muted2">
+            <span>{series[0].label}</span>
+            <span>{series[series.length - 1].label}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
