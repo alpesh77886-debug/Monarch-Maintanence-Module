@@ -1,6 +1,23 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 102 complete - RISK-33 raise side. Migration 0051 adds
+Current loop: Loop 103 complete - RISK-33 acknowledge side + "no unilateral
+  closure" guard, closing RISK-33 RESOLVED. Migration 0052 adds
+  acknowledge_restoration_dispute (staff-only): not-fixed returns the case
+  to DIAGNOSING/IN_REPAIR (reusing verify_restoration's existing failure
+  edges, no new graph edge) and notifies the complainant of the outcome;
+  fixed leaves the case status untouched. The actual server-side teeth for
+  "no unilateral closure" is a new guard inside transition_case itself -
+  TECHNICALLY_RESTORED cannot advance to CLEARANCE_PENDING/
+  MAINTENANCE_RELEASED (neither send_to_qc nor the no-QC-required direct
+  release) while a restoration_disputes row is still PENDING. Both risks
+  the Boss asked about at Gate 20 (RISK-32, RISK-33) are now RESOLVED in
+  RISK_REGISTER.md, after 9+ consecutive gate reports raising them
+  unanswered since Gate 12. tests/restoration-dispute.test.ts covers both
+  RPCs' authority/preconditions, both resolution paths, the guard actually
+  blocking send_to_qc/direct release (with a check that a blocked
+  send_to_qc leaves no orphaned clearances row), duplicate-pending and
+  already-acknowledged refusals, and notification delivery both ways.
+Previously: Loop 102 complete - RISK-33 raise side. Migration 0051 adds
   maintenance.restoration_disputes (RPC-only, same pattern as clearances)
   and raise_restoration_dispute: callable only by the case's own
   reporter_user_id, only against a TECHNICAL restoration staff already
