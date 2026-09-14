@@ -1,6 +1,49 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 90 complete - final loop of the pre-approved 86-90
+Current loop: Loop 91 complete - first loop of the Boss-approved 91-95
+  batch ("Loop start karo 91 se 95"). RISK-32/RISK-33 remain the
+  highest-value item but stayed untouched again - the Boss's reply did
+  not answer either design question raised in the Gate 18 report, and
+  guessing a reopen-authority or joint-decision mechanism would be
+  business-rule invention (barred outright). Checked every other OPEN
+  RISK_REGISTER item first (RISK-01/02/03/04/06) - all six are Boss- or
+  access-blocked, none self-directed. Pivoted to a fresh, mechanically-
+  verifiable investigation mirroring Loop 43/44's precedent: an RPC
+  test-coverage audit across all ~55 maintenance.* functions, cross-
+  referenced against tests/ (broad `\bname\b` grep, not just literal
+  .rpc() calls - a narrower first pass produced false negatives from a
+  call(...) wrapper used in one UI component) and src/ (to separate
+  real gaps from internal triggers never meant to be called directly).
+  Found exactly 3 zero-coverage functions: decide_recurrence_flag,
+  is_qc_authority, mark_asset_known (the last is actually a DB trigger,
+  not an RPC - different verification shape, not touched this loop).
+  decide_recurrence_flag is a real, client-callable, SECURITY DEFINER
+  RPC with a fully locked authority boundary (staff-only, decision enum,
+  required reason, flag-not-found/already-decided guards) and zero test
+  mentions anywhere - added 4 new tests to tests/recurrence-capa.test.ts
+  covering every guard reachable WITHOUT a seeded recurrence_flags row
+  (FORBIDDEN for non-staff, INVALID_DECISION, REASON_REQUIRED,
+  FLAG_NOT_FOUND via a fake uuid - confirmed this exact check order by
+  reading the function body in 0018_maintenance_recurrence_capa.sql).
+  The CONFIRMED/DISMISSED happy path and ALREADY_DECIDED guard still
+  can't be covered here - a recurrence_flags row is only ever created by
+  run_recurrence_scan, which is cron-only and permission-denied for
+  every authenticated client (same reasoning the file's own header
+  already gives for why the full chain was only ever verified live, see
+  CHANGELOG Loop 15) - not invented a test-only backdoor RPC for this,
+  since that would itself be a schema/authority change needing its own
+  Change Control entry, out of proportion to a coverage gap. tsc/eslint
+  clean. Could NOT execute vitest against live Supabase from this
+  sandbox this loop - direct HTTPS to *.supabase.co returns 403 from
+  this session's own egress proxy policy (confirmed via curl and
+  /root/.ccr/README.md's "403/407 = destination not allowed, do not
+  retry" guidance) - a genuine, newly-observed sandbox network
+  restriction, distinct from RISK-05's browser-auth-specific block.
+  This does not block the batch: this suite has only ever run for real
+  in GitHub Actions CI (a separate, unrestricted network), never in this
+  interactive sandbox - so verification happens via the PR's CI run,
+  watched and driven to green same as every other loop.
+Previously: Loop 90 complete - final loop of the pre-approved 86-90
   batch, carrying the mandatory Gate 18 stop per §19.9/§19.13. No new
   code this loop: final sweep confirmed no further loading.tsx gap
   remains - only / (instant redirect, no data fetch) and /login

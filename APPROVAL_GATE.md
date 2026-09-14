@@ -417,3 +417,14 @@ batch's most concrete, highest-value target, since both have awaited a
 Boss design decision since Gate 12 and no further progress is possible
 without one. Per §19.9 the same mandatory stop will apply again after
 the next 5 loops, whatever they turn out to be.
+
+**GATE 18 (Loops 86-90) — RESOLVED.** The Boss replied **"Loop start
+karo 91 se 95"** — explicit continuation language, again without
+answering the RISK-32/RISK-33 design questions this report and the
+prior one both raised. Per standing practice (self-select when a
+blanket continuation doesn't address the flagged blocking question
+rather than stall the batch on it), Loop 91 targets the next-best
+self-directed candidate instead of guessing at RISK-32/RISK-33's
+business-rule shape. The RISK-32/RISK-33 questions remain open and are
+restated plainly for the Boss in this loop's own report, independent of
+whatever Loop 91 ends up covering.
