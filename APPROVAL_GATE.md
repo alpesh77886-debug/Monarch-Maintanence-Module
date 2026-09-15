@@ -25,7 +25,7 @@
 | 21 (Loops 101–105) | [`APPROVAL_REPORT_LOOP_101_105.md`](./APPROVAL_REPORT_LOOP_101_105.md) | Approved — "Start karo 106 se 110" (compound message, also requesting test-data cleanup, a screens question, and two spare-consumption features) | 2026-09-14 |
 | 22 (Loops 106–110) | [`APPROVAL_REPORT_LOOP_106_110.md`](./APPROVAL_REPORT_LOOP_106_110.md) | Approved — "Loop 111 se 115 start karo" (blanket continuation, did not pick between the report's flagged options) | 2026-09-15 |
 | 23 (Loops 111–113 of the approved 111–115) | [`APPROVAL_REPORT_LOOP_111_115.md`](./APPROVAL_REPORT_LOOP_111_115.md) | RESOLVED — Boss directly challenged the "needs more Boss input" framing for RISK-04 and the screens question; treated as the missing decision | 2026-09-15 |
-| 24 (Loops 115–120) | [`APPROVAL_REPORT_LOOP_115_120.md`](./APPROVAL_REPORT_LOOP_115_120.md) | AWAITING BOSS | — |
+| 24 (Loops 115–120) | [`APPROVAL_REPORT_LOOP_115_120.md`](./APPROVAL_REPORT_LOOP_115_120.md) | Approved — "Yes, PR banao" then "Go" once CI was green; PR #105 merged to `main` (merge commit `1f912da`) | 2026-09-15 |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -635,3 +635,13 @@ Full report, open items, and the explicit next-step question (continue
 self-directed vs. open a PR now for CI verification of 5 new e2e specs
 vs. a new direction) in `APPROVAL_REPORT_LOOP_115_120.md`. Loop 121 will
 not start without explicit continuation language from the Boss.
+
+**PR #105 merged (2026-09-15).** CI: `lint-and-build` green, `e2e` 15/15
+green (one real bug found and fixed in the new
+`technician-workspace.spec.ts` itself — the intervention form starts
+collapsed behind a "+ Record intervention" button, which the first
+version of the test never clicked before asserting on a form field —
+fixed and re-pushed, not the app). Merged with the `merge` method (no
+squash), matching this project's standing convention. Loop 121 remains
+AWAITING BOSS — "Go" approved the merge, not a new batch; explicit
+continuation language is still needed before autonomous loop work resumes.
