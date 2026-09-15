@@ -29,6 +29,15 @@ const MORE_LINKS = [
   },
 ];
 
+// Loop 118: Manager-only, same tile also lives on the home hub — kept here
+// too since More is the one page every staff member already reaches from
+// the bottom nav without a role-specific tile having to exist there.
+const MANAGER_LINK = {
+  href: "/approvals",
+  title: "Approvals",
+  sub: "Spare approvals and emergency confirmations awaiting your decision",
+};
+
 export default async function MorePage() {
   const supabase = await createClient();
   const {
@@ -37,13 +46,15 @@ export default async function MorePage() {
 
   const { data: isStaffRow } = await supabase
     .from("staff")
-    .select("id, is_available")
+    .select("id, role, is_available")
     .eq("id", user?.id ?? "")
     .maybeSingle();
 
   if (!isStaffRow) {
     return <EmptyState title="More is visible to Maintenance staff only." />;
   }
+
+  const links = isStaffRow.role === "MAINTENANCE_MANAGER" ? [MANAGER_LINK, ...MORE_LINKS] : MORE_LINKS;
 
   return (
     <div className="flex flex-col gap-4">
@@ -53,7 +64,7 @@ export default async function MorePage() {
       </div>
 
       <ul className="flex flex-col gap-2">
-        {MORE_LINKS.map((link) => (
+        {links.map((link) => (
           <li key={link.href}>
             <Link
               href={link.href}

@@ -24,7 +24,8 @@
 | 20 (Loops 96–100) | [`APPROVAL_REPORT_LOOP_96_100.md`](./APPROVAL_REPORT_LOOP_96_100.md) | Approved — "Continue loop 101 to 105", and in the same message supplied the RISK-32/RISK-33 design decisions this gate report had asked for | 2026-09-14 |
 | 21 (Loops 101–105) | [`APPROVAL_REPORT_LOOP_101_105.md`](./APPROVAL_REPORT_LOOP_101_105.md) | Approved — "Start karo 106 se 110" (compound message, also requesting test-data cleanup, a screens question, and two spare-consumption features) | 2026-09-14 |
 | 22 (Loops 106–110) | [`APPROVAL_REPORT_LOOP_106_110.md`](./APPROVAL_REPORT_LOOP_106_110.md) | Approved — "Loop 111 se 115 start karo" (blanket continuation, did not pick between the report's flagged options) | 2026-09-15 |
-| 23 (Loops 111–113 of the approved 111–115) | [`APPROVAL_REPORT_LOOP_111_115.md`](./APPROVAL_REPORT_LOOP_111_115.md) | AWAITING BOSS | — |
+| 23 (Loops 111–113 of the approved 111–115) | [`APPROVAL_REPORT_LOOP_111_115.md`](./APPROVAL_REPORT_LOOP_111_115.md) | RESOLVED — Boss directly challenged the "needs more Boss input" framing for RISK-04 and the screens question; treated as the missing decision | 2026-09-15 |
+| 24 (Loops 115–120) | [`APPROVAL_REPORT_LOOP_115_120.md`](./APPROVAL_REPORT_LOOP_115_120.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -579,3 +580,58 @@ Vercel/Sentry-config, dependency-security) was confirmed freshly
 re-verified across Gates 19-20 with nothing left to re-check. Loops
 112-115 to follow per whatever this closes out and leaves open, with
 Loop 115 carrying the next mandatory Gate 23 stop per §19.9.
+
+**GATE 23 — RESOLVED.** The Boss's reply directly answered Gate 23's
+open question, rather than picking one of the four listed options
+blindly: the Boss challenged the framing itself, pointing out the pack
+and the Premium UI v2 mockup (both already supplied) were sufficient
+for RISK-04 and the Manager/Technician screens question, and that I
+should not defer either without re-checking. Loop 114 re-verified both
+against the repo/live schema instead of assuming the prior framing was
+still correct:
+- RISK-04: the RISK_REGISTER row was stale (Loop 32-era); the 4 tables
+  it flagged as `using (true)` were already narrowed to the correct
+  role/participant-scoped shape across Loops 101-112, done for
+  independent pack reasons. Marked RESOLVED with live-verified evidence
+  — no new rule invented.
+- Manager/Technician screens: pack §3.1 locks exactly 2 software roles,
+  explicitly no separate Technician role — so the mockup's "Technician"
+  screens are Executive-in-field views, not a third role or a
+  separately-gated project. Reclassified as ordinary Loop 115+ UI work.
+
+Loop 115 begins the Manager/Technician-view UI work against the Premium
+UI v2 mockup's 8 screens, mapped onto the existing role model
+(Manager-facing aggregate views vs. Executive/field-task views), with
+the next mandatory §19.9 stop at Loop 120.
+
+**GATE 24 (Loops 115-120) — AWAITING BOSS.** The Boss replied to Gate 23's
+correction with **"Okay aage ke loops start karo"** and, separately,
+confirmed the screens direction explicitly: **"Technician ka alag screen
+banega... Total 3 screens... Maintenance Manager, Maintenance Executive
+aur Technician."** This batch built exactly that: the Technician
+workspace (Loop 115), all 4 Manager screens from the mockup (Loops
+116-119), and Recurrence & CAPA (Loop 120) — closing the full 3-screen set
+in one batch, 6 loops instead of the standard 5 since the work was
+genuinely bounded and evidence-based throughout, not stretched to fill a
+number.
+
+One real finding surfaced along the way, not from a fresh RLS sweep this
+time but from cross-checking the mockup's own claims against this repo's
+`AUTHORITY_MATRIX.md` before hardcoding anything from it: that file itself
+had drifted from the actual running code on 3 points (RISK-37, RESOLVED
+same loop) — including the exact same wrong claim the mockup makes
+(Executive can reopen a case; the real, Boss-directed rule is Manager-
+only). Fixed the file, not the mockup's claim; the in-app Authority Matrix
+this batch shipped is sourced from the corrected file.
+
+Every mockup element this batch did NOT build is named explicitly in
+`STATUS.md`/`APPROVAL_REPORT_LOOP_115_120.md`, each for one of two
+reasons: no real backing data/RPC exists for it (Team Performance Radar,
+Priority-Override-as-a-queue, CAPA progress %/due dates), or the mockup
+itself is factually wrong (the Authority Matrix's Reopen claim, above).
+Nothing was silently dropped or silently faked either way.
+
+Full report, open items, and the explicit next-step question (continue
+self-directed vs. open a PR now for CI verification of 5 new e2e specs
+vs. a new direction) in `APPROVAL_REPORT_LOOP_115_120.md`. Loop 121 will
+not start without explicit continuation language from the Boss.

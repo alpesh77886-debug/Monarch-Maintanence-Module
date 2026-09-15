@@ -15,26 +15,6 @@ type Counts = {
   activeEmergency: number;
 };
 
-// Loop 109 (Gate 22): a technician's own actively-assigned cases — the
-// visibility gap this loop closes. cases_select (migration 0032) already
-// lets a non-staff technician read exactly these rows; nothing surfaced
-// them until now.
-export type AssignedCase = {
-  id: string;
-  case_number: string;
-  symptom: string;
-  status: string;
-  priority: string | null;
-  area: string | null;
-  line: string | null;
-};
-
-const PRIORITY_DOT: Record<string, string> = {
-  HIGH: "bg-bad",
-  MEDIUM: "bg-warn",
-  LOW: "bg-good",
-};
-
 const ROLE_LABEL: Record<StaffRole, string> = {
   MAINTENANCE_EXECUTIVE: "Maintenance Executive",
   MAINTENANCE_MANAGER: "Maintenance Manager",
@@ -49,22 +29,22 @@ type ModuleTile = {
   tone?: "alert" | "primary";
 };
 
+// Loop 115: this component is now staff-only (`MAINTENANCE_EXECUTIVE` /
+// `MAINTENANCE_MANAGER`) — the non-staff technician identity gets its own
+// dedicated `TechnicianHome` screen instead (see `page.tsx`, Boss: "Total 3
+// screens... Manager, Executive aur Technician").
 export default function HomeClient({
   userLabel,
   role,
   isAvailable,
   counts,
   notifications,
-  isStaff,
-  myAssignedCases = [],
 }: {
   userLabel: string;
-  role: StaffRole | null;
+  role: StaffRole;
   isAvailable: boolean;
   counts: Counts;
   notifications: AppNotification[];
-  isStaff: boolean;
-  myAssignedCases?: AssignedCase[];
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
@@ -75,19 +55,30 @@ export default function HomeClient({
     setTheme(next);
   }
 
-  // Staff-only modules mirror AppNav's own `{isStaff && <AppNav />}` gating —
-  // a non-staff identity (e.g. the demo "technician" login) sees only Cases,
-  // never a PM/Spares/My Work/Emergency tile it has no data access to.
-  const tiles: ModuleTile[] = isStaff
-    ? [
-        { href: "/cases", icon: "▤", title: "Cases", meta: "Report, track & manage maintenance cases", badge: counts.openCases },
-        { href: "/dashboard", icon: "◷", title: "Shift", meta: "Shift status, handover & continuity" },
-        { href: "/pm", icon: "▣", title: "PM", meta: "Plans, calendar & preventive work", badge: counts.pmOverdue > 0 ? counts.pmOverdue : undefined },
-        { href: "/spares", icon: "◆", title: "Spare Consumption", meta: "Requests, approvals & usage trace", badge: counts.spareApprovalPending > 0 ? counts.spareApprovalPending : undefined },
-        { href: "/my-work", icon: "✓", title: "My Work", meta: "Your assigned cases", badge: counts.myWork > 0 ? counts.myWork : undefined, tone: "primary" },
-        { href: "/emergency", icon: "!", title: "Emergency", meta: "Active emergency actions requiring attention", badge: counts.activeEmergency > 0 ? counts.activeEmergency : undefined, tone: "alert" },
-      ]
-    : [{ href: "/cases", icon: "▤", title: "Cases", meta: "Report and track maintenance cases" }];
+  // Loop 118 (mockup screen 2, "Manager — Approvals Queue"): a Manager-only
+  // tile, same pattern as the dashboard's own `isManager`-gated sections —
+  // Executive doesn't get a tile for a page that would just tell them
+  // they can't use it.
+  const tiles: ModuleTile[] = [
+    { href: "/cases", icon: "▤", title: "Cases", meta: "Report, track & manage maintenance cases", badge: counts.openCases },
+    { href: "/dashboard", icon: "◷", title: "Shift", meta: "Shift status, handover & continuity" },
+    { href: "/pm", icon: "▣", title: "PM", meta: "Plans, calendar & preventive work", badge: counts.pmOverdue > 0 ? counts.pmOverdue : undefined },
+    { href: "/spares", icon: "◆", title: "Spare Consumption", meta: "Requests, approvals & usage trace", badge: counts.spareApprovalPending > 0 ? counts.spareApprovalPending : undefined },
+    { href: "/my-work", icon: "✓", title: "My Work", meta: "Your assigned cases", badge: counts.myWork > 0 ? counts.myWork : undefined, tone: "primary" },
+    { href: "/emergency", icon: "!", title: "Emergency", meta: "Active emergency actions requiring attention", badge: counts.activeEmergency > 0 ? counts.activeEmergency : undefined, tone: "alert" },
+    ...(role === "MAINTENANCE_MANAGER"
+      ? [
+          {
+            href: "/approvals",
+            icon: "✓",
+            title: "Approvals",
+            meta: "Spare approvals & emergency confirmations",
+            badge: counts.spareApprovalPending > 0 ? counts.spareApprovalPending : undefined,
+            tone: "primary" as const,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="min-h-screen bg-bg2">
@@ -133,74 +124,17 @@ export default function HomeClient({
               Your work is organised around today&rsquo;s active shift and timeline.
             </p>
           </div>
-          {isStaff && (
-            <span
-              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-                isAvailable
-                  ? "border-good/25 bg-good/10 text-emerald-400"
-                  : "border-line2 bg-card2 text-muted"
-              }`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-good shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-muted2"}`} />
-              {isAvailable ? "ON SHIFT" : "OFF SHIFT"}
-            </span>
-          )}
+          <span
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+              isAvailable
+                ? "border-good/25 bg-good/10 text-emerald-400"
+                : "border-line2 bg-card2 text-muted"
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-good shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-muted2"}`} />
+            {isAvailable ? "ON SHIFT" : "OFF SHIFT"}
+          </span>
         </div>
-
-        {!isStaff && (
-          <p className="rounded-xl border border-dashed border-line2 bg-card p-4 text-sm text-muted">
-            You&rsquo;re signed in, but this identity has no Maintenance staff record — module
-            access below is limited. Contact a Manager if this is unexpected.
-          </p>
-        )}
-
-        {/* Loop 109 (Gate 22): a technician's own assigned work, made
-            visible for the first time — cases_select already let them read
-            these rows, nothing surfaced them. Cards link straight into
-            /cases/[id], where intervention/spare-usage recording is
-            already technician-accessible (isAssignedTechnician gating). */}
-        {!isStaff && (
-          <section>
-            <h2 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted">
-              My assigned work
-            </h2>
-            {myAssignedCases.length === 0 ? (
-              <p className="rounded-xl border border-line bg-card p-4 text-sm text-muted">
-                No case is currently assigned to you.
-              </p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {myAssignedCases.map((c) => (
-                  <li key={c.id}>
-                    <Link
-                      href={`/cases/${c.id}`}
-                      className="block rounded-xl border border-line bg-card p-3.5 shadow-sm transition-shadow hover:shadow-md active:bg-bg2"
-                    >
-                      <div className="flex items-center gap-2">
-                        {c.priority && (
-                          <span
-                            className={`h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[c.priority] ?? "bg-muted2"}`}
-                            aria-hidden="true"
-                          />
-                        )}
-                        <span className="text-xs font-mono font-bold text-muted">{c.case_number}</span>
-                        <span className="ml-auto rounded-full bg-card2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
-                          {c.status}
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-sm font-medium text-fg">{c.symptom}</p>
-                      {(c.area || c.line) && (
-                        <p className="mt-1 text-xs text-muted">
-                          {[c.area, c.line].filter(Boolean).join(" · ")}
-                        </p>
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
 
         <section>
           <h2 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted">
@@ -288,17 +222,13 @@ export default function HomeClient({
                 </span>
                 <div>
                   <p className="text-sm font-bold">{userLabel}</p>
-                  <p className="mt-0.5 text-[10px] opacity-80">
-                    {role ? ROLE_LABEL[role] : "Signed in"}
-                  </p>
+                  <p className="mt-0.5 text-[10px] opacity-80">{ROLE_LABEL[role]}</p>
                 </div>
               </div>
-              {isStaff && (
-                <div className="mt-3 flex items-center justify-between rounded-lg border border-white/15 bg-black/15 px-2.5 py-2">
-                  <span className="text-[9px] font-bold uppercase tracking-wide">Current status</span>
-                  <span className="font-mono text-[10px] opacity-90">{isAvailable ? "ON SHIFT" : "OFF SHIFT"}</span>
-                </div>
-              )}
+              <div className="mt-3 flex items-center justify-between rounded-lg border border-white/15 bg-black/15 px-2.5 py-2">
+                <span className="text-[9px] font-bold uppercase tracking-wide">Current status</span>
+                <span className="font-mono text-[10px] opacity-90">{isAvailable ? "ON SHIFT" : "OFF SHIFT"}</span>
+              </div>
             </div>
 
             <div className="flex-1 p-2">
@@ -306,13 +236,9 @@ export default function HomeClient({
                 Work
               </p>
               <DrawerLink href="/cases/new" icon="＋" title="Report Cases" sub="Create a new maintenance case" onNavigate={() => setMenuOpen(false)} />
-              {isStaff && (
-                <>
-                  <DrawerLink href="/spares" icon="◆" title="Spare Consumption" sub="Record and trace spare usage" onNavigate={() => setMenuOpen(false)} />
-                  <DrawerLink href="/my-work" icon="✓" title="My Work" sub="Assigned work based on your timeline" onNavigate={() => setMenuOpen(false)} />
-                  <DrawerLink href="/dashboard" icon="◷" title="Shift / Handover" sub="Current shift, handover and continuity" onNavigate={() => setMenuOpen(false)} />
-                </>
-              )}
+              <DrawerLink href="/spares" icon="◆" title="Spare Consumption" sub="Record and trace spare usage" onNavigate={() => setMenuOpen(false)} />
+              <DrawerLink href="/my-work" icon="✓" title="My Work" sub="Assigned work based on your timeline" onNavigate={() => setMenuOpen(false)} />
+              <DrawerLink href="/dashboard" icon="◷" title="Shift / Handover" sub="Current shift, handover and continuity" onNavigate={() => setMenuOpen(false)} />
 
               <div className="my-2 h-px bg-line" />
               <p className="px-2 pb-1.5 pt-1 font-mono text-[9px] font-semibold uppercase tracking-widest text-muted2">
@@ -340,21 +266,19 @@ export default function HomeClient({
                 <span>
                   <span className="block text-[11px] font-semibold text-fg">{userLabel}</span>
                   <span className="mt-0.5 block text-[9px] text-muted2">
-                    {role ? ROLE_LABEL[role] : "Logged-in user"} · permissions are server-controlled
+                    {ROLE_LABEL[role]} · permissions are server-controlled
                   </span>
                 </span>
               </div>
-              {isStaff && (
-                <div className="flex items-center gap-2.5 rounded-lg px-2 py-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-sm text-teal">●</span>
-                  <span>
-                    <span className="block text-[11px] font-semibold text-fg">On Shift</span>
-                    <span className="mt-0.5 block text-[9px] text-muted2">
-                      {isAvailable ? "You are available for handovers" : "You are not available for handovers"}
-                    </span>
+              <div className="flex items-center gap-2.5 rounded-lg px-2 py-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-sm text-teal">●</span>
+                <span>
+                  <span className="block text-[11px] font-semibold text-fg">On Shift</span>
+                  <span className="mt-0.5 block text-[9px] text-muted2">
+                    {isAvailable ? "You are available for handovers" : "You are not available for handovers"}
                   </span>
-                </div>
-              )}
+                </span>
+              </div>
               <div className="px-2 py-2">
                 <SignOutButton />
               </div>

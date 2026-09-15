@@ -2097,3 +2097,296 @@ Demo/test logins (rotate or remove before real rollout):
     This is the ONLY identity that can record a QC CLEARED/REJECTED
     decision. It is a test/demo grant, NOT a plant QC authority record —
     the real grant is evidence-controlled per §12.)
+
+## Loop 114 — RISK-04 re-verification: the Boss's pushback was correct, the register was stale
+
+The Boss replied to Gate 23 by directly challenging two things I had
+framed as needing further Boss input: RISK-04 (permission matrix,
+PENDING-03), and the Manager/Technician screens question — pointing out
+the pack (supplied at engagement start) and the Premium UI v2 mockup
+(already shared) should already be enough, and instructing not to build
+further assumptions on top of what was already given.
+
+**RISK-04 check (this loop):** re-read PENDING-03's actual wording —
+"exact permission matrix... must be *verified* against the
+repository/security architecture" — not "must be supplied by the Boss
+from scratch." The RISK_REGISTER row (written Loop 32) still said 4
+tables (`cases`, `evidence`, `safety_stops`, `production_boundary_events`)
+were `using (true)` — open to any authenticated user. Re-read the live
+`pg_policies` on the Maintenance Supabase project
+(`maavrlqkdrisjwzhjdgg`) directly rather than trusting that old note:
+none of the 4 are `using (true)` any more. Across Loops 101-112
+(RISK-32/33/35/36 — reopen authority, restoration dispute, QC-authority
+reachability, all done for independent §11/§12 pack reasons, not for
+RISK-04), all 4 were already narrowed to exactly the
+`is_staff() OR <owner/participant> = auth.uid()` shape the Loop-32 note
+itself said would resolve the asymmetry. The permission matrix PENDING-03
+asks to verify — the 2 locked roles, every pack-locked authority boundary
+(₹12,000 split, reopen, QC decision, restoration dispute), each enforced
+both at the RPC (`security definer` checks) and the read/RLS layer, each
+covered by `tests/*.test.ts` + `e2e/*.spec.ts` — already exists in the
+repo. RISK-04 was marked RESOLVED (`RISK_REGISTER.md`), not because
+anything new was invented, but because the register itself hadn't been
+re-checked against the project's own later work. What's genuinely still
+undefined is only field-level redaction within a screen both roles can
+already open — the pack names no such field, so that residual stays
+open only if the Boss ever names one; it isn't a blocker on anything
+built so far.
+
+**Manager/Technician screens check (this loop):** re-read pack §3.1 —
+"Exactly two Maintenance software roles: `MAINTENANCE_EXECUTIVE`,
+`MAINTENANCE_MANAGER`... There is NO separate Maintenance Technician
+software role in V1." Then read the mockup's own screen labels: screens
+1-4 are "Manager Dashboard / Approvals Queue / Team & Authority /
+Recurrence & CAPA," screens 5-8 are "Technician — My Tasks / Record
+Intervention / Completed & History / Quick Spare Request." Given §3.1,
+"Technician" in the mockup cannot mean a third software role — it means
+an `MAINTENANCE_EXECUTIVE` identity in its field/task-execution capacity
+(exactly the identity already recording interventions and restorations
+in this app). My earlier framing — "separate Manager/Technician screens
+would be a new, separate project needing its own go-ahead" — was wrong:
+this is not a new role or a new authority boundary, it is
+role-appropriate UI depth for the 2 roles already built and already
+partially reflected in the repo (`/dashboard` = shift/manager-facing
+aggregate view, staff-gated; `/my-work` = individual assigned-cases
+view; `/cases/[id]` = the intervention/restoration recording surface
+both identities already share). Corrected: this is ordinary,
+normal-sized Loop 115+ UI work, not a separately-gated project.
+
+No code changed this loop — this was a re-verification loop that
+corrected two governance-doc entries (`RISK_REGISTER.md` RISK-04,
+this note) against evidence that already existed in the repo/live
+schema.
+
+## Loop 115 — Technician workspace (dedicated 3rd screen, mockup screens 5+7)
+
+Boss: **"Technician ka alag screen banega... Total 3 screens...
+Maintenance Manager, Maintenance Executive aur Technician... Ab Technician
+ko kya kya dikhna chahiye vo mene already .HTML file di hai usme
+hai....details link karke banao."** — confirming Loop 114's correction:
+build it, referencing the mockup's own screens, not a new authority
+boundary (pack §3.1 still locks exactly 2 software roles).
+
+Built a dedicated Technician workspace (`src/app/home/technician-home.tsx`),
+replacing the bare "My assigned work" list Loop 109 added for the non-staff
+identity. `src/app/home/page.tsx`'s `!staff` branch now computes, from real
+`case_assignments`/`cases` rows only:
+- **My Tasks** / **Emergency** — active (non-terminal) assigned cases, and
+  the subset with `emergency_confirmed = true`.
+- **Done (Week)** / **Avg Fix Time** — assigned cases closed in the last 7
+  days, and the average of each one's actual `closed_at - assigned_at` gap.
+
+Two mockup fields were deliberately dropped rather than faked: "On Shift ·
+A-Shift" (staff-only `is_available` column — this identity has no `staff`
+row, per §3.1) and per-task spare cost on the Done list (would need a
+second per-case spare-request-sum query for a number Spares already shows
+elsewhere — left out this loop, not invented).
+
+"Record Intervention" (mockup screen 6) and "Quick Spare Request" (mockup
+screen 8) are **not** rebuilt as a second surface — both already exist as
+tested, RLS/RPC-backed forms on the case detail page
+(`intervention-form.tsx`, `spares-panel.tsx`). Duplicating that business
+logic on a new screen would be exactly the "second source of truth"
+CLAUDE.md warns against, so the workspace's Quick Actions deep-link
+straight into them instead: `cases/[id]/page.tsx` now reads a `?tab=`
+search param and passes it to `CaseDetailTabs` as `defaultTab` (new
+plumbing this loop added — `CaseDetailTabs` already fell back safely to its
+first tab for any unrecognised value, so this is additive, not a rewrite).
+
+`HomeClient` (the Manager/Executive hub) is now staff-only — its `isStaff`/
+`myAssignedCases` branches, which only ever ran for the technician
+identity, are removed rather than left as dead code.
+
+New e2e spec `e2e/technician-workspace.spec.ts`: arranges a case through
+ACKNOWLEDGED -> ASSESSED -> `assign_technician` (same arrangement
+`tests/assignment-and-waiting.test.ts` already proves correct), then
+verifies in a real browser that the assigned case surfaces on the
+technician's `/home` workspace with its real symptom text, and that
+`/cases/[id]?tab=interventions` actually lands on the Interventions tab
+with the intervention form visible — the one piece of new UI plumbing this
+loop added that the RPC-level suite cannot see.
+
+Verification this loop: `tsc --noEmit`, `eslint` (both flagged and fixed
+one real issue — a direct `Date.now()` call inline in the `HomePage`
+component body tripped `react-hooks/purity`; pulled into a module-level
+helper, matching how `formatAge()`/`ageInHours()` already do this
+elsewhere in the app), and a full `next build` — all clean.
+
+Not started this loop: the Manager screens (mockup screens 1-4 — Dashboard
+w/ 7 charts, Approvals Queue, Team & Authority, Recurrence & CAPA). Next.
+
+## Loop 116-117 — Manager Dashboard: 4 of the mockup's 7 charts
+
+Boss: "Okay aage ke loops start karo" — continuing straight into the
+Manager screens work flagged as next at the end of Loop 115.
+
+Extended the existing `/dashboard` page (already staff-only, already the
+shift-handover dashboard both roles used identically) with 4 of the
+mockup's 7 "Manager Dashboard" charts, gated on `isManager` — Executive's
+dashboard is visually unchanged, matching the mockup's own "Manager
+Control" framing for the deeper analytics set:
+- **Cases by type** / **Cases by machine area** (Loop 116) — grouped counts
+  of the `cases` rows already fetched for the page, by `case_type`/`area`,
+  no new query.
+- **Case cycle time** (report → closure, weekly avg, last 4 weeks) / **
+  Approved spare spend by area** (Loop 117) — `spare_requests` added to the
+  page's existing parallel-read wave (`case_id, estimated_amount,
+  approved_at`), joined locally to each case's `area`; only requests with
+  `approved_at` set count as "spend" (not merely requested).
+
+One mockup chart was deliberately NOT built as specified: the "Team
+Performance Radar" (screen 1, chart 6) compares Executives across 6
+invented dimensions (Speed/Quality/Volume/Safety/Comms/PM) with no scoring
+formula anywhere in the pack — building it would mean inventing a
+performance-scoring business rule CLAUDE.md explicitly forbids. Not
+attempted this loop; flagged for the Boss below rather than guessed at.
+The existing "By staff member" table (pending/completed counts) already
+gives Manager a real, non-invented executive comparison.
+
+New e2e spec `e2e/manager-dashboard.spec.ts`: confirms Manager sees the new
+sections and Executive does not — a plain UI `isManager` gate (not a new
+RLS policy, `cases`/`spare_requests` were already staff-readable), still
+checked directly rather than assumed correct from the diff, per this
+project's standing practice after RISK-35/36.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+Still not built from the mockup's Manager set: screen 1's chart 2 (Case
+Status Distribution — already covered by the existing "Cases by status"
+BarBreakdown, different chart style but same data) and chart 3's donut/pie
+*shapes* specifically (built as horizontal bars instead, matching this
+app's one existing chart primitive rather than adding a new SVG donut/pie
+component for visual parity alone); screens 2-4 (Approvals Queue, Team &
+Authority, Recurrence & CAPA) not started. Next.
+
+## Loop 118 — Manager Approvals Queue (mockup screen 2)
+
+New Manager-only route `/approvals` (tile on the home hub + link on More,
+both `MAINTENANCE_MANAGER`-gated), aggregating the pending-approval states
+that actually exist as queryable data across every case, not one:
+- Spare requests requiring Manager approval (§3.3, `requires_manager_approval
+  && !approved_at`) — same computation `/spares/page.tsx` already does
+  per-case, now shown plant-wide.
+- Emergency claims awaiting confirmation (`emergency_claimed &&
+  !emergency_confirmed`) — same filter `/emergency/page.tsx` already uses.
+
+Each row deep-links into the real case (`/cases/[id]?tab=spares` for
+spares, matching Loop 115's `?tab=` plumbing) rather than reimplementing
+`approve_spare_request`/emergency-confirmation on a second surface — same
+"don't duplicate tested business logic" choice as the Technician workspace.
+
+Two things the mockup shows but this loop did NOT build, because they
+don't match what's actually real:
+- The mockup's third approval type, "Priority Override" (Executive
+  requests HIGH, Manager approves/rejects as a queued item), does not
+  match how §5.4 is actually implemented — `change_priority` is an
+  immediate action with no pending/queued state anywhere in the schema.
+  There is no row to list and no reject action to wire; building the card
+  anyway would mean inventing a business process. Flagged here, not faked.
+- The mockup's "Reject" button on the spare-approval card was dropped —
+  no reject/decline RPC exists for spare requests, only
+  `approve_spare_request`.
+
+New e2e spec `e2e/approvals-queue.spec.ts`: arranges a real >₹12,000 spare
+request (same threshold `tests/spares.test.ts` already proves server-side),
+confirms it surfaces on `/approvals` for Manager and that Executive is
+turned away with the role-gate message, not just given an empty list.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+Open question for the Boss (not blocking, just flagged): does the
+Priority-Override-as-a-queue workflow the mockup shows reflect a REAL
+process change the Boss wants (Executive requests, Manager approves/
+rejects, as a new stored state) — which would need a Change Control entry
+per CLAUDE.md, since it changes §5.4's actual mechanics — or was the
+mockup simplifying/dramatizing an interaction that in practice is just
+"Executive sets it, Manager can override it," which is what's built today?
+
+Still not built from the mockup's Manager set: screen 3 (Team &
+Authority) and screen 4 (Recurrence & CAPA enhancement). Next.
+
+## Loop 119 — Team & Authority (mockup screen 3) + a real finding: AUTHORITY_MATRIX.md had drifted
+
+Workload-by-Executive and the staff list (mockup screen 3's first two
+sections) already existed — `/dashboard`'s "By staff member" table already
+shows exactly this (pending/completed per staff, on/off shift), visible to
+both roles per §22's plant-wide shift-visibility requirement. Nothing
+rebuilt there.
+
+Before hardcoding the mockup's third section (Authority Matrix) into the
+UI, cross-checked it against the repo's own `AUTHORITY_MATRIX.md` instead
+of re-deriving from the pack cold — and found that file itself was stale
+on 3 real points, logged as **RISK-37 (RESOLVED same loop)**:
+- Reopen Case: file said `is_staff()` (Executive: YES) — migration 0050
+  (this project's own RISK-32 fix) made it `is_manager()`-only; the file
+  was never updated after.
+- QC Clear/Reject: file said `is_staff()`, marked "NO — F-01" — migration
+  0031 had already resolved F-01 and moved the gate to `is_qc_authority()`.
+- The whole "Read authority" table's "today" column described the
+  `using (true)` policies from migration 0002 as a live defect — migration
+  0032 (F-02) had already narrowed all of them *before* the file's own
+  stated verification snapshot (`bcf4b93`), meaning the file was already
+  wrong at the moment it claims to have been checked.
+
+Also worth noting: the mockup's own Authority Matrix (screen 3) claims
+Executive can Reopen a case — which is the same wrong claim
+`AUTHORITY_MATRIX.md` used to make, and directly contradicts what
+Loop 111's e2e test already proved (Reopen is Manager-only, RISK-32). The
+in-app Authority Matrix built this loop is sourced from the now-corrected
+`AUTHORITY_MATRIX.md`, not the mockup, specifically to not ship that error
+into the product itself.
+
+Fixed `AUTHORITY_MATRIX.md` in place (all 3 points, plus the QC-identity
+description and the PENDING-03/RISK-04 cell, now pointing at RISK-04
+RESOLVED from Loop 114). No RPC/RLS changed — every underlying check was
+already correct; only the document describing it was wrong.
+
+Added a condensed, Manager-only Authority Matrix reference table directly
+on `/dashboard` (`AUTHORITY_ROWS` — 9 of the pack's locked action-level
+rules, each citing its §-section), sourced from the corrected
+`AUTHORITY_MATRIX.md` rather than independently re-derived, so it can't
+drift from that file the same way that file drifted from the code.
+e2e/manager-dashboard.spec.ts extended to check both that it appears for
+Manager (with the corrected Reopen rule specifically) and stays hidden
+from Executive.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+Still not built from the mockup's Manager set: screen 4 (Recurrence &
+CAPA). Next — and this closes out the 4-screen Manager set the Boss asked
+for once screen 4 lands.
+
+## Loop 120 — Recurrence & CAPA (mockup screen 4) — closes the Manager 4-screen set
+
+`/recurrence-rules` (already the rule-configuration tool, Loop 23) now
+also shows two plant-wide, staff-visible lists — both real, both from
+data already RLS-scoped for exactly this:
+- **Suspected recurrence** — `recurrence_flags` where `status = 'SUSPECTED'`,
+  each linking to its case.
+- **CAPA actions (§19)** — every `capa_links` row, status badge, owning
+  Manager's name, case reference.
+
+Two mockup fields were dropped as fabricated rather than reproduced: the
+mockup's CAPA progress-percentage bars (60%/100%/25%) and due dates
+("Due: Sep 20") have no backing column anywhere in `capa_links` — `CapaStatus`
+is only `OPEN`/`VERIFIED_EFFECTIVE`/`VERIFIED_NOT_EFFECTIVE`, no percentage
+or date field exists. Built the real status badge instead of inventing a
+number to fill the progress bar.
+
+Not testable with arranged data: the "Suspected recurrence" section itself
+— `recurrence_flags` rows are only ever created by `run_recurrence_scan`,
+cron-only and `permission denied` for every authenticated client (same
+reason `tests/recurrence-capa.test.ts`'s own header gives for not covering
+the scan at the RPC layer either). `e2e/recurrence-capa.spec.ts` instead
+arranges a real CAPA via the already-tested `raise_capa` RPC and confirms
+it surfaces on the page.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+**This closes the Manager 4-screen set the Boss asked for** (screens 1-4:
+Dashboard analytics, Approvals Queue, Team & Authority, Recurrence & CAPA)
+and the Technician workspace from Loop 115 — all 3 screens ("Manager,
+Executive aur Technician") the Boss named are now built, real-data-backed,
+and e2e-covered. Loop 120 is also this batch's scheduled §19.9 mandatory
+stop (Gate 23's resolution named Loop 120) — full report in
+`APPROVAL_REPORT_LOOP_115_120.md`.

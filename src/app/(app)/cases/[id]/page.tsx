@@ -34,7 +34,7 @@ import Link from "next/link";
 import { Badge, Card, StatusBadge } from "@/components/ui";
 import CaseLifecycleStrip from "./case-lifecycle-strip";
 import ActionSheetTrigger from "@/components/sheet";
-import CaseDetailTabs from "@/components/tabs";
+import CaseDetailTabs, { type CaseTabId } from "@/components/tabs";
 import type {
   StaffMember,
   SafetyStop,
@@ -50,10 +50,20 @@ import type {
 
 export default async function CaseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  // Loop 115: lets the Technician workspace's Quick Actions
+  // (`/cases/[id]?tab=interventions` etc.) land straight on the relevant
+  // tab instead of dumping the technician back on Overview every time.
+  // `CaseDetailTabs` already falls back to its first tab for any value not
+  // in its own `tabs` map, so an unrecognised/missing `tab` is a no-op, not
+  // a crash.
+  const { tab } = await searchParams;
+  const defaultTab = tab as CaseTabId | undefined;
   const supabase = await createClient();
 
   // Loop 37 (performance). This page needs ~22 independent reads. Each one
@@ -712,6 +722,7 @@ export default async function CaseDetailPage({
           audit: auditTab,
           evidence: evidenceTab,
         }}
+        defaultTab={defaultTab}
       />
     </div>
   );
