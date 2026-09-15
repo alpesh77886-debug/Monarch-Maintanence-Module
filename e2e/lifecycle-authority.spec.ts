@@ -28,6 +28,16 @@ import { signIn } from "./helpers";
 // prefix regardless of which suite wrote it, so e2e/global-teardown.ts's
 // existing cleanupRun("playwright", ...) call removes these rows exactly
 // like every other case this job creates. No new cleanup code needed.
+//
+// This suite's first CI run found a real bug, exactly the class this suite
+// exists to catch: restorations_select (migration 0002) was staff-only,
+// so a non-staff reporter (§11's own complainant) could never actually see
+// the DisputeRestorationForm — their own read of the case's restoration
+// history returned zero rows under RLS, making canDisputeRestoration
+// permanently false. The RPC-level Vitest suite never caught it because it
+// calls raise_restoration_dispute directly, bypassing the page's read
+// query. Fixed in migration 0055 (restorations now uses the same
+// can_read_case scope every other case-scoped table already has).
 
 async function arrangeClosedCase(label: string): Promise<string> {
   const exec = await signInAs("executive");
@@ -139,6 +149,7 @@ async function arrangeDisputableCase(label: string): Promise<string> {
 
 test("Reopen is Manager-only in the UI, and actually reopens the case (RISK-32)", async ({
   page,
+  browser,
 }) => {
   const caseId = await arrangeClosedCase("e2e reopen authority");
 
@@ -153,18 +164,27 @@ test("Reopen is Manager-only in the UI, and actually reopens the case (RISK-32)"
     0
   );
 
-  // Manager: the button is offered, uses window.prompt for the reopen
-  // reason, and actually reopens the case end to end.
-  await signIn(page, "manager");
-  await page.goto(`/cases/${caseId}`);
-  await expect(page.getByText("Status: CLOSED")).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept("e2e: same problem recurred"));
-  await page.getByRole("button", { name: "Reopen (same problem recurred)" }).click();
-  await expect(page.getByText("Status: REOPENED")).toBeVisible({ timeout: 20_000 });
+  // Manager, in a fresh browser context (not the Executive's signed-in
+  // page): every other spec in this suite signs in once per test, on a
+  // fresh Playwright-provided context, so signIn()'s own "goto /login, wait
+  // for the heading" logic has never had to account for an already-signed-in
+  // session on the same page. Switching roles mid-test needs the same fresh
+  // start signIn() assumes, not a second /login visit on Executive's cookies
+  // (which redirects straight past the heading and times out).
+  const managerContext = await browser.newContext();
+  const managerPage = await managerContext.newPage();
+  await signIn(managerPage, "manager");
+  await managerPage.goto(`/cases/${caseId}`);
+  await expect(managerPage.getByText("Status: CLOSED")).toBeVisible();
+  managerPage.once("dialog", (dialog) => dialog.accept("e2e: same problem recurred"));
+  await managerPage.getByRole("button", { name: "Reopen (same problem recurred)" }).click();
+  await expect(managerPage.getByText("Status: REOPENED")).toBeVisible({ timeout: 20_000 });
+  await managerContext.close();
 });
 
 test("complainant dispute + staff acknowledge round-trip works in the UI (RISK-33)", async ({
   page,
+  browser,
 }) => {
   const caseId = await arrangeDisputableCase("e2e dispute round-trip");
 
@@ -183,16 +203,21 @@ test("complainant dispute + staff acknowledge round-trip works in the UI (RISK-3
     page.getByText("Executive marked this as fixed. Still not working?")
   ).toHaveCount(0, { timeout: 20_000 });
 
-  // Executive (staff, owns the case): acknowledge the dispute as not fixed,
-  // which must return the case to a repair state, not leave it stuck.
-  await signIn(page, "executive");
-  await page.goto(`/cases/${caseId}`);
-  await page.getByRole("tab", { name: "Restorations" }).click();
+  // Executive (staff, owns the case), in a fresh browser context — same
+  // reason as the Reopen test above: signIn() needs a real signed-out start.
+  const execContext = await browser.newContext();
+  const execPage = await execContext.newPage();
+  await signIn(execPage, "executive");
+  await execPage.goto(`/cases/${caseId}`);
+  await execPage.getByRole("tab", { name: "Restorations" }).click();
   await expect(
-    page.getByText("Complainant disputes this restoration (§11) — record your decision")
+    execPage.getByText("Complainant disputes this restoration (§11) — record your decision")
   ).toBeVisible();
-  await page.getByRole("button", { name: "Confirmed not fixed" }).click();
-  await page.getByLabel("Reason (required)").fill("Confirmed still faulty, reopening repair");
-  await page.getByRole("button", { name: "Confirm decision" }).click();
-  await expect(page.getByText(/Status: (DIAGNOSING|IN_REPAIR)/)).toBeVisible({ timeout: 20_000 });
+  await execPage.getByRole("button", { name: "Confirmed not fixed" }).click();
+  await execPage.getByLabel("Reason (required)").fill("Confirmed still faulty, reopening repair");
+  await execPage.getByRole("button", { name: "Confirm decision" }).click();
+  await expect(execPage.getByText(/Status: (DIAGNOSING|IN_REPAIR)/)).toBeVisible({
+    timeout: 20_000,
+  });
+  await execContext.close();
 });

@@ -32,6 +32,28 @@ Current loop: Loop 111 - closes the e2e gap Gate 21's report explicitly
   tsc/eslint/next build all clean; this sandbox cannot run the e2e job
   itself (no direct Supabase network access), so CI is this loop's actual
   verification, same as every other e2e change in this project.
+  CI's FIRST run found two real bugs, both this loop's own (confirmed by
+  reading the actual job log, not just pass/fail): (1) the Reopen test
+  signed in twice on the SAME page (executive, then manager) - no existing
+  spec does this, and signIn()'s own "goto /login, wait for the heading"
+  logic assumes a signed-out start, so the second /login visit redirected
+  straight past the heading on the first role's still-live cookies and
+  timed out. Fixed by giving the second role its own fresh
+  browser.newContext(). (2) A REAL, LIVE bug, not a test bug:
+  restorations_select RLS (migration 0002) was staff-only, so a non-staff
+  reporter (§11's own "complainant") could never actually see the dispute
+  form - their own read of the case's restoration history returned zero
+  rows under RLS, so canDisputeRestoration was permanently false. The
+  RPC-level Vitest suite never caught this because it calls
+  raise_restoration_dispute directly, bypassing the page's read query -
+  exactly the class of bug this e2e suite exists to catch. Fixed in
+  migration 0055 (restorations now uses maintenance.can_read_case, the
+  same helper evidence/safety_stops/production_boundary_events already
+  use - restorations was simply missed when that sweep ran in migration
+  0032, since RISK-33 did not exist yet). Applied live via the Supabase
+  MCP tool, re-verified via pg_policy, documented as RISK-35 (RESOLVED
+  same loop) in RISK_REGISTER.md. No new Supabase advisory findings from
+  the policy change (checked via get_advisors before pushing).
 Previously: PR #100 CI hotfix - Loop 107's multi-material form reused
   "Spare name" / "Asset/machine ref" / "Outcome" as FormField labels,
   identical to labels already used by the existing single-item "Raise a
