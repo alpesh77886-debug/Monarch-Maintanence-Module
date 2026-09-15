@@ -83,5 +83,10 @@ test("Technician workspace shows an assigned task and its Record Fix quick actio
     "aria-selected",
     "true"
   );
+  // intervention-form.tsx starts collapsed (just a "+ Record intervention"
+  // button) — a real bug in this test, not the app: the form fields only
+  // mount after that button is clicked, which the first version of this
+  // test never did before asserting on "Action taken".
+  await page.getByRole("button", { name: "+ Record intervention" }).click();
   await expect(page.getByLabel("Action taken")).toBeVisible();
 });
