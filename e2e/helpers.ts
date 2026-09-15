@@ -50,6 +50,13 @@ export const ACCOUNTS = {
     email: process.env.E2E_TECH_EMAIL ?? "tech1@monarch.test",
     password: process.env.E2E_TECH_PASSWORD ?? "Loop1TestPass!23",
   },
+  // F-01: holds a maintenance.qc_authority grant. Deliberately NOT a
+  // maintenance.staff row — same seeded identity tests/helpers.ts's
+  // CREDS.qc uses.
+  qc: {
+    email: process.env.E2E_QC_EMAIL ?? "qc1@monarch.test",
+    password: process.env.E2E_QC_PASSWORD ?? "Loop1TestPass!23",
+  },
 } as const;
 
 export type AccountName = keyof typeof ACCOUNTS;
