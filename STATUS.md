@@ -2157,3 +2157,60 @@ No code changed this loop — this was a re-verification loop that
 corrected two governance-doc entries (`RISK_REGISTER.md` RISK-04,
 this note) against evidence that already existed in the repo/live
 schema.
+
+## Loop 115 — Technician workspace (dedicated 3rd screen, mockup screens 5+7)
+
+Boss: **"Technician ka alag screen banega... Total 3 screens...
+Maintenance Manager, Maintenance Executive aur Technician... Ab Technician
+ko kya kya dikhna chahiye vo mene already .HTML file di hai usme
+hai....details link karke banao."** — confirming Loop 114's correction:
+build it, referencing the mockup's own screens, not a new authority
+boundary (pack §3.1 still locks exactly 2 software roles).
+
+Built a dedicated Technician workspace (`src/app/home/technician-home.tsx`),
+replacing the bare "My assigned work" list Loop 109 added for the non-staff
+identity. `src/app/home/page.tsx`'s `!staff` branch now computes, from real
+`case_assignments`/`cases` rows only:
+- **My Tasks** / **Emergency** — active (non-terminal) assigned cases, and
+  the subset with `emergency_confirmed = true`.
+- **Done (Week)** / **Avg Fix Time** — assigned cases closed in the last 7
+  days, and the average of each one's actual `closed_at - assigned_at` gap.
+
+Two mockup fields were deliberately dropped rather than faked: "On Shift ·
+A-Shift" (staff-only `is_available` column — this identity has no `staff`
+row, per §3.1) and per-task spare cost on the Done list (would need a
+second per-case spare-request-sum query for a number Spares already shows
+elsewhere — left out this loop, not invented).
+
+"Record Intervention" (mockup screen 6) and "Quick Spare Request" (mockup
+screen 8) are **not** rebuilt as a second surface — both already exist as
+tested, RLS/RPC-backed forms on the case detail page
+(`intervention-form.tsx`, `spares-panel.tsx`). Duplicating that business
+logic on a new screen would be exactly the "second source of truth"
+CLAUDE.md warns against, so the workspace's Quick Actions deep-link
+straight into them instead: `cases/[id]/page.tsx` now reads a `?tab=`
+search param and passes it to `CaseDetailTabs` as `defaultTab` (new
+plumbing this loop added — `CaseDetailTabs` already fell back safely to its
+first tab for any unrecognised value, so this is additive, not a rewrite).
+
+`HomeClient` (the Manager/Executive hub) is now staff-only — its `isStaff`/
+`myAssignedCases` branches, which only ever ran for the technician
+identity, are removed rather than left as dead code.
+
+New e2e spec `e2e/technician-workspace.spec.ts`: arranges a case through
+ACKNOWLEDGED -> ASSESSED -> `assign_technician` (same arrangement
+`tests/assignment-and-waiting.test.ts` already proves correct), then
+verifies in a real browser that the assigned case surfaces on the
+technician's `/home` workspace with its real symptom text, and that
+`/cases/[id]?tab=interventions` actually lands on the Interventions tab
+with the intervention form visible — the one piece of new UI plumbing this
+loop added that the RPC-level suite cannot see.
+
+Verification this loop: `tsc --noEmit`, `eslint` (both flagged and fixed
+one real issue — a direct `Date.now()` call inline in the `HomePage`
+component body tripped `react-hooks/purity`; pulled into a module-level
+helper, matching how `formatAge()`/`ageInHours()` already do this
+elsewhere in the app), and a full `next build` — all clean.
+
+Not started this loop: the Manager screens (mockup screens 1-4 — Dashboard
+w/ 7 charts, Approvals Queue, Team & Authority, Recurrence & CAPA). Next.
