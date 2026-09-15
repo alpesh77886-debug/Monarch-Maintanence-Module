@@ -2214,3 +2214,47 @@ elsewhere in the app), and a full `next build` — all clean.
 
 Not started this loop: the Manager screens (mockup screens 1-4 — Dashboard
 w/ 7 charts, Approvals Queue, Team & Authority, Recurrence & CAPA). Next.
+
+## Loop 116-117 — Manager Dashboard: 4 of the mockup's 7 charts
+
+Boss: "Okay aage ke loops start karo" — continuing straight into the
+Manager screens work flagged as next at the end of Loop 115.
+
+Extended the existing `/dashboard` page (already staff-only, already the
+shift-handover dashboard both roles used identically) with 4 of the
+mockup's 7 "Manager Dashboard" charts, gated on `isManager` — Executive's
+dashboard is visually unchanged, matching the mockup's own "Manager
+Control" framing for the deeper analytics set:
+- **Cases by type** / **Cases by machine area** (Loop 116) — grouped counts
+  of the `cases` rows already fetched for the page, by `case_type`/`area`,
+  no new query.
+- **Case cycle time** (report → closure, weekly avg, last 4 weeks) / **
+  Approved spare spend by area** (Loop 117) — `spare_requests` added to the
+  page's existing parallel-read wave (`case_id, estimated_amount,
+  approved_at`), joined locally to each case's `area`; only requests with
+  `approved_at` set count as "spend" (not merely requested).
+
+One mockup chart was deliberately NOT built as specified: the "Team
+Performance Radar" (screen 1, chart 6) compares Executives across 6
+invented dimensions (Speed/Quality/Volume/Safety/Comms/PM) with no scoring
+formula anywhere in the pack — building it would mean inventing a
+performance-scoring business rule CLAUDE.md explicitly forbids. Not
+attempted this loop; flagged for the Boss below rather than guessed at.
+The existing "By staff member" table (pending/completed counts) already
+gives Manager a real, non-invented executive comparison.
+
+New e2e spec `e2e/manager-dashboard.spec.ts`: confirms Manager sees the new
+sections and Executive does not — a plain UI `isManager` gate (not a new
+RLS policy, `cases`/`spare_requests` were already staff-readable), still
+checked directly rather than assumed correct from the diff, per this
+project's standing practice after RISK-35/36.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+Still not built from the mockup's Manager set: screen 1's chart 2 (Case
+Status Distribution — already covered by the existing "Cases by status"
+BarBreakdown, different chart style but same data) and chart 3's donut/pie
+*shapes* specifically (built as horizontal bars instead, matching this
+app's one existing chart primitive rather than adding a new SVG donut/pie
+component for visual parity alone); screens 2-4 (Approvals Queue, Team &
+Authority, Recurrence & CAPA) not started. Next.

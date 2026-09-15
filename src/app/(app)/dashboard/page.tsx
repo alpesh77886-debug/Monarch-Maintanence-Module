@@ -34,7 +34,7 @@ export default async function DashboardPage() {
 
   const { data: isStaffRow } = await supabase
     .from("staff")
-    .select("id")
+    .select("id, role")
     .eq("id", user?.id ?? "")
     .maybeSingle();
 
@@ -45,17 +45,23 @@ export default async function DashboardPage() {
       </p>
     );
   }
+  const isManager = isStaffRow.role === "MAINTENANCE_MANAGER";
 
-  // Loop 37 (performance): three independent reads, issued together instead
-  // of one after the other. Queries themselves unchanged.
-  const [{ data: allCases }, { data: staff }, { data: overduePm }] = await Promise.all([
-    supabase
-      .from("cases")
-      .select("id, case_number, status, priority, symptom, current_owner_user_id, created_at, closed_at")
-      .order("created_at", { ascending: true }),
-    supabase.from("staff").select("id, full_name, role, is_active, is_available"),
-    supabase.from("pm_instances").select("id").eq("status", "OVERDUE"),
-  ]);
+  // Loop 37 (performance): independent reads issued together instead of one
+  // after the other. Loop 117 added `spare_requests` to the same wave —
+  // still just one more parallel read, not a new round trip.
+  const [{ data: allCases }, { data: staff }, { data: overduePm }, { data: spareRequests }] =
+    await Promise.all([
+      supabase
+        .from("cases")
+        .select(
+          "id, case_number, status, priority, symptom, case_type, area, current_owner_user_id, created_at, closed_at"
+        )
+        .order("created_at", { ascending: true }),
+      supabase.from("staff").select("id, full_name, role, is_active, is_available"),
+      supabase.from("pm_instances").select("id").eq("status", "OVERDUE"),
+      supabase.from("spare_requests").select("case_id, estimated_amount, approved_at"),
+    ]);
 
   const cases = (allCases ?? []) as Pick<
     MaintenanceCase,
@@ -64,6 +70,8 @@ export default async function DashboardPage() {
     | "status"
     | "priority"
     | "symptom"
+    | "case_type"
+    | "area"
     | "current_owner_user_id"
     | "created_at"
     | "closed_at"
@@ -94,6 +102,87 @@ export default async function DashboardPage() {
     value,
     colorClass: statusFillClass(label),
   }));
+
+  // Loop 116 (Boss: "Manager ke 4 screens... Dashboard 7 charts" — Premium
+  // UI v2 mockup screen 1): two of the mockup's 7 charts that need no new
+  // query, only grouping the `cases` rows already fetched above by columns
+  // already on the row (`case_type`, `area`). Manager-only (`isManager`) —
+  // Executive keeps the existing lighter dashboard unchanged, matching the
+  // pack's own "Manager Control" framing (mockup app-header subtitle) for
+  // the deeper analytics set. `CATEGORY_PALETTE` round-robins the app's own
+  // existing bg-* tokens (no new colour introduced) since, unlike case
+  // status, case_type/area have no canonical colour mapping to reuse.
+  const CATEGORY_PALETTE = ["bg-brand", "bg-teal", "bg-vio", "bg-warn", "bg-bad", "bg-good", "bg-line2"];
+  function groupSegments(values: (string | null)[]): { label: string; value: number; colorClass: string }[] {
+    const counts = new Map<string, number>();
+    for (const v of values) {
+      const label = v ?? "Unspecified";
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, value], i) => ({ label, value, colorClass: CATEGORY_PALETTE[i % CATEGORY_PALETTE.length] }));
+  }
+  const caseTypeSegments = groupSegments(cases.map((c) => c.case_type));
+  const areaSegments = groupSegments(cases.map((c) => c.area));
+
+  // Loop 117: two more of the mockup's 7 charts. Both manager-only, both
+  // real aggregates of data already modelled elsewhere in the schema — no
+  // new business rule invented.
+  //
+  // "MTTR" in the mockup has no defined formula in the pack (no §25.2
+  // clock start/stop is specified as "restoration start" vs "report
+  // time") — rather than guess at an industry-standard MTTR definition
+  // this codebase has never computed anywhere else, this uses the one
+  // cycle-time measure the app already computes elsewhere (TechnicianHome,
+  // Loop 115: `closed_at - assigned_at`) and is explicit about scope in its
+  // own label: report-to-closure duration, weekly average, last 4 weeks.
+  const CYCLE_WEEKS = 4;
+  const weekBuckets: { key: string; label: string; hours: number[] }[] = [];
+  {
+    const now = new Date();
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setUTCHours(0, 0, 0, 0);
+    startOfThisWeek.setUTCDate(startOfThisWeek.getUTCDate() - startOfThisWeek.getUTCDay());
+    for (let i = CYCLE_WEEKS - 1; i >= 0; i--) {
+      const weekStart = new Date(startOfThisWeek);
+      weekStart.setUTCDate(weekStart.getUTCDate() - i * 7);
+      weekBuckets.push({
+        key: weekStart.toISOString().slice(0, 10),
+        label: `Wk of ${weekStart.toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "UTC" })}`,
+        hours: [],
+      });
+    }
+  }
+  for (const c of cases) {
+    if (!c.closed_at) continue;
+    const closedDate = new Date(c.closed_at);
+    const weekStartKey = new Date(
+      Date.UTC(closedDate.getUTCFullYear(), closedDate.getUTCMonth(), closedDate.getUTCDate() - closedDate.getUTCDay())
+    )
+      .toISOString()
+      .slice(0, 10);
+    const bucket = weekBuckets.find((w) => w.key === weekStartKey);
+    if (bucket) {
+      bucket.hours.push((closedDate.getTime() - new Date(c.created_at).getTime()) / 3_600_000);
+    }
+  }
+  const cycleTimeWeekly = weekBuckets.map((w) => ({
+    label: w.label,
+    avgHours: w.hours.length > 0 ? w.hours.reduce((s, h) => s + h, 0) / w.hours.length : null,
+  }));
+
+  const areaByCaseId = new Map(cases.map((c) => [c.id, c.area ?? "Unspecified"]));
+  const spareSpendByArea = new Map<string, number>();
+  for (const sr of spareRequests ?? []) {
+    if (!sr.approved_at || !sr.estimated_amount) continue;
+    const area = areaByCaseId.get(sr.case_id) ?? "Unspecified";
+    spareSpendByArea.set(area, (spareSpendByArea.get(area) ?? 0) + sr.estimated_amount);
+  }
+  const totalSpareSpend = [...spareSpendByArea.values()].reduce((s, v) => s + v, 0);
+  const spareSpendSegments = [...spareSpendByArea.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value], i) => ({ label, value, colorClass: CATEGORY_PALETTE[i % CATEGORY_PALETTE.length] }));
 
   // Loop 110 (Boss: "Manager ke liye better analytics — existing KPI/
   // Dashboard data pe real charts"): a 14-day created-vs-closed volume
@@ -157,6 +246,52 @@ export default async function DashboardPage() {
       )}
 
       <TrendChart title="Case volume — created vs closed, last 14 days" series={trendSeries} />
+
+      {isManager && cases.length > 0 && (
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+          <BarBreakdown title="Cases by type (all time)" total={cases.length} segments={caseTypeSegments} />
+          <BarBreakdown title="Cases by machine area (all time)" total={cases.length} segments={areaSegments} />
+        </div>
+      )}
+
+      {isManager && (
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+          <div className="rounded-lg border border-line bg-card p-3">
+            <p className="text-xs font-medium text-muted">
+              Case cycle time <span className="text-muted2">Report → closure, weekly avg, last 4 weeks</span>
+            </p>
+            {cycleTimeWeekly.every((w) => w.avgHours === null) ? (
+              <p className="mt-2 text-xs text-muted2">No case closed in this window yet.</p>
+            ) : (
+              <div className="mt-3 flex items-end justify-between gap-2" style={{ height: 68 }}>
+                {cycleTimeWeekly.map((w) => {
+                  const maxHours = Math.max(1, ...cycleTimeWeekly.map((x) => x.avgHours ?? 0));
+                  return (
+                    <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
+                      <span className="text-[9px] text-muted2">
+                        {w.avgHours !== null ? `${w.avgHours.toFixed(1)}h` : "—"}
+                      </span>
+                      <div
+                        className="w-full max-w-[36px] rounded-t bg-gradient-to-t from-brand2 to-brand"
+                        style={{
+                          height: w.avgHours !== null ? Math.max(2, Math.round((w.avgHours / maxHours) * 48)) : 2,
+                        }}
+                      />
+                      <span className="text-[9px] text-muted2">{w.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <BarBreakdown
+            title="Approved spare spend by area (₹)"
+            total={totalSpareSpend}
+            segments={spareSpendSegments}
+          />
+        </div>
+      )}
 
       <section>
         <h2 className="text-sm font-semibold text-fg">By staff member</h2>
