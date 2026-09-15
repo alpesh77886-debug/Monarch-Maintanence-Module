@@ -1,6 +1,38 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: PR #100 CI hotfix - Loop 107's multi-material form reused
+Current loop: Loop 111 - closes the e2e gap Gate 21's report explicitly
+  acknowledged and deferred (and Gate 22's report repeated as still open):
+  no browser-level coverage existed for the Reopen button (RISK-32) or the
+  two dispute forms (RISK-33), only the RPC-level Vitest suite plus a
+  manual read of page.tsx's gating conditions. Walking the ENTIRE
+  lifecycle to CLOSED / TECHNICALLY_RESTORED through Playwright clicks was
+  the reason this was deferred - no existing spec attempts a walk that
+  long, and this sandbox cannot verify selectors locally. New
+  e2e/lifecycle-authority.spec.ts instead arranges scenario state via the
+  SAME real RPCs tests/lifecycle.test.ts and tests/restoration-
+  dispute.test.ts already prove correct (signed in as the seeded demo
+  accounts, through real authority checks, not a service-role bypass),
+  then drives ONLY the actual new UI surface through the real browser -
+  exactly this suite's own stated purpose (case-flow.spec.ts's header
+  comment): catch UI-wiring bugs the RPC-level tests cannot see, not
+  re-prove authority the RPC tests already prove exhaustively. Two new
+  tests: (1) an Executive gets no Reopen button at all on a CLOSED case
+  (close-reopen-actions.tsx gates on isManager) while a Manager does, uses
+  window.prompt for the reason, and the reopen actually lands
+  (Status: REOPENED); (2) a technician (the case's own reporter) raises a
+  dispute on a TECHNICALLY_RESTORED+PASSED case via "Machine still not
+  okay", the prompt correctly disappears once PENDING, then an Executive
+  sees "Complainant disputes this restoration", picks "Confirmed not
+  fixed", and the case actually returns to DIAGNOSING/IN_REPAIR. Case rows
+  use the same [AUTOTEST]+[run=...] tagging every other case in this
+  suite uses (testSymptom, imported from tests/helpers.ts) -
+  cleanup_test_cases_since matches on a literal '[AUTOTEST%' prefix
+  regardless of which suite wrote it, so the existing
+  e2e/global-teardown.ts cleanup picks these up with no new cleanup code.
+  tsc/eslint/next build all clean; this sandbox cannot run the e2e job
+  itself (no direct Supabase network access), so CI is this loop's actual
+  verification, same as every other e2e change in this project.
+Previously: PR #100 CI hotfix - Loop 107's multi-material form reused
   "Spare name" / "Asset/machine ref" / "Outcome" as FormField labels,
   identical to labels already used by the existing single-item "Raise a
   spare request" and "Record spare usage" forms on the same panel - a
