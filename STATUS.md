@@ -1,6 +1,43 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 111 - closes the e2e gap Gate 21's report explicitly
+Current loop: Loop 112 - a more severe sibling of Loop 111's RISK-35
+  find, found by continuing the same method (reading every case-scoped
+  table's live pg_policy against what the UI/RPC layer already assumes)
+  on the QC gate (§12), which per a quick grep had zero browser e2e
+  coverage either. Found: cases_select (migration 0032) never had a
+  QC-authority branch at all, and clearances_select (migration 0002)
+  was staff-only since this schema's very first RLS pass - both predate
+  maintenance.qc_authority/is_qc_authority() (migration 0031, F-01).
+  F-01 deliberately made the QC-authority identity NOT a
+  maintenance.staff row, so this identity got zero rows back from
+  cases_select for the very case they're meant to clear - the page's
+  own first query (the case row itself) returned null under RLS, so
+  the QC-authority holder could not even LOAD /cases/[id]. On top of
+  that, qcTab in page.tsx was gated on isStaffRow alone, so even a
+  correct read scope would still have hidden the tab outright. The
+  entire §12 QC-decision UI has been unreachable via the browser for
+  the actual QC-authority identity since Loop 31 shipped
+  is_qc_authority() - tests/qc-and-restoration.test.ts never caught it
+  because it calls qc_decision directly via RPC. HIGH severity (more
+  severe than RISK-35 - this blocks the actual decision action, not
+  just a downstream path - though never CRITICAL, since qc_decision's
+  own RPC-level is_qc_authority() check was always correct; no
+  unauthorized decision was ever possible, only the legitimate one was
+  blocked). Fixed live (migration 0056): extended
+  maintenance.can_read_case() and cases_select's inlined equivalent
+  with a QC-authority branch SCOPED to cases that actually have a
+  clearances row (not blanket all-cases access), plus the matching
+  branch on clearances_select; qcTab's gate changed to
+  isStaffRow || isQcAuthority. Documented as RISK-36 (RESOLVED) in
+  RISK_REGISTER.md. New e2e/qc-gate.spec.ts drives the full round-trip
+  in a real browser: Executive sees "awaiting QC decision" with no
+  buttons, QC-authority identity (fresh browser context) loads the
+  case, sees the buttons, clears it, case actually lands
+  MAINTENANCE_RELEASED. Live-verified via pg_policy before and after
+  the fix, and via get_advisors (no new findings). tsc/eslint/next
+  build all clean; CI is this loop's actual e2e verification, same as
+  every prior loop touching this suite.
+Previously: Loop 111 - closes the e2e gap Gate 21's report explicitly
   acknowledged and deferred (and Gate 22's report repeated as still open):
   no browser-level coverage existed for the Reopen button (RISK-32) or the
   two dispute forms (RISK-33), only the RPC-level Vitest suite plus a

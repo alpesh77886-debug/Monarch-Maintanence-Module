@@ -585,7 +585,12 @@ export default async function CaseDetailPage({
     </div>
   );
 
-  const qcTab = isStaffRow && (
+  // F-01 (§1/§43.8): a QC-authority holder is deliberately NOT staff, so
+  // gating this tab on isStaffRow alone hid it from the one identity it
+  // exists for — QcPanel's own internal isQcAuthority branching (Loop 31)
+  // never had a chance to render. Found in the same Loop 112 sweep that
+  // found the matching cases_select/clearances_select RLS gap (RISK-36).
+  const qcTab = (isStaffRow || isQcAuthority) && (
     <QcPanel
       caseId={caseRow.id}
       status={caseRow.status}
