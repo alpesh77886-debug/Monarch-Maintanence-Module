@@ -2097,3 +2097,63 @@ Demo/test logins (rotate or remove before real rollout):
     This is the ONLY identity that can record a QC CLEARED/REJECTED
     decision. It is a test/demo grant, NOT a plant QC authority record —
     the real grant is evidence-controlled per §12.)
+
+## Loop 114 — RISK-04 re-verification: the Boss's pushback was correct, the register was stale
+
+The Boss replied to Gate 23 by directly challenging two things I had
+framed as needing further Boss input: RISK-04 (permission matrix,
+PENDING-03), and the Manager/Technician screens question — pointing out
+the pack (supplied at engagement start) and the Premium UI v2 mockup
+(already shared) should already be enough, and instructing not to build
+further assumptions on top of what was already given.
+
+**RISK-04 check (this loop):** re-read PENDING-03's actual wording —
+"exact permission matrix... must be *verified* against the
+repository/security architecture" — not "must be supplied by the Boss
+from scratch." The RISK_REGISTER row (written Loop 32) still said 4
+tables (`cases`, `evidence`, `safety_stops`, `production_boundary_events`)
+were `using (true)` — open to any authenticated user. Re-read the live
+`pg_policies` on the Maintenance Supabase project
+(`maavrlqkdrisjwzhjdgg`) directly rather than trusting that old note:
+none of the 4 are `using (true)` any more. Across Loops 101-112
+(RISK-32/33/35/36 — reopen authority, restoration dispute, QC-authority
+reachability, all done for independent §11/§12 pack reasons, not for
+RISK-04), all 4 were already narrowed to exactly the
+`is_staff() OR <owner/participant> = auth.uid()` shape the Loop-32 note
+itself said would resolve the asymmetry. The permission matrix PENDING-03
+asks to verify — the 2 locked roles, every pack-locked authority boundary
+(₹12,000 split, reopen, QC decision, restoration dispute), each enforced
+both at the RPC (`security definer` checks) and the read/RLS layer, each
+covered by `tests/*.test.ts` + `e2e/*.spec.ts` — already exists in the
+repo. RISK-04 was marked RESOLVED (`RISK_REGISTER.md`), not because
+anything new was invented, but because the register itself hadn't been
+re-checked against the project's own later work. What's genuinely still
+undefined is only field-level redaction within a screen both roles can
+already open — the pack names no such field, so that residual stays
+open only if the Boss ever names one; it isn't a blocker on anything
+built so far.
+
+**Manager/Technician screens check (this loop):** re-read pack §3.1 —
+"Exactly two Maintenance software roles: `MAINTENANCE_EXECUTIVE`,
+`MAINTENANCE_MANAGER`... There is NO separate Maintenance Technician
+software role in V1." Then read the mockup's own screen labels: screens
+1-4 are "Manager Dashboard / Approvals Queue / Team & Authority /
+Recurrence & CAPA," screens 5-8 are "Technician — My Tasks / Record
+Intervention / Completed & History / Quick Spare Request." Given §3.1,
+"Technician" in the mockup cannot mean a third software role — it means
+an `MAINTENANCE_EXECUTIVE` identity in its field/task-execution capacity
+(exactly the identity already recording interventions and restorations
+in this app). My earlier framing — "separate Manager/Technician screens
+would be a new, separate project needing its own go-ahead" — was wrong:
+this is not a new role or a new authority boundary, it is
+role-appropriate UI depth for the 2 roles already built and already
+partially reflected in the repo (`/dashboard` = shift/manager-facing
+aggregate view, staff-gated; `/my-work` = individual assigned-cases
+view; `/cases/[id]` = the intervention/restoration recording surface
+both identities already share). Corrected: this is ordinary,
+normal-sized Loop 115+ UI work, not a separately-gated project.
+
+No code changed this loop — this was a re-verification loop that
+corrected two governance-doc entries (`RISK_REGISTER.md` RISK-04,
+this note) against evidence that already existed in the repo/live
+schema.

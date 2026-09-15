@@ -579,3 +579,26 @@ Vercel/Sentry-config, dependency-security) was confirmed freshly
 re-verified across Gates 19-20 with nothing left to re-check. Loops
 112-115 to follow per whatever this closes out and leaves open, with
 Loop 115 carrying the next mandatory Gate 23 stop per §19.9.
+
+**GATE 23 — RESOLVED.** The Boss's reply directly answered Gate 23's
+open question, rather than picking one of the four listed options
+blindly: the Boss challenged the framing itself, pointing out the pack
+and the Premium UI v2 mockup (both already supplied) were sufficient
+for RISK-04 and the Manager/Technician screens question, and that I
+should not defer either without re-checking. Loop 114 re-verified both
+against the repo/live schema instead of assuming the prior framing was
+still correct:
+- RISK-04: the RISK_REGISTER row was stale (Loop 32-era); the 4 tables
+  it flagged as `using (true)` were already narrowed to the correct
+  role/participant-scoped shape across Loops 101-112, done for
+  independent pack reasons. Marked RESOLVED with live-verified evidence
+  — no new rule invented.
+- Manager/Technician screens: pack §3.1 locks exactly 2 software roles,
+  explicitly no separate Technician role — so the mockup's "Technician"
+  screens are Executive-in-field views, not a third role or a
+  separately-gated project. Reclassified as ordinary Loop 115+ UI work.
+
+Loop 115 begins the Manager/Technician-view UI work against the Premium
+UI v2 mockup's 8 screens, mapped onto the existing role model
+(Manager-facing aggregate views vs. Executive/field-task views), with
+the next mandatory §19.9 stop at Loop 120.
