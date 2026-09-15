@@ -24,6 +24,7 @@
 | 20 (Loops 96–100) | [`APPROVAL_REPORT_LOOP_96_100.md`](./APPROVAL_REPORT_LOOP_96_100.md) | Approved — "Continue loop 101 to 105", and in the same message supplied the RISK-32/RISK-33 design decisions this gate report had asked for | 2026-09-14 |
 | 21 (Loops 101–105) | [`APPROVAL_REPORT_LOOP_101_105.md`](./APPROVAL_REPORT_LOOP_101_105.md) | Approved — "Start karo 106 se 110" (compound message, also requesting test-data cleanup, a screens question, and two spare-consumption features) | 2026-09-14 |
 | 22 (Loops 106–110) | [`APPROVAL_REPORT_LOOP_106_110.md`](./APPROVAL_REPORT_LOOP_106_110.md) | Approved — "Loop 111 se 115 start karo" (blanket continuation, did not pick between the report's flagged options) | 2026-09-15 |
+| 23 (Loops 111–113 of the approved 111–115) | [`APPROVAL_REPORT_LOOP_111_115.md`](./APPROVAL_REPORT_LOOP_111_115.md) | AWAITING BOSS | — |
 
 Current state: **GATE 9 (Loops 41-45) APPROVED, SCOPED.** The Boss was shown a
 percent-complete breakdown against IMPLEMENTATION_PACK.md §32's 25-item V1
@@ -530,6 +531,37 @@ depth) would be a multi-loop project of its own, not a bounded batch
 item, and asks for an explicit go-ahead before treating it as in scope.
 Per §19.9 the same mandatory stop will apply again after the next 5
 loops, whatever they turn out to be.
+
+**GATE 22 (Loops 106-110) — RESOLVED.** The Boss replied **"Loop 111 se
+115 start karo"** — explicit continuation language, again a blanket reply
+that did not pick between the report's two options. Per standing practice,
+Loop 111 targets the most concrete already-flagged item: the e2e coverage
+gap for the Reopen button and dispute forms.
+
+**GATE 23 (Loops 111-113 of the approved 111-115) — AWAITING BOSS.** Only
+3 of the 5 approved loops ran, same pattern as Gate 10: the genuine,
+evidence-based work ran out before the loop count did, and the remaining
+2 slots were deliberately not filled with invented work. Loop 111's new
+`e2e/lifecycle-authority.spec.ts` found a real, live bug while building
+the approved coverage: `restorations_select` RLS was staff-only, so a
+non-staff reporter could never actually see the RISK-33 dispute form —
+**RISK-35 (RESOLVED)**, fixed live via migration 0055. Loop 112 continued
+the same method on the QC gate (§12), which had zero e2e coverage either,
+and found a more severe sibling: the QC-authority identity (deliberately
+not staff, per F-01) could not even load a case's page, and the QC tab was
+additionally hidden by an `isStaffRow`-only gate — the entire §12 decision
+UI has been unreachable via the browser for the real QC-authority identity
+since Loop 31 — **RISK-36 (RESOLVED)**, fixed live via migration 0056,
+with new `e2e/qc-gate.spec.ts` proving the full round-trip. Loop 113
+confirmed the write side of both fixes was always safe (RPC-only, `with
+check (false)`) and refreshed `npm audit` (no drift from RISK-34) before
+stopping rather than continuing to dig without new evidence. One question
+is flagged for the Boss, not guessed at: the same "tab not staff-gated"
+shape recurs in Journal/Interventions/Assignments, but unlike RISK-35/36
+there is no pack requirement forcing reporter read access there — full
+detail and the exact question in `APPROVAL_REPORT_LOOP_111_115.md`. Per
+§19.9 the same mandatory stop will apply again after the next 5 loops,
+whatever they turn out to be.
 
 **GATE 22 (Loops 106-110) — RESOLVED.** The Boss replied **"Loop 111 se
 115 start karo"** — explicit continuation language, again a blanket

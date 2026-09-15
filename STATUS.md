@@ -1,6 +1,32 @@
 Project: MONARCH — Maintenance Module
 Current approved design version: v0.2 LOCKED
-Current loop: Loop 112 - a more severe sibling of Loop 111's RISK-35
+Current loop: Loop 113 - closes out the RLS-audit thread Loops 111-112
+  opened, rather than continuing to dig for a third finding of the same
+  class without new evidence. Two checks: (1) clearances' WRITE-side
+  policies - clearances_insert is `with check (false)` (RPC-only,
+  send_to_qc is SECURITY DEFINER), no UPDATE/DELETE policy exists
+  either, confirming the write side was always correctly RPC-only and
+  Loop 112's read-side fix introduced no new write exposure; (2) a
+  fresh `npm audit` - still exactly the 2 moderate findings already
+  documented as RISK-34, no drift since Loop 108. Both clean, nothing
+  new. Also flagging, NOT acting on (would need a Boss decision, not a
+  mechanical RLS fix like RISK-35/36 - see reasoning below): while
+  re-reading page.tsx during the QC investigation, noticed the
+  Journal/Interventions/Assignments tabs are NOT staff-gated at the top
+  level (same shape as the bug class that produced RISK-35/36), but
+  their underlying read policies (observations_select, most of
+  case_ownership_select: staff-only; interventions_select/
+  case_assignments_select: staff OR the specific technician involved)
+  were NEVER updated for a general reporter. Unlike RISK-35 (where §11
+  explicitly required reporter access to a specific action) there is no
+  equivalent pack requirement forcing reporter read access here - RPC
+  writes into these tables are staff-only or technician-only regardless,
+  so nothing is FUNCTIONALLY broken, only a possibly-misleading "No
+  entries yet" for a reporter who isn't staff or the involved
+  technician. Widening this without evidence would be inventing a
+  business rule CLAUDE.md forbids, so left as an explicit open question
+  for the Boss rather than guessed at.
+Previously: Loop 112 - a more severe sibling of Loop 111's RISK-35
   find, found by continuing the same method (reading every case-scoped
   table's live pg_policy against what the UI/RPC layer already assumes)
   on the QC gate (§12), which per a quick grep had zero browser e2e
