@@ -2355,3 +2355,38 @@ Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
 Still not built from the mockup's Manager set: screen 4 (Recurrence &
 CAPA). Next — and this closes out the 4-screen Manager set the Boss asked
 for once screen 4 lands.
+
+## Loop 120 — Recurrence & CAPA (mockup screen 4) — closes the Manager 4-screen set
+
+`/recurrence-rules` (already the rule-configuration tool, Loop 23) now
+also shows two plant-wide, staff-visible lists — both real, both from
+data already RLS-scoped for exactly this:
+- **Suspected recurrence** — `recurrence_flags` where `status = 'SUSPECTED'`,
+  each linking to its case.
+- **CAPA actions (§19)** — every `capa_links` row, status badge, owning
+  Manager's name, case reference.
+
+Two mockup fields were dropped as fabricated rather than reproduced: the
+mockup's CAPA progress-percentage bars (60%/100%/25%) and due dates
+("Due: Sep 20") have no backing column anywhere in `capa_links` — `CapaStatus`
+is only `OPEN`/`VERIFIED_EFFECTIVE`/`VERIFIED_NOT_EFFECTIVE`, no percentage
+or date field exists. Built the real status badge instead of inventing a
+number to fill the progress bar.
+
+Not testable with arranged data: the "Suspected recurrence" section itself
+— `recurrence_flags` rows are only ever created by `run_recurrence_scan`,
+cron-only and `permission denied` for every authenticated client (same
+reason `tests/recurrence-capa.test.ts`'s own header gives for not covering
+the scan at the RPC layer either). `e2e/recurrence-capa.spec.ts` instead
+arranges a real CAPA via the already-tested `raise_capa` RPC and confirms
+it surfaces on the page.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+**This closes the Manager 4-screen set the Boss asked for** (screens 1-4:
+Dashboard analytics, Approvals Queue, Team & Authority, Recurrence & CAPA)
+and the Technician workspace from Loop 115 — all 3 screens ("Manager,
+Executive aur Technician") the Boss named are now built, real-data-backed,
+and e2e-covered. Loop 120 is also this batch's scheduled §19.9 mandatory
+stop (Gate 23's resolution named Loop 120) — full report in
+`APPROVAL_REPORT_LOOP_115_120.md`.

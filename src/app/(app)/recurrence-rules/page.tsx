@@ -1,7 +1,15 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CreateRecurrenceRuleForm from "./create-recurrence-rule-form";
 import RecurrenceRuleCard from "./recurrence-rule-card";
+import { Badge, EmptyState } from "@/components/ui";
 import type { RecurrenceRule } from "@/lib/supabase/database.types";
+
+const CAPA_STATUS_TONE: Record<string, "warn" | "success" | "danger"> = {
+  OPEN: "warn",
+  VERIFIED_EFFECTIVE: "success",
+  VERIFIED_NOT_EFFECTIVE: "danger",
+};
 
 // Loop 23: §18 recurrence-rule configuration. `create_recurrence_rule` and
 // `set_recurrence_rule_active` have existed since Loop 15 and were fully
@@ -34,13 +42,35 @@ export default async function RecurrenceRulesPage() {
 
   const isManager = isStaffRow.role === "MAINTENANCE_MANAGER";
 
-  // Loop 37 (performance): the rules and the staff-name lookup are
-  // independent — issued together rather than one after the other.
-  const [{ data: rules }, { data: staff }] = await Promise.all([
+  // Loop 119 (Boss: "Manager ke 4 screens" — mockup screen 4, "Manager —
+  // Recurrence & CAPA"): a plant-wide view of active recurrence flags and
+  // CAPA items, alongside the rule-configuration tool this page already
+  // was. Both `recurrence_flags`/`capa_links` are staff-select, plant-wide
+  // (migration 0018/0002), not case-scoped — same read scope the existing
+  // per-case `recurrence-capa-panel.tsx` already relies on, just not
+  // previously aggregated anywhere. Loop 37 performance convention:
+  // independent reads issued together.
+  const [{ data: rules }, { data: staff }, { data: flags }, { data: capas }] = await Promise.all([
     supabase.from("recurrence_rules").select("*").order("created_at", { ascending: false }),
     supabase.from("staff").select("id, full_name"),
+    supabase
+      .from("recurrence_flags")
+      .select("id, case_id, related_case_ids, flagged_at, match_value, status")
+      .eq("status", "SUSPECTED")
+      .order("flagged_at", { ascending: false }),
+    supabase.from("capa_links").select("*").order("created_at", { ascending: false }),
   ]);
   const nameById = new Map((staff ?? []).map((s) => [s.id, s.full_name as string]));
+
+  const flagRows = flags ?? [];
+  const capaRows = capas ?? [];
+  const caseIds = [
+    ...new Set([...flagRows.map((f) => f.case_id), ...capaRows.map((c) => c.case_id)]),
+  ];
+  const { data: relatedCases } = caseIds.length
+    ? await supabase.from("cases").select("id, case_number, symptom, area, line").in("id", caseIds)
+    : { data: [] as { id: string; case_number: string; symptom: string; area: string | null; line: string | null }[] };
+  const caseById = new Map((relatedCases ?? []).map((c) => [c.id, c]));
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,6 +83,75 @@ export default async function RecurrenceRulesPage() {
           case.
         </p>
       </div>
+
+      <section>
+        <h2 className="text-sm font-semibold text-fg">Suspected recurrence</h2>
+        {flagRows.length === 0 ? (
+          <EmptyState title="No suspected recurrence right now." className="mt-2" />
+        ) : (
+          <ul className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
+            {flagRows.map((f) => {
+              const c = caseById.get(f.case_id);
+              const caseCount = f.related_case_ids.length + 1;
+              return (
+                <li key={f.id}>
+                  <Link
+                    href={`/cases/${f.case_id}`}
+                    className="block rounded-xl border border-warn/25 bg-card p-3.5 shadow-sm transition-shadow hover:shadow-md active:bg-bg2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-muted">{c?.case_number ?? "unavailable"}</span>
+                      <Badge tone="warn">Suspected</Badge>
+                    </div>
+                    <p className="mt-1.5 text-sm font-medium text-fg">{c?.symptom ?? "case unavailable"}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {caseCount} case{caseCount === 1 ? "" : "s"} matched
+                      {f.match_value ? ` on ${f.match_value}` : ""}
+                      {(c?.area || c?.line) ? ` · ${[c?.area, c?.line].filter(Boolean).join(" · ")}` : ""}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold text-fg">CAPA actions (§19)</h2>
+        {capaRows.length === 0 ? (
+          <EmptyState title="No CAPA raised yet." className="mt-2" />
+        ) : (
+          <ul className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
+            {capaRows.map((capa) => {
+              const c = caseById.get(capa.case_id);
+              return (
+                <li key={capa.id}>
+                  <Link
+                    href={`/cases/${capa.case_id}`}
+                    className="block rounded-xl border border-line bg-card p-3.5 shadow-sm transition-shadow hover:shadow-md active:bg-bg2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-fg">{capa.title}</span>
+                      <Badge tone={CAPA_STATUS_TONE[capa.status] ?? "warn"}>
+                        {capa.status.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      {c?.case_number ?? "case unavailable"} · Owner: {nameById.get(capa.owner_user_id) ?? "unknown"}
+                    </p>
+                    {capa.source === "SYSTEM_SUGGESTED" && (
+                      <p className="mt-1 text-[10px] text-muted2">
+                        System-suggested from a confirmed recurrence — Manager confirmed by raising it
+                      </p>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       {isManager ? (
         <CreateRecurrenceRuleForm />
