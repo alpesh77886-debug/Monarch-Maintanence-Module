@@ -16,6 +16,41 @@ import { statusFillClass } from "@/components/ui";
 
 const TERMINAL = ["CLOSED", "REJECTED", "DUPLICATE"];
 
+// Loop 119 (Boss: "Manager ke 4 screens" — mockup screen 3, "Manager —
+// Team & Authority"). Static, LOCKED reference content, not per-request
+// data — same class as displaying any other pack-locked policy text, so
+// hardcoding it here (rather than a query) is not business-rule invention.
+// Sourced from `AUTHORITY_MATRIX.md`'s "Action authority" table, itself
+// re-verified this same loop against the actual current migration SQL —
+// this repo had a real, documented case of that file drifting from the
+// code (RISK-37: Reopen and QC Clear/Reject both went stale after later
+// migrations corrected them), so this list is a condensed copy of the
+// now-corrected file, not an independent re-derivation that could drift
+// again on its own.
+const AUTHORITY_ROWS: {
+  action: string;
+  exec: boolean;
+  execNote: string;
+  mgr: boolean;
+  mgrNote: string;
+}[] = [
+  { action: "Acknowledge / take ownership", exec: true, execNote: "Yes", mgr: true, mgrNote: "Yes" },
+  { action: "Close case", exec: true, execNote: "Yes", mgr: true, mgrNote: "Yes" },
+  { action: "Reopen case (§3.2)", exec: false, execNote: "No", mgr: true, mgrNote: "Yes — only" },
+  { action: "Spares ≤ ₹12,000 (§3.3)", exec: true, execNote: "Auto (within authority)", mgr: true, mgrNote: "Yes" },
+  { action: "Spares > ₹12,000 (§3.3)", exec: false, execNote: "No", mgr: true, mgrNote: "Required" },
+  {
+    action: "Set / change priority (§5.4)",
+    exec: true,
+    execNote: "Yes, until a Manager locks it",
+    mgr: true,
+    mgrNote: "Yes, and locks it",
+  },
+  { action: "Confirm Emergency (§6)", exec: true, execNote: "Yes", mgr: true, mgrNote: "Yes" },
+  { action: "Configure recurrence rule (§18)", exec: false, execNote: "No", mgr: true, mgrNote: "Yes — only" },
+  { action: "Verify CAPA effectiveness (§19)", exec: false, execNote: "No", mgr: true, mgrNote: "Yes — only" },
+];
+
 function ageInHours(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
 }
@@ -329,6 +364,45 @@ export default async function DashboardPage() {
           </table>
         </div>
       </section>
+
+      {isManager && (
+        <section>
+          <h2 className="text-sm font-semibold text-fg">Authority matrix</h2>
+          <p className="mt-1 text-xs text-muted">
+            Locked action-level authority (§29), re-verified against the actual RPC/RLS code —
+            not this screen&rsquo;s own opinion. Full detail and migration citations:{" "}
+            <span className="font-mono text-muted2">AUTHORITY_MATRIX.md</span>.
+          </p>
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full min-w-[26rem] text-left text-sm">
+              <thead className="text-xs uppercase text-muted">
+                <tr>
+                  <th className="py-1 pr-3">Action</th>
+                  <th className="py-1 pr-3">Executive</th>
+                  <th className="py-1">Manager</th>
+                </tr>
+              </thead>
+              <tbody>
+                {AUTHORITY_ROWS.map((row) => (
+                  <tr key={row.action} className="border-t border-line">
+                    <td className="py-1 pr-3 text-fg">{row.action}</td>
+                    <td className={`py-1 pr-3 text-xs ${row.exec ? "text-emerald-300" : "text-muted2"}`}>
+                      {row.exec ? "✓" : "✗"} {row.execNote}
+                    </td>
+                    <td className={`py-1 text-xs ${row.mgr ? "text-emerald-300" : "text-muted2"}`}>
+                      {row.mgr ? "✓" : "✗"} {row.mgrNote}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[10px] text-muted2">
+            QC Clear/Reject is not in this table because neither Executive nor Manager holds it —
+            only a separately granted QC-authority identity does (§12, F-01).
+          </p>
+        </section>
+      )}
 
       {/* Loop 76 (§16 "Responsive Model" harder half, §30 mobile-first
           sweep): Unassigned and Oldest Open are two independent case-lists

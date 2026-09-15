@@ -2304,3 +2304,54 @@ mockup simplifying/dramatizing an interaction that in practice is just
 
 Still not built from the mockup's Manager set: screen 3 (Team &
 Authority) and screen 4 (Recurrence & CAPA enhancement). Next.
+
+## Loop 119 — Team & Authority (mockup screen 3) + a real finding: AUTHORITY_MATRIX.md had drifted
+
+Workload-by-Executive and the staff list (mockup screen 3's first two
+sections) already existed — `/dashboard`'s "By staff member" table already
+shows exactly this (pending/completed per staff, on/off shift), visible to
+both roles per §22's plant-wide shift-visibility requirement. Nothing
+rebuilt there.
+
+Before hardcoding the mockup's third section (Authority Matrix) into the
+UI, cross-checked it against the repo's own `AUTHORITY_MATRIX.md` instead
+of re-deriving from the pack cold — and found that file itself was stale
+on 3 real points, logged as **RISK-37 (RESOLVED same loop)**:
+- Reopen Case: file said `is_staff()` (Executive: YES) — migration 0050
+  (this project's own RISK-32 fix) made it `is_manager()`-only; the file
+  was never updated after.
+- QC Clear/Reject: file said `is_staff()`, marked "NO — F-01" — migration
+  0031 had already resolved F-01 and moved the gate to `is_qc_authority()`.
+- The whole "Read authority" table's "today" column described the
+  `using (true)` policies from migration 0002 as a live defect — migration
+  0032 (F-02) had already narrowed all of them *before* the file's own
+  stated verification snapshot (`bcf4b93`), meaning the file was already
+  wrong at the moment it claims to have been checked.
+
+Also worth noting: the mockup's own Authority Matrix (screen 3) claims
+Executive can Reopen a case — which is the same wrong claim
+`AUTHORITY_MATRIX.md` used to make, and directly contradicts what
+Loop 111's e2e test already proved (Reopen is Manager-only, RISK-32). The
+in-app Authority Matrix built this loop is sourced from the now-corrected
+`AUTHORITY_MATRIX.md`, not the mockup, specifically to not ship that error
+into the product itself.
+
+Fixed `AUTHORITY_MATRIX.md` in place (all 3 points, plus the QC-identity
+description and the PENDING-03/RISK-04 cell, now pointing at RISK-04
+RESOLVED from Loop 114). No RPC/RLS changed — every underlying check was
+already correct; only the document describing it was wrong.
+
+Added a condensed, Manager-only Authority Matrix reference table directly
+on `/dashboard` (`AUTHORITY_ROWS` — 9 of the pack's locked action-level
+rules, each citing its §-section), sourced from the corrected
+`AUTHORITY_MATRIX.md` rather than independently re-derived, so it can't
+drift from that file the same way that file drifted from the code.
+e2e/manager-dashboard.spec.ts extended to check both that it appears for
+Manager (with the corrected Reopen rule specifically) and stays hidden
+from Executive.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+Still not built from the mockup's Manager set: screen 4 (Recurrence &
+CAPA). Next — and this closes out the 4-screen Manager set the Boss asked
+for once screen 4 lands.
