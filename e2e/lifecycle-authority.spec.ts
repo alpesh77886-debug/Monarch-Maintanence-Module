@@ -178,7 +178,12 @@ test("Reopen is Manager-only in the UI, and actually reopens the case (RISK-32)"
   await expect(managerPage.getByText("Status: CLOSED")).toBeVisible();
   managerPage.once("dialog", (dialog) => dialog.accept("e2e: same problem recurred"));
   await managerPage.getByRole("button", { name: "Reopen (same problem recurred)" }).click();
-  await expect(managerPage.getByText("Status: REOPENED")).toBeVisible({ timeout: 20_000 });
+  // reopen_case (migration 0050) has no "REOPENED" case_status at all — its
+  // p_new_status param defaults to DIAGNOSING (the only other option is
+  // IN_REPAIR, neither ever passed here) — see lifecycle.test.ts's own
+  // identical assertion. The lifecycle event itself is still logged as
+  // event_type REOPENED; only the case's status column lands in DIAGNOSING.
+  await expect(managerPage.getByText("Status: DIAGNOSING")).toBeVisible({ timeout: 20_000 });
   await managerContext.close();
 });
 
