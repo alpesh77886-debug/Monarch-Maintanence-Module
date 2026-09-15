@@ -2258,3 +2258,49 @@ BarBreakdown, different chart style but same data) and chart 3's donut/pie
 app's one existing chart primitive rather than adding a new SVG donut/pie
 component for visual parity alone); screens 2-4 (Approvals Queue, Team &
 Authority, Recurrence & CAPA) not started. Next.
+
+## Loop 118 — Manager Approvals Queue (mockup screen 2)
+
+New Manager-only route `/approvals` (tile on the home hub + link on More,
+both `MAINTENANCE_MANAGER`-gated), aggregating the pending-approval states
+that actually exist as queryable data across every case, not one:
+- Spare requests requiring Manager approval (§3.3, `requires_manager_approval
+  && !approved_at`) — same computation `/spares/page.tsx` already does
+  per-case, now shown plant-wide.
+- Emergency claims awaiting confirmation (`emergency_claimed &&
+  !emergency_confirmed`) — same filter `/emergency/page.tsx` already uses.
+
+Each row deep-links into the real case (`/cases/[id]?tab=spares` for
+spares, matching Loop 115's `?tab=` plumbing) rather than reimplementing
+`approve_spare_request`/emergency-confirmation on a second surface — same
+"don't duplicate tested business logic" choice as the Technician workspace.
+
+Two things the mockup shows but this loop did NOT build, because they
+don't match what's actually real:
+- The mockup's third approval type, "Priority Override" (Executive
+  requests HIGH, Manager approves/rejects as a queued item), does not
+  match how §5.4 is actually implemented — `change_priority` is an
+  immediate action with no pending/queued state anywhere in the schema.
+  There is no row to list and no reject action to wire; building the card
+  anyway would mean inventing a business process. Flagged here, not faked.
+- The mockup's "Reject" button on the spare-approval card was dropped —
+  no reject/decline RPC exists for spare requests, only
+  `approve_spare_request`.
+
+New e2e spec `e2e/approvals-queue.spec.ts`: arranges a real >₹12,000 spare
+request (same threshold `tests/spares.test.ts` already proves server-side),
+confirms it surfaces on `/approvals` for Manager and that Executive is
+turned away with the role-gate message, not just given an empty list.
+
+Verification: `tsc --noEmit`, `eslint`, full `next build` — all clean.
+
+Open question for the Boss (not blocking, just flagged): does the
+Priority-Override-as-a-queue workflow the mockup shows reflect a REAL
+process change the Boss wants (Executive requests, Manager approves/
+rejects, as a new stored state) — which would need a Change Control entry
+per CLAUDE.md, since it changes §5.4's actual mechanics — or was the
+mockup simplifying/dramatizing an interaction that in practice is just
+"Executive sets it, Manager can override it," which is what's built today?
+
+Still not built from the mockup's Manager set: screen 3 (Team &
+Authority) and screen 4 (Recurrence & CAPA enhancement). Next.

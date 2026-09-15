@@ -55,6 +55,10 @@ export default function HomeClient({
     setTheme(next);
   }
 
+  // Loop 118 (mockup screen 2, "Manager — Approvals Queue"): a Manager-only
+  // tile, same pattern as the dashboard's own `isManager`-gated sections —
+  // Executive doesn't get a tile for a page that would just tell them
+  // they can't use it.
   const tiles: ModuleTile[] = [
     { href: "/cases", icon: "▤", title: "Cases", meta: "Report, track & manage maintenance cases", badge: counts.openCases },
     { href: "/dashboard", icon: "◷", title: "Shift", meta: "Shift status, handover & continuity" },
@@ -62,6 +66,18 @@ export default function HomeClient({
     { href: "/spares", icon: "◆", title: "Spare Consumption", meta: "Requests, approvals & usage trace", badge: counts.spareApprovalPending > 0 ? counts.spareApprovalPending : undefined },
     { href: "/my-work", icon: "✓", title: "My Work", meta: "Your assigned cases", badge: counts.myWork > 0 ? counts.myWork : undefined, tone: "primary" },
     { href: "/emergency", icon: "!", title: "Emergency", meta: "Active emergency actions requiring attention", badge: counts.activeEmergency > 0 ? counts.activeEmergency : undefined, tone: "alert" },
+    ...(role === "MAINTENANCE_MANAGER"
+      ? [
+          {
+            href: "/approvals",
+            icon: "✓",
+            title: "Approvals",
+            meta: "Spare approvals & emergency confirmations",
+            badge: counts.spareApprovalPending > 0 ? counts.spareApprovalPending : undefined,
+            tone: "primary" as const,
+          },
+        ]
+      : []),
   ];
 
   return (
